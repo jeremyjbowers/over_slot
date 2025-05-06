@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Rankings</h1>
+<div>
+    <p>
+        <ul>
+            {% for ranking in rankings %}
+            <li id="#{{ pr.slug }}"><a href="/rankings/{{ ranking.slug }}/">{{ ranking }}</a></li>
+            {% endfor %}
+        </ul>
+    </p>
+</div>
+{% endblock %}

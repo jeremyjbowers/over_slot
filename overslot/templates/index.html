@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div>
+    This is some content about Over Slot.
+</div>
+<div>
+    <h2>{{ rankings|length }} rankings</h2>
+    <p>
+        <ul>
+            {% for ranking in rankings %}
+            <li id="#{{ pr.slug }}"><a href="/rankings/{{ ranking.slug }}/">{{ ranking }}</a></li>
+            {% endfor %}
+        </ul>
+    </p>
+    <h2>{{ articles|length }} articles</h2>
+    <p>
+        <ul>
+            {% for article in articles %}
+            <li><a href="/articles/{{ article.slug }}/">{{ article.headline }}</a><br/>{{ article.created }}</li>
+            {% endfor %}
+        </ul>
+    </p>
+</div>
+
+{% endblock %}

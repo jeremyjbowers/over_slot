@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ player.name }}</h1>
+
+{% if player.scouting_report %}
+<div>
+    {{ player.scouting_report|safe }}
+</div>
+{% endif %}
+
+{% if rankings %}
+<h3>Rankings</h3>
+<div>
+    <p>
+        <ul>
+            {% for r in rankings %}<li>{{ r.rank }} — <a href="/rankings/{{ r.ranking.slug }}/#{{ player.slug }}">{{ r.ranking }}</a></li>{% endfor %}
+        </ul>
+    </p>
+</div>
+{% endif %}
+
+{% if articles %}
+<h3>Articles</h3>
+<div>
+    <p>
+        <ul>
+            {% for a in articles %}<li>{{ a.created }} <a href="/articles/{{ a.slug }}/">{{ a.headline }}</a></li>{% endfor %}
+        </ul>
+    </p>
+</div>
+{% endif %}
+{% endblock %}

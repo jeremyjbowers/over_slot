@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>{{ ranking }}</h1>
+{% if ranking.body %}<div>{{ ranking.body|safe }}</div>{% endif %}
+
+<div>
+    <p>
+        <ul>
+            {% for pr in ranking.get_playerrankings %}
+            <li id="{{ pr.player.slug }}">{{ pr.rank }} — {{ pr.ranking_position }} <a href="/players/{{ pr.player.slug }}/">{{ pr.player.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </p>
+</div>
+{% endblock %}
