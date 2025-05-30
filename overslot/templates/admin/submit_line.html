@@ -1,0 +1,58 @@
+{% load i18n admin_urls %}
+
+<div class="submit-row-sticky">
+    <div class="submit-row">
+        {% if show_save %}<input type="submit" value="{% translate 'Save' %}" class="default" name="_save">{% endif %}
+        {% if show_delete_link and original %}
+            {% url opts|admin_urlname:'delete' original.pk|admin_urlquote as delete_url %}
+            <a href="{% add_preserved_filters delete_url %}" class="deletelink">{% translate "Delete" %}</a>
+        {% endif %}
+        {% if show_save_as_new %}<input type="submit" value="{% translate 'Save as new' %}" name="_saveasnew">{% endif %}
+        {% if show_save_and_add_another %}<input type="submit" value="{% translate 'Save and add another' %}" name="_addanother">{% endif %}
+        {% if show_save_and_continue %}<input type="submit" value="{% if can_change %}{% translate 'Save and continue editing' %}{% else %}{% translate 'Save and view' %}{% endif %}" name="_continue">{% endif %}
+    </div>
+</div>
+
+<style>
+.submit-row-sticky {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: calc(100% - 300px); /* Adjust for Django admin sidebar width */
+    z-index: 1000;
+    background: var(--body-bg);
+    border-top: 1px solid var(--hairline-color);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    padding: 15px 20px;
+}
+
+.submit-row-sticky .submit-row {
+    margin: 0;
+    text-align: right;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .submit-row-sticky {
+        width: 100%;
+    }
+}
+
+/* Add padding to prevent content from being hidden behind sticky bar */
+#content {
+    padding-bottom: 80px !important;
+}
+
+/* Style improvements */
+.submit-row-sticky input[type="submit"] {
+    margin-left: 8px;
+}
+
+.submit-row-sticky .deletelink {
+    height: 35px;
+    line-height: 35px;
+}
+</style> 

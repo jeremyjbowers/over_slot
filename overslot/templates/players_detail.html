@@ -1,33 +1,726 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block content %}
-<h1>{{ player.name }}</h1>
+<!-- Hero section with player name and position -->
+<style>
+.hero {
+    background: linear-gradient(
+        rgba(var(--theme-primary-rgb), 0.1),
+        var(--dark-bg)
+    );
+    padding: 4rem 0;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--dark-border);
+}
 
-{% if player.scouting_report %}
-<div>
-    {{ player.scouting_report|safe }}
-</div>
-{% endif %}
+.hero .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
 
-{% if rankings %}
-<h3>Rankings</h3>
-<div>
-    <p>
-        <ul>
-            {% for r in rankings %}<li>{{ r.rank }} — <a href="/rankings/{{ r.ranking.slug }}/#{{ player.slug }}">{{ r.ranking }}</a></li>{% endfor %}
-        </ul>
-    </p>
-</div>
-{% endif %}
+.hero-title {
+    font-family: var(--font-sans);
+    font-size: var(--text-5xl);
+    font-weight: 800;
+    line-height: var(--leading-tight);
+    color: var(--dark-text);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+    max-width: 700px;
+}
 
-{% if articles %}
-<h3>Articles</h3>
-<div>
-    <p>
-        <ul>
-            {% for a in articles %}<li>{{ a.created }} <a href="/articles/{{ a.slug }}/">{{ a.headline }}</a></li>{% endfor %}
-        </ul>
-    </p>
+.hero-subtitle {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    color: var(--dark-text-secondary);
+    margin-bottom: 1rem;
+    font-weight: 400;
+    max-width: 700px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: var(--text-base);
+    color: var(--dark-text-muted);
+}
+
+.hero-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hero-meta-item .icon {
+    color: var(--theme-primary);
+    font-size: 0.875rem;
+}
+
+.hero-meta-label {
+    color: var(--dark-text-secondary);
+    font-weight: 500;
+}
+
+@media screen and (max-width: 768px) {
+    .hero-title {
+        font-size: 3rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.25rem;
+        justify-content: center;
+    }
+
+    .hero-meta {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+}
+
+.player-info-section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.player-info-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.player-photo-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.player-photo-wrapper {
+    position: relative;
+    padding-top: 100%;
+}
+
+.player-photo-wrapper img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.player-video-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    color: var(--theme-primary);
+    border-top: 1px solid var(--dark-border);
+    transition: all 0.2s ease;
+}
+
+.player-video-link:hover {
+    background: var(--dark-surface-hover);
+    color: var(--theme-primary);
+}
+
+.player-info-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.info-section {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.info-section:last-child {
+    border-bottom: none;
+}
+
+.info-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.info-section-header .icon {
+    color: var(--theme-primary);
+    font-size: 1rem;
+}
+
+.info-section-title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--dark-text);
+    letter-spacing: -0.01em;
+    margin: 0;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.info-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--dark-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.info-value {
+    font-size: var(--text-sm);
+    color: var(--dark-text);
+    font-weight: 500;
+}
+
+.location-section {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--dark-text);
+    font-size: var(--text-sm);
+}
+
+.location-section .icon {
+    color: var(--theme-primary);
+}
+
+.content-section {
+    max-width: 1200px;
+    margin: 3rem auto 0;
+    padding: 0 1.5rem 3rem;
+    background: var(--dark-bg);
+}
+
+.content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.section-header .icon {
+    color: var(--theme-primary);
+    font-size: 1.5rem;
+}
+
+.section-title {
+    font-size: var(--text-2xl);
+    font-weight: 800;
+    color: var(--dark-text);
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.ranking-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 1rem;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.ranking-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.ranking-header a {
+    color: var(--dark-text);
+    font-weight: 600;
+    font-size: var(--text-lg);
+}
+
+.ranking-header a:hover {
+    color: var(--theme-primary);
+}
+
+.ranking-content {
+    padding: 1.5rem;
+    color: var(--dark-text-secondary);
+    background: var(--dark-surface);
+}
+
+.ranking-content-inner {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.tools-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.tool-tag {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+}
+
+.tool-name {
+    background: var(--dark-surface-hover);
+    color: var(--dark-text);
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem 0 0 0.5rem;
+    border: 1px solid var(--dark-border);
+}
+
+.tool-score {
+    background: var(--theme-primary);
+    color: var(--dark-text);
+    padding: 0.25rem 0.75rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-weight: 600;
+}
+
+.article-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.article-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    color: var(--dark-text-muted);
+    font-size: var(--text-sm);
+}
+
+.article-content {
+    max-width: 700px;
+}
+
+.article-title {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+    line-height: var(--leading-snug);
+}
+
+.article-title:hover {
+    color: var(--theme-primary);
+}
+
+.article-subhead {
+    color: var(--dark-text-secondary);
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
+    margin-bottom: 1rem;
+}
+
+.article-blurb {
+    color: var(--dark-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+}
+
+.scouting-report {
+    position: relative;
+    font-family: var(--font-serif);
+    line-height: var(--leading-relaxed);
+}
+
+.scouting-report-preview {
+    max-height: 150px;
+    overflow: hidden;
+    position: relative;
+}
+
+.scouting-report-preview::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: linear-gradient(transparent, var(--dark-surface));
+    pointer-events: none;
+}
+
+.scouting-report.expanded .scouting-report-preview {
+    max-height: none;
+}
+
+.scouting-report.expanded .scouting-report-preview::after {
+    display: none;
+}
+
+.toggle-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    color: var(--theme-primary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+
+.toggle-button:hover {
+    color: var(--theme-primary-hover);
+}
+
+.toggle-button .icon {
+    transition: transform 0.2s ease;
+}
+
+.scouting-report.expanded .toggle-button .icon {
+    transform: rotate(180deg);
+}
+
+@media (max-width: 1024px) {
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .player-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .player-photo-card {
+        max-width: 300px;
+        margin: 0 auto;
+    }
+}
+
+/* Add this to ensure the entire page has dark background */
+body {
+    background: var(--dark-bg);
+    min-height: 100vh;
+}
+</style>
+
+<div class="hero">
+    <div class="container">
+        <h1 class="hero-title">{{ player.name }}</h1>
+        <div class="hero-subtitle">
+            <span>{{ player.position }}</span>
+            {% if rankings.0.role %}
+            <span class="hero-meta-item">
+                <span class="icon">
+                    <i class="fas fa-star"></i>
+                </span>
+                <span class="hero-meta-label">FV:</span>
+                {{ rankings.0.role }}
+            </span>
+            {% endif %}
+        </div>
+        <div class="hero-meta">
+            {% if player.school %}
+            <div class="hero-meta-item">
+                <span class="icon">
+                    <i class="fas fa-graduation-cap"></i>
+                </span>
+                {{ player.school }}
+            </div>
+            {% endif %}
+            {% if player.hometown or player.state %}
+            <div class="hero-meta-item">
+                <span class="icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                </span>
+                {% if player.hometown %}{{ player.hometown }}{% endif %}
+                {% if player.state %}, {{ player.state }}{% endif %}
+            </div>
+            {% endif %}
+            {% if player.bats and player.throws %}
+            <div class="hero-meta-item">
+                <span class="icon">
+                    <i class="fas fa-baseball-ball"></i>
+                </span>
+                B/T: {{ player.bats }}/{{ player.throws }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
-{% endif %}
+
+<div class="player-info-section">
+    <div class="player-info-grid">
+        <!-- Photo column -->
+        <div class="player-photo-card">
+            <div class="player-photo-wrapper">
+                <img src="{{ player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}" 
+                     alt="{{ player.name }}">
+            </div>
+            {% if player.video_url %}
+            <a href="{{ player.video_url }}" class="player-video-link">
+                <span class="icon">
+                    <i class="fas fa-video"></i>
+                </span>
+                <span>Watch Highlights</span>
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Info column -->
+        <div class="player-info-card">
+            <!-- Physical Tools Section -->
+            <div class="info-section">
+                <div class="info-section-header">
+                    <span class="icon">
+                        <i class="fas fa-baseball-ball"></i>
+                    </span>
+                    <h3 class="info-section-title">Physical Tools</h3>
+                </div>
+                <div class="info-grid">
+                    {% if player.height %}
+                    <div class="info-item">
+                        <div class="info-label">Height</div>
+                        <div class="info-value">{{ player.height }}</div>
+                    </div>
+                    {% endif %}
+                    {% if player.weight %}
+                    <div class="info-item">
+                        <div class="info-label">Weight</div>
+                        <div class="info-value">{{ player.weight }} lbs</div>
+                    </div>
+                    {% endif %}
+                    {% if player.bats %}
+                    <div class="info-item">
+                        <div class="info-label">Bats</div>
+                        <div class="info-value">{{ player.bats }}</div>
+                    </div>
+                    {% endif %}
+                    {% if player.throws %}
+                    <div class="info-item">
+                        <div class="info-label">Throws</div>
+                        <div class="info-value">{{ player.throws }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Background Section -->
+            <div class="info-section">
+                <div class="info-section-header">
+                    <span class="icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </span>
+                    <h3 class="info-section-title">Background</h3>
+                </div>
+                <div class="info-grid">
+                    {% if player.school %}
+                    <div class="info-item">
+                        <div class="info-label">School</div>
+                        <div class="info-value">{{ player.school }}</div>
+                    </div>
+                    {% endif %}
+                    {% if rankings.0.commitment %}
+                    <div class="info-item">
+                        <div class="info-label">Commitment</div>
+                        <div class="info-value">{{ rankings.0.commitment }}</div>
+                    </div>
+                    {% endif %}
+                    {% if rankings.0.level %}
+                    <div class="info-item">
+                        <div class="info-label">Level</div>
+                        <div class="info-value">{{ rankings.0.level }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Location Section -->
+            {% if player.hometown or player.state or player.country %}
+            <div class="info-section">
+                <div class="info-section-header">
+                    <span class="icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </span>
+                    <h3 class="info-section-title">Location</h3>
+                </div>
+                <div class="location-section">
+                    <span class="icon">
+                        <i class="fas fa-home"></i>
+                    </span>
+                    <span>
+                        {% if player.hometown %}{{ player.hometown }}{% endif %}
+                        {% if player.state %}, {{ player.state }}{% endif %}
+                        {% if player.country and player.country != "United States" %}, {{ player.country }}{% endif %}
+                    </span>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Latest Evaluation Section -->
+            {% if rankings.0.role or rankings.0.risk %}
+            <div class="info-section">
+                <div class="info-section-header">
+                    <span class="icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </span>
+                    <h3 class="info-section-title">Latest Evaluation</h3>
+                </div>
+                <div class="info-grid">
+                    {% if rankings.0.role %}
+                    <div class="info-item">
+                        <div class="info-label">Future Value</div>
+                        <div class="info-value">{{ rankings.0.role }}</div>
+                    </div>
+                    {% endif %}
+                    {% if rankings.0.risk %}
+                    <div class="info-item">
+                        <div class="info-label">Risk</div>
+                        <div class="info-value">{{ rankings.0.risk }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="content-section">
+    <div class="content-grid">
+        <!-- Rankings column -->
+        <div>
+            <div class="section-header">
+                <span class="icon">
+                    <i class="fas fa-chart-line"></i>
+                </span>
+                <h2 class="section-title">Rankings</h2>
+            </div>
+            
+            {% for r in rankings %}
+            <div class="ranking-card">
+                <div class="ranking-header">
+                    <a href="/rankings/{{ r.ranking.slug }}/#{{ r.player.slug }}">
+                        Ranked {{ r.rank|ordinal }} in {{ r.ranking }}
+                    </a>
+                </div>
+                
+                {% if r.carrying_tools.all %}
+                <div class="ranking-content">
+                    <div class="tools-grid">
+                        {% for c in r.carrying_tools.all %}
+                        <div class="tool-tag">
+                            <span class="tool-name">{{ c.tool }}</span>
+                            <span class="tool-score">{{ c.score }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if r.scouting_report %}
+                <div class="ranking-content">
+                    <div class="ranking-content-inner">
+                        <div class="scouting-report" data-expanded="false">
+                            <div class="scouting-report-preview">
+                                {{ r.scouting_report|safe }}
+                            </div>
+                            <button class="toggle-button" onclick="toggleReport(this)">
+                                <span>Show more</span>
+                                <span class="icon">
+                                    <i class="fas fa-chevron-down"></i>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Articles column -->
+        <div>
+            <div class="section-header">
+                <span class="icon">
+                    <i class="fas fa-newspaper"></i>
+                </span>
+                <h2 class="section-title">Articles</h2>
+            </div>
+
+            {% for a in articles %}
+            <div class="article-card">
+                <div class="article-meta">
+                    {% if a.authors.all %}
+                    <span class="icon-text">
+                        <span class="icon">
+                            <i class="fas fa-users"></i>
+                        </span>
+                        <span>{% for author in a.authors.all %}{{ author.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+                    </span>
+                    {% endif %}
+                    <span class="icon-text">
+                        <span class="icon">
+                            <i class="fas fa-calendar"></i>
+                        </span>
+                        <span>{{ a.published_at|date:"F j, Y" }}</span>
+                    </span>
+                </div>
+                <div class="article-content">
+                    <a href="/articles/{{ a.slug }}/" class="article-title">{{ a.headline }}</a>
+                    {% if a.subhead %}
+                    <div class="article-subhead">{{ a.subhead }}</div>
+                    {% endif %}
+                    {% if a.blurb %}
+                    <div class="article-blurb">{{ a.blurb }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Add JavaScript for toggle functionality -->
+<script>
+function toggleReport(button) {
+    const report = button.closest('.scouting-report');
+    const isExpanded = report.getAttribute('data-expanded') === 'true';
+    
+    report.setAttribute('data-expanded', !isExpanded);
+    report.classList.toggle('expanded');
+    
+    const buttonText = button.querySelector('span:not(.icon)');
+    buttonText.textContent = isExpanded ? 'Show more' : 'Show less';
+}
+</script>
 {% endblock %}

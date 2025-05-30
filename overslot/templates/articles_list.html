@@ -1,14 +1,221 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Articles</h1>
-<div>
-    <p>
-        <ul>
-            {% for article in articles %}
-            <li><a href="/articles/{{ article.slug }}/">{{ article.headline }}</a><br/>{{ article.created }}</li>
+<style>
+.article-list {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.article-card {
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.article-card:last-child {
+    border-bottom: none;
+}
+
+.article-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--dark-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+}
+
+.article-meta .icon-text {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.article-meta .has-text-info {
+    color: var(--theme-primary) !important;
+}
+
+.social-links {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+}
+
+.social-links a {
+    color: var(--dark-text-muted);
+    transition: color 0.2s ease;
+}
+
+.social-links a:hover {
+    color: var(--theme-primary);
+}
+
+.article-date {
+    color: var(--dark-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.article-headline {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: var(--dark-text);
+    line-height: 1.2;
+}
+
+.article-subhead {
+    font-size: 1.25rem;
+    color: var(--dark-text-secondary);
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.article-blurb {
+    color: var(--dark-text-secondary);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.player-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.player-tag {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    color: var(--theme-primary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.player-tag:hover {
+    background: var(--dark-surface-hover);
+    border-color: var(--theme-primary);
+}
+
+.hero {
+    background: linear-gradient(
+        rgba(var(--theme-primary-rgb), 0.1),
+        var(--dark-bg)
+    );
+    padding: 4rem 0;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.hero-title {
+    font-family: var(--font-sans);
+    font-size: var(--text-5xl);
+    font-weight: 800;
+    line-height: var(--leading-tight);
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+    max-width: 700px;
+}
+
+.hero-subtitle {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    color: var(--dark-text-secondary);
+    margin-bottom: 1rem;
+    font-weight: 400;
+    max-width: 700px;
+}
+
+.hero .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+@media screen and (max-width: 768px) {
+    .hero-title {
+        font-size: 3rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.25rem;
+    }
+}
+</style>
+
+<div class="hero">
+    <div class="container">
+        <h1 class="hero-title">Articles</h1>
+        <p class="hero-subtitle">In-depth analysis and scouting reports</p>
+    </div>
+</div>
+
+<div class="article-list">
+    {% for article in articles %}
+    <article class="article-card">
+        <div class="article-meta">
+            {% if article.authors.all %}
+            <span class="icon-text has-text-info">
+                <span class="icon">
+                    <i class="fas fa-users"></i>
+                </span>
+                <span class="has-text-weight-medium">
+                    {% for author in article.authors.all %}
+                        {{ author.display_name }}
+                        {% if author.bluesky or author.twitter %}
+                        <span class="social-links">
+                            {% if author.bluesky %}
+                                <a href="{{ author.bluesky_url }}" title="Bluesky">
+                                    <span class="icon is-small">
+                                        <i class="fas fa-cloud"></i>
+                                    </span>
+                                </a>
+                            {% endif %}
+                            {% if author.twitter %}
+                                <a href="https://twitter.com/{{ author.twitter }}" title="Twitter">
+                                    <span class="icon is-small">
+                                        <i class="fab fa-twitter"></i>
+                                    </span>
+                                </a>
+                            {% endif %}
+                        </span>
+                        {% endif %}
+                        {% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </span>
+            </span>
+            {% endif %}
+            <span class="icon-text">
+                <span class="icon">
+                    <i class="fas fa-calendar"></i>
+                </span>
+                <span>{{ article.created|date:"F j, Y" }}</span>
+            </span>
+        </div>
+        <a href="/articles/{{ article.slug }}/" class="has-text-white">
+            <h2 class="article-headline">{{ article.headline }}</h2>
+        </a>
+        {% if article.subhead %}
+        <h3 class="article-subhead">{{ article.subhead }}</h3>
+        {% endif %}
+        {% if article.blurb %}
+        <p class="article-blurb">{{ article.blurb }}</p>
+        {% endif %}
+        {% if article.players.all %}
+        <div class="player-tags">
+            {% for player in article.players.all %}
+            <a href="/players/{{ player.slug }}/" class="player-tag">
+                {{ player.name }}
+            </a>
             {% endfor %}
-        </ul>
-    </p>
+        </div>
+        {% endif %}
+    </article>
+    {% endfor %}
 </div>
 {% endblock %}

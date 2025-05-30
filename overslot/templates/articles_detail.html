@@ -1,22 +1,393 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>{{ article.headline }}</h1>
-<div>
-    <h3>{{ article.subhead }}</h3>
-    <p><em>{{ article.blurb }}</em></p>
+<style>
+.hero {
+    background: linear-gradient(
+        rgba(var(--theme-primary-rgb), 0.1),
+        var(--dark-bg)
+    );
+    padding: 4rem 0;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.hero .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.hero-title {
+    font-family: var(--font-sans);
+    font-size: var(--text-5xl);
+    font-weight: 800;
+    line-height: var(--leading-tight);
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+    max-width: 700px;
+}
+
+.hero-subhead {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    color: var(--dark-text-secondary);
+    margin-bottom: 1rem;
+    font-weight: 400;
+    max-width: 700px;
+}
+
+.hero-blurb {
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    line-height: var(--leading-relaxed);
+    color: var(--dark-text-secondary);
+    max-width: 700px;
+}
+
+.article-content {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.article-meta {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    color: var(--dark-text-muted);
+    border-left: 3px solid var(--theme-primary);
+    padding-left: 1rem;
+    margin: 2rem 0;
+}
+
+.article-meta .authors {
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--dark-text);
+    margin-bottom: 0.75rem;
+}
+
+.article-meta .date-info {
+    font-size: var(--text-xs);
+    color: var(--dark-text-muted);
+    border-top: 1px solid var(--dark-border);
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+}
+
+.author-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.author-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 6px;
+    padding: 0.75rem;
+    flex: 1;
+    min-width: 200px;
+    transition: all 0.2s ease;
+}
+
+.author-card:hover {
+    background: var(--dark-surface-hover);
+}
+
+.author-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.author-card .photo {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.author-card .name {
+    color: var(--dark-text);
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.2rem;
+}
+
+.author-card .social-links {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.author-card .social-links .icon-small {
+    font-size: 0.8rem;
+}
+
+.author-card .bio {
+    color: var(--dark-text-muted);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin-top: 0.5rem;
+}
+
+.author-card .contact {
+    margin-top: 0.4rem;
+}
+
+.article-body {
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    line-height: var(--leading-relaxed);
+    color: var(--dark-text-secondary);
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+.article-body p {
+    margin-bottom: 1.5em;
+}
+
+.article-body h2 {
+    font-family: var(--font-sans);
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    color: var(--dark-text);
+    margin: 2.5em 0 0.8em;
+    letter-spacing: -0.02em;
+}
+
+.article-body h3 {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    color: var(--dark-text);
+    margin: 2em 0 0.8em;
+    letter-spacing: -0.01em;
+}
+
+.article-body ul, .article-body ol {
+    margin: 1.5em 0;
+    padding-left: 1.5em;
+}
+
+.article-body li {
+    margin-bottom: 0.5em;
+}
+
+.article-body blockquote {
+    font-style: italic;
+    border-left: 3px solid var(--theme-primary);
+    padding-left: 1.5em;
+    margin: 2em 0;
+    color: var(--dark-text);
+}
+
+.player-cards {
+    position: sticky;
+    top: 2rem;
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 6px;
+}
+
+.player-card {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--dark-border);
+    transition: all 0.2s ease;
+}
+
+.player-card:last-child {
+    border-bottom: none;
+}
+
+.player-card:hover {
+    background: var(--dark-surface-hover);
+}
+
+.player-photo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 1rem;
+    object-fit: cover;
+}
+
+.player-name {
+    color: var(--dark-text);
+    font-weight: 600;
+}
+
+.player-position {
+    color: var(--dark-text-muted);
+}
+
+@media screen and (max-width: 1200px) {
+    .article-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+}
+
+.article-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 3rem;
+}
+
+.article-body-container {
+    max-width: 70ch;
+}
+
+.featured-players {
+    position: sticky;
+    top: 2rem;
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    height: fit-content;
+}
+
+.featured-players-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--dark-border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.featured-players-header .icon {
+    color: var(--theme-primary);
+}
+
+.featured-players-header .title {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--dark-text);
+    margin: 0;
+}
+
+.featured-players-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.player-card {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--dark-border);
+    transition: all 0.2s ease;
+}
+
+.player-card:last-child {
+    border-bottom: none;
+}
+
+.player-card:hover {
+    background: var(--dark-surface-hover);
+}
+
+.player-photo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 1rem;
+    object-fit: cover;
+}
+
+.player-info {
+    flex: 1;
+}
+
+.player-name {
+    color: var(--dark-text);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    margin-bottom: 0.25rem;
+}
+
+.player-position {
+    color: var(--dark-text-muted);
+    font-size: var(--text-xs);
+}
+
+@media screen and (max-width: 1200px) {
+    .article-container {
+        grid-template-columns: minmax(0, 1fr) 250px;
+        gap: 2rem;
+    }
+}
+
+@media screen and (max-width: 900px) {
+    .article-container {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+    }
+
+    .article-body-container {
+        max-width: none;
+    }
+
+    .featured-players {
+        position: static;
+        margin-top: 2rem;
+    }
+}
+</style>
+
+<div class="hero">
+    <div class="container">
+        <h1 class="hero-title">{{ article.headline }}</h1>
+        {% if article.subhead %}
+        <h2 class="hero-subhead">{{ article.subhead }}</h2>
+        {% endif %}
+        {% if article.blurb %}
+        <p class="hero-blurb">{{ article.blurb }}</p>
+        {% endif %}
+    </div>
 </div>
-<div>
-    {% if article.players %}
-    <h2>Players mentioned</h2>
-    <ul>
-        {% for player in article.players.all %}
-        <li>{{ player.current_position }} <a href="/players/{{ player.slug }}/">{{ player.name }}</a></li>
-        {% endfor %}
-    </ul>
+
+<div class="article-container">
+    <div class="article-body-container">
+        <div class="article-body">
+            {{ article.body|safe }}
+        </div>
+    </div>
+
+    {% if article.players.all %}
+    <div class="featured-players">
+        <div class="featured-players-header">
+            <span class="icon">
+                <i class="fas fa-users"></i>
+            </span>
+            <h2 class="title">Featured Players</h2>
+        </div>
+        <div class="featured-players-list">
+            {% for player in article.players.all %}
+            <a href="/players/{{ player.slug }}/" class="player-card">
+                <img src="{{ player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
+                     alt="{{ player.name }}" 
+                     class="player-photo">
+                <div class="player-info">
+                    <div class="player-name">{{ player.name }}</div>
+                    <div class="player-position">{{ player.position }}</div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
     {% endif %}
-</div>
-<div>
-    {{ article.body|safe }}
 </div>
 {% endblock %}

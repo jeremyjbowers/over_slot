@@ -1,0 +1,525 @@
+<nav class="navbar has-shadow" role="navigation" aria-label="main navigation" style="background: var(--dark-surface); border-bottom: 1px solid var(--dark-border); min-height: 3.5rem; padding: 0; position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">
+    <div class="container">
+        <div class="navbar-brand" style="min-height: 3.5rem; display: flex; align-items: center;">
+            <a class="navbar-item logo" href="/">
+                <div class="logo-content">
+                    <!-- Compact Over Slot Logo -->
+                    <div class="nav-logo">
+                        <svg width="40" height="40" viewBox="0 0 120 120" fill="none" class="logo-svg">
+                            <!-- Dark background circle -->
+                            <circle cx="60" cy="60" r="60" fill="#111111"/>
+                            
+                            <!-- Baseball stitching - Left side -->
+                            <g transform="translate(20, 20)">
+                                <path d="M0 10 Q15 25 0 40 Q15 55 0 70" 
+                                      stroke="#ef4444" stroke-width="3" fill="none" stroke-linecap="round"/>
+                                <g stroke="#ef4444" stroke-width="2" stroke-linecap="round">
+                                    <line x1="-5" y1="15" x2="5" y2="15"/>
+                                    <line x1="-5" y1="25" x2="5" y2="25"/>
+                                    <line x1="-5" y1="35" x2="5" y2="35"/>
+                                    <line x1="-5" y1="45" x2="5" y2="45"/>
+                                    <line x1="-5" y1="55" x2="5" y2="55"/>
+                                    <line x1="-5" y1="65" x2="5" y2="65"/>
+                                </g>
+                            </g>
+                            
+                            <!-- Baseball stitching - Right side -->
+                            <g transform="translate(100, 20) scale(-1, 1)">
+                                <path d="M0 10 Q15 25 0 40 Q15 55 0 70" 
+                                      stroke="#ef4444" stroke-width="3" fill="none" stroke-linecap="round"/>
+                                <g stroke="#ef4444" stroke-width="2" stroke-linecap="round">
+                                    <line x1="-5" y1="15" x2="5" y2="15"/>
+                                    <line x1="-5" y1="25" x2="5" y2="25"/>
+                                    <line x1="-5" y1="35" x2="5" y2="35"/>
+                                    <line x1="-5" y1="45" x2="5" y2="45"/>
+                                    <line x1="-5" y1="55" x2="5" y2="55"/>
+                                    <line x1="-5" y1="65" x2="5" y2="65"/>
+                                </g>
+                            </g>
+                            
+                            <!-- Microphone icon -->
+                            <g transform="translate(60, 60)">
+                                <!-- Microphone body -->
+                                <ellipse cx="0" cy="-8" rx="8" ry="12" fill="#ffffff" stroke="#ffffff" stroke-width="1"/>
+                                <!-- Microphone stand -->
+                                <line x1="0" y1="4" x2="0" y2="20" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                                <!-- Base -->
+                                <line x1="-8" y1="20" x2="8" y2="20" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <span class="logo-text">Over Slot</span>
+                </div>
+            </a>
+
+            <a role="button" 
+               class="navbar-burger" 
+               aria-label="menu" 
+               aria-expanded="false" 
+               data-target="navMenu">
+                <span aria-hidden="true" style="background-color: #94a3b8;"></span>
+                <span aria-hidden="true" style="background-color: #94a3b8;"></span>
+                <span aria-hidden="true" style="background-color: #94a3b8;"></span>
+            </a>
+        </div>
+
+        <div id="navMenu" class="navbar-menu" style="background: var(--dark-surface); padding: 0;">
+            <div class="navbar-start">
+                <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
+                   href="/articles/"
+                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
+                    Articles
+                </a>
+                <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
+                   href="/rankings/"
+                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
+                    Rankings
+                </a>
+            </div>
+
+            <div class="navbar-end">
+                <div class="navbar-item search-container">
+                    <div class="search-wrapper">
+                        <input type="text" 
+                               class="search-input" 
+                               placeholder="Search articles, rankings, or players..."
+                               id="navSearch"
+                               autocomplete="off">
+                        <div class="search-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                    <div class="search-results" id="searchResults">
+                        <div class="search-results-content">
+                            <div class="search-column">
+                                <h3 class="search-column-title">
+                                    <span class="icon"><i class="fas fa-newspaper"></i></span>
+                                    Articles
+                                </h3>
+                                <div class="search-items" id="articleResults"></div>
+                            </div>
+                            <div class="search-column">
+                                <h3 class="search-column-title">
+                                    <span class="icon"><i class="fas fa-list-ol"></i></span>
+                                    Rankings
+                                </h3>
+                                <div class="search-items" id="rankingResults"></div>
+                            </div>
+                            <div class="search-column">
+                                <h3 class="search-column-title">
+                                    <span class="icon"><i class="fas fa-user"></i></span>
+                                    Players
+                                </h3>
+                                <div class="search-items" id="playerResults"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="navbar-item">
+                    <div class="buttons">
+                        {% if user.is_authenticated %}
+                            <div class="navbar-item has-dropdown is-hoverable">
+                                <a class="navbar-link">
+                                    {{ user.email }}
+                                </a>
+                                <div class="navbar-dropdown is-right">
+                                    {% if user.is_staff %}
+                                        <a class="navbar-item" href="{% url 'admin:index' %}">
+                                            Admin
+                                        </a>
+                                        <hr class="navbar-divider">
+                                    {% endif %}
+                                    <a class="navbar-item" href="{% url 'account_logout' %}">
+                                        Sign out
+                                    </a>
+                                </div>
+                            </div>
+                        {% else %}
+                            <a class="button is-primary" href="{% url 'account_signup' %}" title="Create account with magic link">
+                                <strong>Get started</strong>
+                            </a>
+                            <a class="button is-light" href="{% url 'account_login' %}" title="Sign in with magic link">
+                                Sign in
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<style>
+.navbar-item:hover {
+    background: var(--dark-surface-hover) !important;
+    color: var(--theme-primary) !important;
+}
+
+.navbar-item.logo {
+    position: relative;
+    padding: 0 1.5rem;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+    background: transparent !important;
+}
+
+.logo-content {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+    position: relative;
+    gap: 0.75rem;
+}
+
+.logo-text {
+    font-family: 'Aleo', serif;
+    font-size: var(--text-3xl);
+    font-weight: 900;
+    color: var(--dark-text);
+    letter-spacing: -0.02em;
+    position: relative;
+    line-height: 1;
+}
+
+.logo-text::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -3px;
+    height: 3px;
+    background: var(--theme-primary);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.navbar-item.logo:hover .logo-text::after {
+    transform: scaleX(1);
+}
+
+.nav-logo {
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s ease;
+}
+
+.logo-svg {
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.navbar-item.logo:hover .nav-logo {
+    transform: scale(1.05);
+}
+
+/* Mobile menu styles */
+@media screen and (max-width: 1023px) {
+    .navbar-brand {
+        flex: 1;
+    }
+
+    .navbar-menu {
+        display: none;
+        background: var(--dark-surface);
+    }
+    
+    .navbar-menu.is-active {
+        display: block;
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 3.5rem;
+        background: var(--dark-surface);
+        border-bottom: 1px solid var(--dark-border);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        z-index: 999;
+    }
+
+    .navbar-menu.is-active .navbar-item {
+        padding: 1rem;
+        border-top: 1px solid var(--dark-border);
+        background: var(--dark-surface);
+    }
+
+    .navbar-menu.is-active .navbar-item:hover {
+        background: var(--dark-surface-hover) !important;
+    }
+
+    .navbar-menu.is-active .navbar-end {
+        padding: 0;
+    }
+
+    .navbar-menu.is-active .navbar-end .navbar-item {
+        border-top: 1px solid var(--dark-border);
+    }
+}
+
+/* Ensure burger menu is properly hidden at desktop */
+@media screen and (min-width: 1024px) {
+    .navbar-burger {
+        display: none !important;
+    }
+}
+
+/* Search styles */
+.search-container {
+    position: relative;
+    min-width: 400px;
+    max-width: 600px;
+    flex-grow: 1;
+}
+
+.search-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    border: 1px solid var(--dark-border);
+    border-radius: 6px;
+    background: var(--dark-surface);
+    color: var(--dark-text);
+    font-size: var(--text-base);
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb), 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--dark-text-secondary);
+    pointer-events: none;
+}
+
+.search-results {
+    display: none;
+    position: fixed;
+    top: 4.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1200px;
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 998;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+}
+
+.search-results.active {
+    display: block;
+}
+
+.search-results-content {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--dark-border);
+}
+
+.search-column {
+    background: var(--dark-surface);
+    padding: 1.5rem;
+}
+
+.search-column-title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--dark-text-secondary);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.search-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.search-item {
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.search-item:hover {
+    background: var(--dark-surface-hover);
+}
+
+.search-item-title {
+    font-weight: 500;
+    color: var(--dark-text);
+    margin-bottom: 0.25rem;
+}
+
+.search-item-meta {
+    font-size: var(--text-xs);
+    color: var(--dark-text-secondary);
+}
+
+.search-item-preview {
+    color: var(--theme-primary);
+    font-style: italic;
+}
+
+@media screen and (max-width: 1023px) {
+    .search-container {
+        min-width: 100%;
+    }
+
+    .search-results-content {
+        grid-template-columns: 1fr;
+    }
+
+    .search-column:not(:last-child) {
+        border-bottom: 1px solid var(--dark-border);
+    }
+}
+
+/* User Dropdown Styles */
+.navbar-item.has-dropdown .navbar-link {
+    color: var(--dark-text);
+    background-color: var(--dark-surface); /* Ensure consistent background */
+}
+
+.navbar-item.has-dropdown .navbar-link:hover,
+.navbar-item.has-dropdown.is-hoverable:hover .navbar-link { /* Keep link visible when dropdown is open */
+    background-color: var(--dark-surface-hover);
+    color: var(--theme-primary);
+}
+
+.navbar-dropdown {
+    background-color: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-top: none; /* Remove top border if it touches the navbar */
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    border-radius: 0 0 6px 6px; /* Optional: match other border-radius */
+}
+
+.navbar-dropdown .navbar-item {
+    color: var(--dark-text-secondary);
+    background-color: var(--dark-surface);
+}
+
+.navbar-dropdown .navbar-item:hover {
+    background-color: var(--dark-surface-hover);
+    color: var(--theme-primary);
+}
+
+.navbar-dropdown .navbar-divider {
+    background-color: var(--dark-border);
+    height: 1px; /* Ensure visibility */
+    margin: 0.25rem 0; /* Adjust spacing if needed */
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Get all "navbar-burger" elements
+    const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+
+    // Add a click event on each of them
+    $navbarBurgers.forEach(el => {
+        el.addEventListener('click', () => {
+            // Get the target from the "data-target" attribute
+            const target = el.dataset.target;
+            const $target = document.getElementById(target);
+
+            // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+            el.classList.toggle('is-active');
+            $target.classList.toggle('is-active');
+        });
+    });
+
+    const searchInput = document.getElementById('navSearch');
+    const searchResults = document.getElementById('searchResults');
+    const articleResults = document.getElementById('articleResults');
+    const rankingResults = document.getElementById('rankingResults');
+    const playerResults = document.getElementById('playerResults');
+    
+    let searchTimeout;
+
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        const query = e.target.value.trim();
+        
+        if (query.length < 2) {
+            searchResults.classList.remove('active');
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            fetch(`/api/search/?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Clear previous results
+                    articleResults.innerHTML = '';
+                    rankingResults.innerHTML = '';
+                    playerResults.innerHTML = '';
+
+                    // Populate articles
+                    data.articles.forEach(article => {
+                        articleResults.innerHTML += `
+                            <a href="/articles/${article.slug}/" class="search-item">
+                                <div class="search-item-title">${article.headline}</div>
+                                <div class="search-item-meta">${article.created}</div>
+                            </a>
+                        `;
+                    });
+
+                    // Populate rankings
+                    data.rankings.forEach(ranking => {
+                        rankingResults.innerHTML += `
+                            <a href="/rankings/${ranking.slug}/" class="search-item">
+                                <div class="search-item-title">${ranking.headline}</div>
+                                <div class="search-item-meta">
+                                    ${ranking.year}
+                                    ${ranking.preview ? `<span class="search-item-preview">• Contains ${ranking.preview}</span>` : ''}
+                                </div>
+                            </a>
+                        `;
+                    });
+
+                    // Populate players
+                    data.players.forEach(player => {
+                        playerResults.innerHTML += `
+                            <a href="/players/${player.slug}/" class="search-item">
+                                <div class="search-item-title">${player.name}</div>
+                                <div class="search-item-meta">${player.position} | ${player.school}</div>
+                            </a>
+                        `;
+                    });
+
+                    searchResults.classList.add('active');
+                });
+        }, 300);
+    });
+
+    // Close search results when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!searchResults.contains(e.target) && e.target !== searchInput) {
+            searchResults.classList.remove('active');
+        }
+    });
+
+    // Prevent clicks inside search results from closing
+    searchResults.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+});
+</script>

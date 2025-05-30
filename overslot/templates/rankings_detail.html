@@ -1,16 +1,528 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>{{ ranking }}</h1>
-{% if ranking.body %}<div>{{ ranking.body|safe }}</div>{% endif %}
+<style>
+.hero {
+    background: linear-gradient(
+        rgba(var(--theme-primary-rgb), 0.1),
+        var(--dark-bg)
+    );
+    padding: 4rem 0;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--dark-border);
+}
 
-<div>
-    <p>
-        <ul>
-            {% for pr in ranking.get_playerrankings %}
-            <li id="{{ pr.player.slug }}">{{ pr.rank }} — {{ pr.ranking_position }} <a href="/players/{{ pr.player.slug }}/">{{ pr.player.name }}</a></li>
-            {% endfor %}
-        </ul>
-    </p>
+.hero-title {
+    font-family: var(--font-sans);
+    font-size: var(--text-5xl);
+    font-weight: 800;
+    line-height: var(--leading-tight);
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+    max-width: 700px;
+}
+
+.hero-subhead {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    color: var(--dark-text-secondary);
+    margin-bottom: 1rem;
+    font-weight: 400;
+    max-width: 700px;
+}
+
+.hero-blurb {
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    line-height: var(--leading-relaxed);
+    color: var(--dark-text-secondary);
+    margin-bottom: 1.5rem;
+    max-width: 700px;
+}
+
+.hero-content {
+    font-family: var(--font-serif);
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
+    color: var(--dark-text-secondary);
+    max-width: 700px;
+}
+
+.hero-content.collapsed {
+    max-height: 150px;
+    overflow: hidden;
+}
+
+.hero-content.collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: linear-gradient(transparent, var(--dark-bg));
+    pointer-events: none;
+}
+
+.hero-actions {
+    margin-top: 1rem;
+}
+
+.toggle-all-button {
+    background: var(--dark-surface);
+    color: var(--theme-primary);
+    border: 1px solid var(--dark-border);
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toggle-all-button:hover {
+    background: var(--dark-surface-hover);
+    border-color: var(--theme-primary);
+}
+
+.toggle-all-button .icon {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+.toggle-all-button[aria-expanded="true"] .icon {
+    transform: rotate(180deg);
+}
+
+.hero .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.player-cards {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.player-cards-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.player-cards-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.player-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    display: grid;
+    grid-template-columns: 75px 1fr auto;
+    position: relative;
+}
+
+.player-card:hover {
+    transform: translateY(-2px);
+}
+
+.player-rank-accent {
+    background: var(--theme-primary);
+    color: var(--dark-text);
+    font-size: var(--text-3xl);
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    min-width: 75px;
+}
+
+.player-main {
+    padding: 1.25rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.player-info {
+    flex: 1;
+}
+
+.player-name {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--dark-text);
+    display: block;
+    line-height: var(--leading-tight);
+    margin-bottom: 0.5rem;
+}
+
+.player-position {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--dark-text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+}
+
+.player-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: var(--text-sm);
+    color: var(--dark-text-muted);
+}
+
+.player-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.meta-label {
+    color: var(--dark-text-secondary);
+}
+
+.meta-label::after {
+    content: ":";
+}
+
+.player-photo {
+    width: 120px;
+    height: 120px;
+    border-radius: 0.5rem;
+    object-fit: cover;
+}
+
+.toggle-section {
+    display: flex;
+    align-items: stretch;
+    border-left: 1px solid var(--dark-border);
+}
+
+.toggle-button {
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--theme-primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.toggle-button:hover {
+    background: var(--dark-surface-hover);
+}
+
+.player-content {
+    display: none;
+    grid-column: 1 / -1;
+    padding: 1.25rem;
+    border-top: 1px solid var(--dark-border);
+    color: var(--dark-text-secondary);
+    background: var(--dark-surface);
+}
+
+.player-content.expanded {
+    display: block;
+}
+
+.player-content-inner {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.tools-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.tool-tag {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+}
+
+.tool-name {
+    background: var(--dark-surface-hover);
+    color: var(--dark-text);
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem 0 0 0.5rem;
+    border: 1px solid var(--dark-border);
+}
+
+.tool-score {
+    background: var(--theme-primary);
+    color: var(--dark-text);
+    padding: 0.25rem 0.75rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-weight: 600;
+}
+
+.section-label {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--dark-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+}
+
+.player-metrics {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    color: var(--dark-text-muted);
+    margin: 1rem 0;
+}
+
+.scouting-report {
+    font-family: var(--font-serif);
+    line-height: var(--leading-relaxed);
+    color: var(--dark-text-secondary);
+}
+
+.toggle-report {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    color: var(--theme-primary);
+    transition: all 0.2s ease;
+}
+
+.toggle-report:hover {
+    background: var(--dark-surface-hover);
+    border-color: var(--theme-primary);
+}
+
+.ranking-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--theme-primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    font-size: var(--text-sm);
+    font-weight: 500;
+}
+
+.ranking-toggle:hover {
+    color: var(--theme-primary-hover);
+}
+
+@media screen and (min-width: 769px) {
+    .player-card-content {
+        padding: 2rem;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .hero-title {
+        font-size: 3rem;
+    }
+
+    .player-card {
+        grid-template-columns: 50px 1fr auto;
+    }
+
+    .player-main {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    .player-photo {
+        width: 100px;
+        height: 100px;
+    }
+
+    .player-meta {
+        gap: 0.75rem;
+    }
+
+    .toggle-button {
+        padding: 0 1rem;
+    }
+}
+</style>
+
+<div class="hero">
+    <div class="container">
+        <h1 class="hero-title">{{ ranking }}</h1>
+        {% if ranking.subhead %}
+        <h2 class="hero-subhead">{{ ranking.subhead }}</h2>
+        {% endif %}
+        {% if ranking.blurb %}
+        <div class="hero-blurb">{{ ranking.blurb }}</div>
+        {% endif %}
+        {% if ranking.body %}
+        <div class="hero-content">
+            {{ ranking.body|safe }}
+        </div>
+        {% endif %}
+    </div>
 </div>
+
+<div class="player-cards">
+    <div class="player-cards-header">
+        <button class="toggle-all-button" aria-expanded="false">
+            <span>Expand All Scouting Reports</span>
+            <span class="icon">
+                <i class="fas fa-chevron-down"></i>
+            </span>
+        </button>
+    </div>
+    
+    {% for pr in ranking.get_playerrankings %}
+    <div id="{{ pr.player.slug }}" class="player-card">
+        <div class="player-rank-accent">
+            {{ pr.rank }}
+        </div>
+        <div class="player-main">
+            <div class="player-info">
+                <a href="/players/{{ pr.player.slug }}/" class="player-name">
+                    {{ pr.player.name }}
+                </a>
+                <div class="player-position">
+                    {{ pr.position }} — {{ pr.school }}
+                </div>
+                <div class="player-meta">
+                    <div class="player-meta-item">
+                        <span class="meta-label">Height</span>
+                        <span>{{ pr.player.height }}</span>
+                    </div>
+                    <div class="player-meta-item">
+                        <span class="meta-label">Weight</span>
+                        <span>{{ pr.player.weight }} lbs</span>
+                    </div>
+                    <div class="player-meta-item">
+                        <span class="meta-label">Bats</span>
+                        <span>{{ pr.player.bats }}</span>
+                    </div>
+                    <div class="player-meta-item">
+                        <span class="meta-label">Throws</span>
+                        <span>{{ pr.player.throws }}</span>
+                    </div>
+                </div>
+            </div>
+            <img src="{{ pr.player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
+                 alt="{{ pr.player.name }}" 
+                 class="player-photo">
+        </div>
+        <div class="toggle-section">
+            <button class="toggle-button" aria-expanded="false" data-content="report-{{ pr.player.slug }}">
+                <span class="icon">
+                    <i class="fas fa-chevron-down"></i>
+                </span>
+            </button>
+        </div>
+        <div class="player-content" id="report-{{ pr.player.slug }}">
+            <div class="player-content-inner">
+                {% if pr.carrying_tools.all %}
+                <div class="tools-grid">
+                    {% for c in pr.carrying_tools.all %}
+                    <div class="tool-tag">
+                        <span class="tool-name">{{ c.tool }}</span>
+                        <span class="tool-score">{{ c.score }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if pr.role or pr.risk %}
+                <div class="player-metrics">
+                    {% if pr.role %}
+                    <span class="mr-3">Role: {{ pr.role }}</span>
+                    {% endif %}
+                    {% if pr.risk %}
+                    <span>Risk: {{ pr.risk }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if pr.scouting_report %}
+                <div class="section-label">Scouting Report</div>
+                <div class="scouting-report">
+                    {{ pr.scouting_report|safe }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function toggleContent(button) {
+    const expanded = button.getAttribute('aria-expanded') === 'true';
+    const contentId = button.getAttribute('data-content');
+    const content = document.getElementById(contentId);
+    
+    if (contentId !== 'rankingBody') {
+        content.classList.toggle('expanded');
+    }
+    
+    button.setAttribute('aria-expanded', !expanded);
+    
+    // Rotate chevron
+    const icon = button.querySelector('.icon');
+    icon.style.transform = !expanded ? 'rotate(180deg)' : '';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Individual toggle buttons (excluding ranking body)
+    document.querySelectorAll('.player-card .toggle-button').forEach(button => {
+        button.addEventListener('click', () => toggleContent(button));
+    });
+
+    // Toggle all button for scouting reports
+    const toggleAllButton = document.querySelector('.toggle-all-button');
+    if (toggleAllButton) {
+        toggleAllButton.addEventListener('click', () => {
+            const expanded = toggleAllButton.getAttribute('aria-expanded') === 'true';
+            const toggleButtons = document.querySelectorAll('.player-card .toggle-button');
+            
+            toggleButtons.forEach(button => {
+                const contentId = button.getAttribute('data-content');
+                const content = document.getElementById(contentId);
+                
+                button.setAttribute('aria-expanded', !expanded);
+                content.classList.toggle('expanded', !expanded);
+                
+                // Rotate chevron
+                const icon = button.querySelector('.icon');
+                icon.style.transform = !expanded ? 'rotate(180deg)' : '';
+            });
+            
+            toggleAllButton.setAttribute('aria-expanded', !expanded);
+            toggleAllButton.querySelector('span:not(.icon)').textContent = 
+                expanded ? 'Expand All Scouting Reports' : 'Collapse All Scouting Reports';
+            toggleAllButton.querySelector('.icon').style.transform = 
+                !expanded ? 'rotate(180deg)' : '';
+        });
+    }
+});
+</script>
 {% endblock %}

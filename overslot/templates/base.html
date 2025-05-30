@@ -1,13 +1,208 @@
-<html>
-    <head></head>
+<!DOCTYPE html>
+<html lang="en" class="theme-red">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}Over Slot{% endblock %}</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Aleo:ital,wght@0,100..900;1,100..900&family=Noto+Serif:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">        
+        <style>
+            :root {
+                /* Theme Colors - Red theme only */
+                --theme-red-primary: #ef4444;
+                --theme-red-primary-rgb: 239, 68, 68;
+                
+                /* Set theme primary to red */
+                --theme-primary: var(--theme-red-primary);
+                --theme-primary-rgb: var(--theme-red-primary-rgb);
+                
+                /* Dark Mode Colors */
+                --dark-bg: #111111;
+                --dark-surface: #1a1a1a;
+                --dark-surface-hover: #222222;
+                --dark-border: #333333;
+                --dark-text: #ffffff;
+                --dark-text-secondary: #94a3b8;
+                --dark-text-muted: #64748b;
+                
+                /* Typography */
+                --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+                --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+                --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                
+                /* Font Sizes */
+                --text-xs: 0.75rem;
+                --text-sm: 0.875rem;
+                --text-base: 1rem;
+                --text-lg: 1.125rem;
+                --text-xl: 1.25rem;
+                --text-2xl: 1.5rem;
+                --text-3xl: 1.875rem;
+                --text-4xl: 2.25rem;
+                --text-5xl: 3rem;
+                
+                /* Line Heights */
+                --leading-none: 1;
+                --leading-tight: 1.25;
+                --leading-snug: 1.375;
+                --leading-normal: 1.5;
+                --leading-relaxed: 1.625;
+                --leading-loose: 2;
+            }
+
+            /* Base Typography */
+            body {
+                font-family: var(--font-sans);
+                background: var(--dark-bg);
+                color: var(--dark-text);
+                line-height: var(--leading-normal);
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            main {
+                flex: 1;
+                padding-top: 3.5rem;
+                padding-bottom: 4rem;
+            }
+
+            /* Headings */
+            h1, h2, h3, h4, h5, h6,
+            .title, .subtitle {
+                font-family: var(--font-sans);
+                letter-spacing: -0.02em;
+                line-height: var(--leading-tight);
+            }
+
+            /* Article Typography */
+            .article-body {
+                font-family: var(--font-serif);
+                font-size: var(--text-lg);
+                line-height: var(--leading-relaxed);
+                color: var(--dark-text-secondary);
+            }
+
+            .article-body h2 {
+                font-family: var(--font-sans);
+                font-size: var(--text-3xl);
+                font-weight: 700;
+                margin-top: 2.5em;
+                margin-bottom: 0.8em;
+                color: var(--dark-text);
+            }
+
+            .article-body h3 {
+                font-family: var(--font-sans);
+                font-size: var(--text-2xl);
+                font-weight: 600;
+                margin-top: 2em;
+                margin-bottom: 0.8em;
+                color: var(--dark-text);
+            }
+
+            .article-body p {
+                margin-bottom: 1.5em;
+            }
+
+            /* UI Elements */
+            .meta-text {
+                font-size: var(--text-sm);
+                color: var(--dark-text-muted);
+            }
+
+            .hero-title {
+                font-size: var(--text-5xl);
+                font-weight: 800;
+            }
+
+            .hero-subtitle {
+                font-size: var(--text-2xl);
+                color: var(--dark-text-secondary);
+                line-height: var(--leading-snug);
+            }
+
+            /* Code blocks */
+            pre, code {
+                font-family: var(--font-mono);
+                font-size: var(--text-sm);
+            }
+
+            /* Links */
+            a {
+                color: var(--theme-primary);
+                text-decoration: none;
+                transition: color 0.2s ease;
+            }
+
+            a:hover {
+                color: var(--dark-text);
+            }
+
+            /* Toggle Buttons (Read More/Show Less) */
+            .toggle-button {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: none;
+                border: none;
+                color: var(--theme-primary);
+                font-size: var(--text-sm);
+                font-weight: 500;
+                padding: 0.5rem 0;
+                cursor: pointer;
+            }
+
+            .toggle-button:hover {
+                color: var(--theme-primary-hover);
+            }
+
+            .toggle-button .icon {
+                transition: transform 0.2s ease;
+            }
+
+            .toggle-button[aria-expanded="true"] .icon {
+                transform: rotate(180deg);
+            }
+
+            .preview-content {
+                position: relative;
+                max-height: 150px;
+                overflow: hidden;
+            }
+
+            .preview-content::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 50px;
+                background: linear-gradient(transparent, var(--dark-surface));
+                pointer-events: none;
+            }
+
+            .preview-content.expanded {
+                max-height: none;
+            }
+
+            .preview-content.expanded::after {
+                display: none;
+            }
+        </style>
+        {% block extra_css %}{% endblock %}
+    </head>
     <body>
-        <div class="nav">
-            <a href="/"><strong>OVER SLOT</strong></a> &bull;
-            <a href="/articles/">Articles</a> &bull;
-            <a href="/rankings/">Rankings</a>
-        </div>
-        <div id="content">
+        {% include "includes/nav.html" %}
+        
+        <main>
             {% block content %}{% endblock %}
-        </div>
+        </main>
+
+        {% block extra_js %}{% endblock %}
     </body>
 </html>

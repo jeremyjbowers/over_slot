@@ -5,8 +5,11 @@ cachetools==5.5.2
 certifi==2025.4.26
 charset-normalizer==3.4.2
 Django==5.2
+django-allauth==65.8.1
+django-environ==0.12.0
 django-js-asset==3.1.2
 django-prose-editor==0.11.2
+django-sesame==3.2.3
 google-api-core==2.24.2
 google-api-python-client==2.169.0
 google-auth==2.39.0
@@ -26,11 +29,14 @@ pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pyparsing==3.2.3
 python-dateutil==2.9.0.post0
+python3-openid==3.2.0
 requests==2.32.3
 requests-oauthlib==2.0.0
 rsa==4.9.1
 s3transfer==0.12.0
 six==1.17.0
 sqlparse==0.5.3
+stripe==12.2.0
+typing_extensions==4.13.2
 uritemplate==4.1.1
 urllib3==2.4.0

@@ -1,0 +1,43 @@
+{% extends "auth/base_auth.html" %}
+
+{% block auth_title %}Sign out{% endblock %}
+
+{% block auth_content %}
+<div class="logout-content">
+    <p class="logout-message">Are you sure you want to sign out?</p>
+    
+    <form method="post" class="auth-form">
+        {% csrf_token %}
+        {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
+        {% endif %}
+        <button type="submit" class="form-submit">Sign out</button>
+    </form>
+    
+    <div class="auth-links">
+        <p><a href="{% url 'index' %}">Cancel and go back to home</a></p>
+    </div>
+</div>
+
+<style>
+.logout-content {
+    text-align: center;
+}
+
+.logout-message {
+    color: var(--dark-text-secondary);
+    font-size: var(--text-base);
+    margin-bottom: 1.5rem;
+}
+
+.form-submit {
+    background: #ef4444;
+    color: white;
+}
+
+.form-submit:hover {
+    background: #dc2626;
+    filter: none;
+}
+</style>
+{% endblock %} 

@@ -1,14 +1,254 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Rankings</h1>
-<div>
-    <p>
-        <ul>
-            {% for ranking in rankings %}
-            <li id="#{{ pr.slug }}"><a href="/rankings/{{ ranking.slug }}/">{{ ranking }}</a></li>
-            {% endfor %}
-        </ul>
-    </p>
+<style>
+.hero {
+    background: linear-gradient(
+        rgba(var(--theme-primary-rgb), 0.1),
+        var(--dark-bg)
+    );
+    padding: 4rem 0;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.hero-title {
+    font-family: var(--font-sans);
+    font-size: var(--text-5xl);
+    font-weight: 800;
+    line-height: var(--leading-tight);
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+    max-width: 700px;
+}
+
+.hero-subtitle {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    color: var(--dark-text-secondary);
+    margin-bottom: 1rem;
+    font-weight: 400;
+    max-width: 700px;
+}
+
+.hero .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.rankings-grid {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    gap: 2rem;
+    padding: 0 1.5rem 3rem;
+}
+
+.ranking-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.ranking-card:hover {
+    background: var(--dark-surface-hover);
+    transform: translateY(-2px);
+}
+
+.ranking-card-content {
+    padding: 1.5rem;
+    flex: 1;
+}
+
+.ranking-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.ranking-blurb {
+    color: var(--dark-text-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.top-players-title {
+    font-size: 1.25rem;
+    color: var(--dark-text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.player-preview {
+    display: block;
+    transition: transform 0.2s ease;
+}
+
+.player-preview:hover {
+    transform: translateY(-2px);
+}
+
+.image-wrapper {
+    position: relative;
+    padding-top: 100%;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    margin-bottom: 0.75rem;
+}
+
+.image-wrapper img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.player-preview:hover .image-wrapper {
+    border-color: var(--theme-primary);
+}
+
+.rank-badge {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.8);
+    color: var(--theme-primary);
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-top-left-radius: 0.5rem;
+}
+
+.player-name {
+    color: var(--dark-text);
+    font-weight: 500;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    margin-bottom: 0.2rem;
+}
+
+.player-position {
+    color: var(--dark-text-muted);
+    font-size: 0.8rem;
+}
+
+.view-all-link {
+    display: block;
+    text-align: center;
+    padding: 0.75rem;
+    color: var(--theme-primary);
+    border-top: 1px solid var(--dark-border);
+    transition: all 0.2s ease;
+}
+
+.view-all-link:hover {
+    background: var(--dark-surface-hover);
+    color: var(--theme-primary);
+}
+
+.top-players {
+    margin-top: 2rem;
+}
+
+.top-players-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+}
+
+@media screen and (min-width: 769px) {
+    .rankings-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    .top-players-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .hero-title {
+        font-size: 3rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.25rem;
+    }
+
+    .ranking-title {
+        font-size: 1.75rem;
+    }
+
+    .top-players-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .top-players-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+
+<div class="hero">
+    <div class="container">
+        <h1 class="hero-title">Rankings</h1>
+        <p class="hero-subtitle">Player rankings and draft boards for amateur baseball</p>
+    </div>
+</div>
+
+<div class="rankings-grid">
+    {% for ranking in rankings %}
+    <div class="ranking-card">
+        <div class="ranking-card-content">
+            <h2 class="ranking-title">
+                <a href="/rankings/{{ ranking.slug }}/" class="has-text-white">
+                    {{ ranking }}
+                </a>
+            </h2>
+            
+            {% if ranking.blurb %}
+            <p class="ranking-blurb">{{ ranking.blurb }}</p>
+            {% endif %}
+
+            <div class="top-players">
+                <h3 class="top-players-title">Top Prospects</h3>
+                <div class="top-players-grid">
+                    {% for pr in ranking.get_playerrankings|slice:":5" %}
+                    <a href="/players/{{ pr.player.slug }}/" class="player-preview">
+                        <div class="image-wrapper">
+                            <img src="{{ pr.player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
+                                 alt="{{ pr.player.name }}">
+                            <div class="rank-badge">#{{ pr.rank }}</div>
+                        </div>
+                        <p class="player-name">{{ pr.player.name }}</p>
+                        <p class="player-position">{{ pr.player.position }}</p>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <a href="/rankings/{{ ranking.slug }}/" class="view-all-link">
+            View Full Rankings
+        </a>
+    </div>
+    {% endfor %}
 </div>
 {% endblock %}

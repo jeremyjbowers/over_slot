@@ -6,11 +6,21 @@ admin.site.index_title = "Administer The Overslot Website"
 
 from overslot.models import (
     Article,
+    Author,
     Player,
     Ranking,
     PlayerRanking,
     PlayerRankingCarryingTool
 )
+
+
+@admin.register(Author)
+class AuthorAdmin(admin.ModelAdmin):
+    model = Author
+    list_display = ["display_name", "user", "email", "twitter", "bluesky"]
+    search_fields = ["display_name", "user__username", "user__email", "email", "bio", "twitter", "bluesky"]
+    autocomplete_fields = ["user"]
+    readonly_fields = ["created", "last_modified"]
 
 
 @admin.register(Article)
@@ -19,13 +29,13 @@ class ArticleAdmin(admin.ModelAdmin):
     list_display = ["headline", "subhead", "blurb", "publish"]
     search_fields = ["headline", "body", "subhead", "blurb"]
     list_editable = ["subhead", "blurb", "publish"]
-    autocomplete_fields = ["players"]
+    autocomplete_fields = ["players", "authors"]
 
 
 @admin.register(Player)
 class PlayerAdmin(admin.ModelAdmin):
     model = Player
-    list_display = ["name", "current_position", "current_school"]
+    list_display = ["name", "position", "school"]
     search_fields = ["name"]
 
 
@@ -49,14 +59,15 @@ class PlayerRankingInline(admin.TabularInline):
     min_num = 30
     max_num = 1000
     extra = 0
+    classes = ['collapse']
     fieldsets = (
         (
             None,
             {
                 "fields": (
                     ("rank", "player"),
-                    ("ranking_position", "ranking_school"),
-                    ('role', 'carrying_tools'),
+                    ("position", "school"),
+                    ('role', 'risk', 'carrying_tools'),
                 ),
             },
         ),
@@ -74,10 +85,12 @@ class PlayerRankingAdmin(admin.ModelAdmin):
             None,
             {
                 "fields": (
-                    "rank",
-                    "player",
-                    ("ranking_position", "ranking_school"),
-                    ('role', 'carrying_tools'),
+                    ("rank", "player"),
+                    ("position", "school", 'commitment'),
+                    ('role', 'risk', 'level'),
+                    'scouting_report',
+                    'raw_carrying_tools',
+                    "carrying_tools",
                 ),
             },
         ),

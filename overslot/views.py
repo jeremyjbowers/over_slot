@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from decimal import *
+from django.utils.timezone import template_localtime
 
 from overslot import models, utils
 
@@ -55,3 +56,80 @@ def players_detail(request, slug):
     context['articles'] = models.Article.objects.filter(players=context['player'])
 
     return render(request, "players_detail.html", context)
+
+def search(request):
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({
+            'articles': [],
+            'rankings': [],
+            'players': []
+        })
+
+    # Search articles
+    articles = models.Article.objects.filter(
+        Q(headline__icontains=query) |
+        Q(subhead__icontains=query) |
+        Q(blurb__icontains=query) |
+        Q(body__icontains=query)
+    ).filter(publish=True)[:5]
+
+    # Search rankings - include rankings that contain matching players
+    rankings = models.Ranking.objects.filter(
+        Q(headline__icontains=query) |
+        Q(subhead__icontains=query) |
+        Q(blurb__icontains=query) |
+        Q(year__icontains=query) |
+        Q(playerranking__player__name__icontains=query)
+    ).distinct()[:5]
+
+    # Search players
+    players = models.Player.objects.filter(
+        Q(name__icontains=query) |
+        Q(position__icontains=query) |
+        Q(school__icontains=query)
+    )[:5]
+
+    def get_ranking_title(ranking):
+        parts = [str(ranking.year)]
+        
+        if ranking.is_mock_draft:
+            if ranking.ranking_type:
+                parts.append(ranking.ranking_type)
+            parts.append(f"Mock Draft v{ranking.mock_draft_version}" if ranking.mock_draft_version else "Mock Draft")
+        elif ranking.is_draft:
+            parts.append("Draft")
+            if ranking.ranking_length:
+                parts.append(f"Top {ranking.ranking_length}")
+            elif ranking.ranking_type:
+                parts.extend([ranking.ranking_type, "Draft Board"])
+        else:
+            if ranking.ranking_type:
+                parts.append(ranking.ranking_type)
+            parts.append("Rankings")
+        
+        return " ".join(parts)
+
+    return JsonResponse({
+        'articles': [{
+            'headline': article.headline,
+            'slug': article.slug,
+            'created': template_localtime(article.created).strftime('%b %d, %Y')
+        } for article in articles],
+        'rankings': [{
+            'headline': get_ranking_title(ranking),
+            'slug': ranking.slug,
+            'year': ranking.year,
+            'preview': next(
+                (pr.player.name for pr in ranking.playerranking_set.all()
+                 if query.lower() in pr.player.name.lower()),
+                None
+            )
+        } for ranking in rankings],
+        'players': [{
+            'name': player.name,
+            'slug': player.slug,
+            'position': player.position,
+            'school': player.school
+        } for player in players]
+    })

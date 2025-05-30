@@ -56,43 +56,28 @@ class Player(BaseModel):
     name = models.CharField(max_length=255)
     birthdate = models.DateField(blank=True, null=True)
     raw_age = models.IntegerField(default=None, blank=True, null=True)
-    current_position = models.CharField(max_length=255, blank=True, null=True)
-    current_school = models.CharField(max_length=255, blank=True, null=True)
-    current_country = models.CharField(max_length=255, blank=True, null=True)
+    position = models.CharField(max_length=255, blank=True, null=True)
+    school = models.CharField(max_length=255, blank=True, null=True)
+    hometown = models.CharField(max_length=255, blank=True, null=True)
+    state = models.CharField(max_length=255, blank=True, null=True)
+    country = models.CharField(max_length=255, blank=True, null=True)
+    height = models.CharField(max_length=255, blank=True, null=True)
+    weight = models.CharField(max_length=255, blank=True, null=True)
+    bats = models.CharField(max_length=255, blank=True, null=True)
+    throws = models.CharField(max_length=255, blank=True, null=True)
+
+    # multimedia
+    photo_url = models.CharField(max_length=255, blank=True, null=True)
+    video_url = models.CharField(max_length=255, blank=True, null=True)
+
+    # identifiers
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     mlb_id = models.CharField(max_length=255, blank=True, null=True)
     fg_id = models.CharField(max_length=255, blank=True, null=True)
 
     # publishing fields
-    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.SlugField(max_length=255, blank=True, null=True)
     regenerate_slug = models.BooleanField(default=False)
-    scouting_report = ProseEditorField(
-        extensions={
-            # Core text formatting
-            "Bold": True,
-            "Italic": True,
-            "Strike": True,
-            "Underline": True,
-            "HardBreak": True,
-
-            # Structure
-            "Heading": {
-                "levels": [1, 2, 3, 4, 5]  # Only allow h1, h2, h3
-            },
-            "BulletList": True,
-            "OrderedList": True,
-            "Blockquote": True,
-            "Table": True,
-
-            # Editor capabilities
-            "History": True,       # Enables undo/redo
-            "HTML": True,          # Allows HTML view
-            "Typographic": True,   # Enables typographic chars
-        },
-        sanitize=True,
-        null=True,
-        blank=True
-    )
 
     def __unicode__(self):
         return self.name
@@ -160,6 +145,8 @@ class Ranking(BaseModel):
     def get_playerrankings(self):
         return PlayerRanking.objects.filter(ranking=self).order_by("rank")
 
+    def get_initial_players(self):
+        return PlayerRanking.objects.filter(ranking=self, rank__lte=10).order_by("rank")
 
     def save(self, *args, **kwargs):
         if self.regenerate_slug or not self.slug:
@@ -201,6 +188,33 @@ class PlayerRankingCarryingTool(BaseModel):
         return f"{self.tool}: {self.score}"
 
 
+class Author(BaseModel):
+    """
+    Extended profile for Users who can write articles.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='author_profile')
+    display_name = models.CharField(max_length=255, help_text="Name to display on articles")
+    email = models.EmailField(help_text="Public contact email (if different from login email)")
+    bio = models.TextField(blank=True, null=True, help_text="Author biography")
+    twitter = models.CharField(max_length=255, blank=True, null=True, help_text="Twitter handle (without @)")
+    bluesky = models.CharField(max_length=255, blank=True, null=True, help_text="Bluesky handle (with or without @)")
+    photo_url = models.CharField(max_length=255, blank=True, null=True)
+
+    def __unicode__(self):
+        return self.display_name or self.user.get_full_name() or self.user.username
+
+    @property
+    def bluesky_url(self):
+        """Returns the full Bluesky URL for the handle"""
+        if not self.bluesky:
+            return None
+        handle = self.bluesky.strip('@')
+        return f"https://bsky.app/profile/{handle}"
+
+    class Meta:
+        ordering = ["display_name"]
+
+
 class PlayerRanking(BaseModel):
     """
     An instance of a player in a ranking. This way players can have many ranks, tracking history.
@@ -209,13 +223,45 @@ class PlayerRanking(BaseModel):
     player = models.ForeignKey(Player, on_delete=models.SET_NULL, blank=True, null=True)
     ranking = models.ForeignKey(Ranking, on_delete=models.SET_NULL, blank=True, null=True)
     rank = models.IntegerField(blank=True, null=True)
-    ranking_position = models.CharField(max_length=255, blank=True, null=True)
-    ranking_school = models.CharField(max_length=255, blank=True, null=True)
-    ranking_country = models.CharField(max_length=255, blank=True, null=True)
+    position = models.CharField(max_length=255, blank=True, null=True)
+    school = models.CharField(max_length=255, blank=True, null=True)
+    country = models.CharField(max_length=255, blank=True, null=True)
+    commitment = models.CharField(max_length=255, blank=True, null=True)
+    raw_carrying_tools = models.TextField(blank=True, null=True)
+
     level = models.CharField(max_length=255, choices=LEVEL_CHOICES, blank=True, null=True)
 
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, blank=True, null=True)
+    risk = models.CharField(max_length=25, blank=True, null=True)
     carrying_tools = models.ManyToManyField(PlayerRankingCarryingTool, blank=True)
+
+    scouting_report = ProseEditorField(
+        extensions={
+            # Core text formatting
+            "Bold": True,
+            "Italic": True,
+            "Strike": True,
+            "Underline": True,
+            "HardBreak": True,
+
+            # Structure
+            "Heading": {
+                "levels": [1, 2, 3, 4, 5]  # Only allow h1, h2, h3
+            },
+            "BulletList": True,
+            "OrderedList": True,
+            "Blockquote": True,
+            "Table": True,
+
+            # Editor capabilities
+            "History": True,       # Enables undo/redo
+            "HTML": True,          # Allows HTML view
+            "Typographic": True,   # Enables typographic chars
+        },
+        sanitize=True,
+        null=True,
+        blank=True
+    )
 
     class Meta:
         ordering = ['ranking', 'rank']
@@ -230,6 +276,7 @@ class Article(BaseModel):
     blurb = models.CharField(max_length=255, blank=True, null=True)
 
     players = models.ManyToManyField(Player, blank=True)
+    authors = models.ManyToManyField(Author, blank=True, related_name='articles')
 
     body = ProseEditorField(
         extensions={
