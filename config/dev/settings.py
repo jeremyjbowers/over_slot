@@ -126,15 +126,11 @@ ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email']  # Remove password fields completely
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # Disable allauth email verification since we handle it via magic links
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-ACCOUNT_USERNAME_REQUIRED = False
-ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_PASSWORD_MIN_LENGTH = 8  # Keep for admin users, but not used in signup
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Auto-login users when they verify email
 ACCOUNT_LOGOUT_ON_GET = False  # Require POST for logout
 ACCOUNT_SESSION_REMEMBER = None  # Don't auto-remember sessions
-ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = False  # Disable password confirmation
-ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Only email authentication
 
 # Enable login by code (magic link alternative through allauth)
 ACCOUNT_LOGIN_BY_CODE_ENABLED = True
