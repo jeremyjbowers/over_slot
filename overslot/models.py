@@ -15,6 +15,56 @@ from django.utils.text import slugify
 from overslot import utils
 
 
+class BaseModel(models.Model):
+    """
+    Base model for tracking create/update dates and also setting active.
+    """
+    active = models.BooleanField(default=True)
+    created = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    last_modified = models.DateTimeField(auto_now=True, blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return self.__unicode__()
+
+
+class Subscription(BaseModel):
+    """
+    Model to track user subscriptions linked to Stripe.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription')
+    stripe_customer_id = models.CharField(max_length=255, unique=True)
+    stripe_subscription_id = models.CharField(max_length=255, blank=True, null=True)
+    
+    # Subscription status from Stripe
+    status = models.CharField(max_length=50, default='inactive')  # active, canceled, incomplete, etc.
+    current_period_start = models.DateTimeField(blank=True, null=True)
+    current_period_end = models.DateTimeField(blank=True, null=True)
+    
+    # Subscription details
+    plan_name = models.CharField(max_length=100, blank=True, null=True)
+    price_id = models.CharField(max_length=255, blank=True, null=True)
+    
+    def __unicode__(self):
+        return f"{self.user.email} - {self.status}"
+    
+    @property
+    def is_active(self):
+        """Check if the subscription is currently active."""
+        return self.status == 'active'
+    
+    @property
+    def is_trial(self):
+        """Check if the subscription is in trial period."""
+        return self.status in ['trialing', 'active'] and self.current_period_start and self.current_period_end
+    
+    def can_access_premium_content(self):
+        """Determine if user can access premium content."""
+        return self.is_active or self.is_trial
+
+
 LEVEL_CHOICES = (
     ("College", "College"),
     ("High School", "High School"),
@@ -32,21 +82,6 @@ ROLE_CHOICES = (
     ("75", "75"),
     ("80", "80"),
 )
-
-class BaseModel(models.Model):
-    """
-    Base model for tracking create/update dates and also setting active.
-    """
-    active = models.BooleanField(default=True)
-    created = models.DateTimeField(auto_now_add=True, blank=True, null=True)
-    last_modified = models.DateTimeField(auto_now=True, blank=True, null=True)
-
-    class Meta:
-        abstract = True
-
-    def __str__(self):
-        return self.__unicode__()
-
 
 class Player(BaseModel):
     """

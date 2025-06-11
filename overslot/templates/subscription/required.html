@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Subscription Required - Over Slot{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto text-center">
+        <div class="bg-white shadow-lg rounded-lg p-8">
+            <div class="mb-6">
+                <svg class="w-16 h-16 text-blue-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Premium Content</h1>
+                <p class="text-gray-600">This content requires a subscription to access.</p>
+            </div>
+            
+            <div class="bg-blue-50 rounded-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold text-blue-900 mb-3">What You'll Get</h2>
+                <ul class="text-left space-y-2 text-sm text-blue-800">
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        Full access to all articles and in-depth analysis
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        Complete player rankings and detailed scouting reports
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        Individual player profiles with comprehensive stats
+                    </li>
+                    <li class="flex items-start">
+                        <svg class="w-5 h-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        Early access to new content and analysis
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="mb-6">
+                <div class="text-3xl font-bold text-gray-900 mb-2">$9.99<span class="text-lg font-normal text-gray-600">/month</span></div>
+                <p class="text-sm text-gray-600">Cancel anytime • No long-term commitment</p>
+            </div>
+            
+            <div class="space-y-3">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'subscription_dashboard' %}" 
+                       class="block w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 transition duration-200 font-medium">
+                        Subscribe Now
+                    </a>
+                {% else %}
+                    <a href="{% url 'account_login' %}?next={{ request.get_full_path }}" 
+                       class="block w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 transition duration-200 font-medium">
+                        Log In to Subscribe
+                    </a>
+                    <p class="text-sm text-gray-600">
+                        Don't have an account? 
+                        <a href="{% url 'account_signup' %}" class="text-blue-600 hover:text-blue-800">Sign up here</a>
+                    </p>
+                {% endif %}
+                
+                <a href="{% url 'index' %}" class="block text-gray-600 hover:text-gray-800 py-2">
+                    ← Back to Home
+                </a>
+            </div>
+            
+            <p class="text-xs text-gray-500 mt-4">
+                Secure payment powered by Stripe
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %} 

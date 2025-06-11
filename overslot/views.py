@@ -13,6 +13,7 @@ from decimal import *
 from django.utils.timezone import template_localtime
 
 from overslot import models, utils
+from overslot.decorators import subscription_required
 
 def index(request):
     context = {}
@@ -24,10 +25,16 @@ def index(request):
 def articles_list(request):
     context = {}
     context['articles'] = models.Article.objects.filter(publish=True)
+    
+    # Add recent rankings for sidebar
+    context['recent_rankings'] = models.Ranking.objects.filter(
+        active=True
+    ).order_by('-created')[:3]
 
     return render(request, "articles_list.html", context)
 
 
+@subscription_required
 def articles_detail(request, slug):
     context = {}
     context['article'] = get_object_or_404(models.Article, slug=slug)
@@ -42,13 +49,20 @@ def rankings_list(request):
     return render(request, "rankings_list.html", context)
 
 
+@subscription_required
 def rankings_detail(request, slug):
     context = {}
     context['ranking'] = get_object_or_404(models.Ranking, slug=slug)
+    
+    # Add recent articles for sidebar
+    context['recent_articles'] = models.Article.objects.filter(
+        publish=True
+    ).order_by('-created')[:5]
 
     return render(request, "rankings_detail.html", context)
 
 
+@subscription_required
 def players_detail(request, slug):
     context = {}
     context['player'] = get_object_or_404(models.Player, slug=slug)

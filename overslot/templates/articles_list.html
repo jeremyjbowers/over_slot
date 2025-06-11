@@ -2,9 +2,30 @@
 
 {% block content %}
 <style>
-.article-list {
-    max-width: 900px;
+/* Main layout with sidebar */
+.main-layout {
+    max-width: 1400px;
     margin: 0 auto;
+    padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 3rem;
+    align-items: start;
+}
+
+.content-area {
+    min-width: 0; /* Prevent grid blowout */
+}
+
+.sidebar-area {
+    min-width: 0;
+    /* Ensure sidebar container allows sticky positioning */
+    position: relative;
+    height: fit-content;
+}
+
+.article-list {
+    padding: 0;
 }
 
 .article-card {
@@ -137,6 +158,18 @@
     padding: 0 1.5rem;
 }
 
+/* Mobile layout adjustments */
+@media screen and (max-width: 1200px) {
+    .main-layout {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .sidebar-area {
+        order: -1; /* Put sidebar above content on mobile */
+    }
+}
+
 @media screen and (max-width: 768px) {
     .hero-title {
         font-size: 3rem;
@@ -144,6 +177,11 @@
     
     .hero-subtitle {
         font-size: 1.25rem;
+    }
+
+    .main-layout {
+        padding: 0 1rem;
+        gap: 1.5rem;
     }
 }
 </style>
@@ -155,8 +193,11 @@
     </div>
 </div>
 
-<div class="article-list">
-    {% for article in articles %}
+<!-- Main content area with sidebar layout -->
+<div class="main-layout">
+    <div class="content-area">
+        <div class="article-list">
+            {% for article in articles %}
     <article class="article-card">
         <div class="article-meta">
             {% if article.authors.all %}
@@ -217,5 +258,12 @@
         {% endif %}
     </article>
     {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar-area">
+        {% include "includes/recent_rankings_sidebar.html" with recent_rankings=recent_rankings %}
+    </div>
 </div>
 {% endblock %}

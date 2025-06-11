@@ -106,10 +106,30 @@
     padding: 0 1.5rem;
 }
 
-.player-cards {
-    max-width: 1000px;
+/* Main layout with sidebar */
+.main-layout {
+    max-width: 1400px;
     margin: 0 auto;
     padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 3rem;
+    align-items: start;
+}
+
+.content-area {
+    min-width: 0; /* Prevent grid blowout */
+}
+
+.sidebar-area {
+    min-width: 0;
+    /* Ensure sidebar container allows sticky positioning */
+    position: relative;
+    height: fit-content;
+}
+
+.player-cards {
+    padding: 0;
 }
 
 .player-cards-header {
@@ -337,9 +357,26 @@
     }
 }
 
+/* Mobile layout adjustments */
+@media screen and (max-width: 1200px) {
+    .main-layout {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .sidebar-area {
+        order: -1; /* Put sidebar above content on mobile */
+    }
+}
+
 @media screen and (max-width: 768px) {
     .hero-title {
         font-size: 3rem;
+    }
+
+    .main-layout {
+        padding: 0 1rem;
+        gap: 1.5rem;
     }
 
     .player-card {
@@ -385,15 +422,18 @@
     </div>
 </div>
 
-<div class="player-cards">
-    <div class="player-cards-header">
-        <button class="toggle-all-button" aria-expanded="false">
-            <span>Expand All Scouting Reports</span>
-            <span class="icon">
-                <i class="fas fa-chevron-down"></i>
-            </span>
-        </button>
-    </div>
+<!-- Main content area with sidebar layout -->
+<div class="main-layout">
+    <div class="content-area">
+        <div class="player-cards">
+            <div class="player-cards-header">
+                <button class="toggle-all-button" aria-expanded="false">
+                    <span>Expand All Scouting Reports</span>
+                    <span class="icon">
+                        <i class="fas fa-chevron-down"></i>
+                    </span>
+                </button>
+            </div>
     
     {% for pr in ranking.get_playerrankings %}
     <div id="{{ pr.player.slug }}" class="player-card">
@@ -472,6 +512,13 @@
         </div>
     </div>
     {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar-area">
+        {% include "includes/recent_articles_sidebar.html" with recent_articles=recent_articles %}
+    </div>
 </div>
 
 <script>

@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import include, path
 from django.contrib.auth.views import LogoutView
 
-from overslot import views
+from overslot import views, subscription_views
 from . import auth
 
 urlpatterns = [
@@ -19,6 +19,14 @@ urlpatterns = [
     path("", views.index, name="index"),
 
     path("api/search/", views.search, name="search"),
+
+    # Subscription URLs
+    path('subscription/', subscription_views.subscription_dashboard, name='subscription_dashboard'),
+    path('subscription/checkout/', subscription_views.create_checkout_session, name='create_checkout_session'),
+    path('subscription/success/', subscription_views.subscription_success, name='subscription_success'),
+    path('subscription/cancel/', subscription_views.cancel_subscription, name='cancel_subscription'),
+    path('subscription/billing/', subscription_views.manage_billing, name='manage_billing'),
+    path('webhooks/stripe/', subscription_views.stripe_webhook, name='stripe_webhook'),
 
     # Authentication URLs
     path('accounts/', include('allauth.urls')),  # This includes all django-allauth URLs

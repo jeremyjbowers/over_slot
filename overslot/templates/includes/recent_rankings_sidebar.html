@@ -1,0 +1,297 @@
+{% load overslot_tags %}
+
+<div class="recent-rankings-sidebar">
+    <div class="sidebar-header">
+        <h3 class="sidebar-title">Recent Rankings</h3>
+    </div>
+    
+    <div class="sidebar-content">
+        {% if recent_rankings %}
+            {% for ranking in recent_rankings %}
+                <article class="sidebar-ranking">
+                    <a href="{% url 'rankings_detail' ranking.slug %}" class="sidebar-ranking-link">
+                        <div class="sidebar-ranking-content">
+                            <h4 class="sidebar-ranking-title">{{ ranking }}</h4>
+                            {% if ranking.subhead %}
+                                <p class="sidebar-ranking-subhead">{{ ranking.subhead }}</p>
+                            {% endif %}
+                            <div class="sidebar-ranking-meta">
+                                <time class="sidebar-ranking-date">{{ ranking.created|date:"M j, Y" }}</time>
+                            </div>
+                        </div>
+                    </a>
+                </article>
+            {% endfor %}
+        {% else %}
+            <p class="sidebar-empty">No recent rankings available.</p>
+        {% endif %}
+        
+        <div class="sidebar-footer">
+            <a href="{% url 'rankings_list' %}" class="sidebar-view-all">
+                View All Rankings →
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.recent-rankings-sidebar {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.recent-rankings-sidebar.sticky {
+    position: fixed;
+    top: 1rem;
+    width: 320px;
+    max-height: calc(100vh - 4.5rem - 1rem); /* 100vh - navbar height - padding */
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.sidebar-header {
+    background: var(--dark-surface-hover);
+    border-bottom: 1px solid var(--dark-border);
+    padding: 1.25rem;
+}
+
+.sidebar-title {
+    font-family: var(--font-sans);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--dark-text);
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.sidebar-content {
+    padding: 0;
+}
+
+.sidebar-ranking {
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.sidebar-ranking:last-of-type {
+    border-bottom: none;
+}
+
+.sidebar-ranking-link {
+    display: block;
+    padding: 1.25rem;
+    color: inherit;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+}
+
+.sidebar-ranking-link:hover {
+    background: var(--dark-surface-hover);
+    color: inherit;
+}
+
+.sidebar-ranking-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sidebar-ranking-title {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--dark-text);
+    line-height: var(--leading-tight);
+    margin: 0;
+}
+
+.sidebar-ranking-subhead {
+    font-family: var(--font-serif);
+    font-size: var(--text-sm);
+    color: var(--dark-text-secondary);
+    line-height: var(--leading-snug);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.sidebar-ranking-blurb {
+    font-family: var(--font-serif);
+    font-size: var(--text-sm);
+    color: var(--dark-text-secondary);
+    line-height: var(--leading-snug);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.sidebar-ranking-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: var(--text-xs);
+    color: var(--dark-text-muted);
+}
+
+.sidebar-ranking-date {
+    font-weight: 500;
+}
+
+.sidebar-ranking-details {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.ranking-detail {
+    background: var(--dark-surface-hover);
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: var(--text-xs);
+    color: var(--theme-primary);
+    border: 1px solid var(--dark-border);
+}
+
+.sidebar-empty {
+    padding: 1.25rem;
+    font-size: var(--text-sm);
+    color: var(--dark-text-muted);
+    text-align: center;
+    margin: 0;
+}
+
+.sidebar-footer {
+    padding: 1.25rem;
+    border-top: 1px solid var(--dark-border);
+    background: var(--dark-surface-hover);
+}
+
+.sidebar-view-all {
+    display: block;
+    text-align: center;
+    color: var(--theme-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.sidebar-view-all:hover {
+    color: var(--dark-text);
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 1200px) {
+    .recent-rankings-sidebar {
+        position: relative !important;
+        top: 0 !important;
+        width: auto !important;
+        max-height: none !important;
+        overflow-y: visible !important;
+        margin-bottom: 2rem;
+    }
+    
+    .recent-rankings-sidebar.sticky {
+        position: relative !important;
+    }
+}
+
+/* Scrollbar styling for the sidebar */
+.recent-rankings-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.recent-rankings-sidebar::-webkit-scrollbar-track {
+    background: var(--dark-surface);
+}
+
+.recent-rankings-sidebar::-webkit-scrollbar-thumb {
+    background: var(--dark-border);
+    border-radius: 3px;
+}
+
+.recent-rankings-sidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--dark-text-muted);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Only apply sticky behavior on desktop
+    if (window.innerWidth > 1200) {
+        const sidebar = document.querySelector('.recent-rankings-sidebar');
+        const sidebarArea = document.querySelector('.sidebar-area');
+        
+        if (sidebar && sidebarArea) {
+            let placeholder = null;
+            
+            function handleScroll() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const mainLayout = document.querySelector('.main-layout');
+                const hero = document.querySelector('.hero');
+                const navbar = document.querySelector('.navbar');
+                
+                // Calculate navbar height (default to 3.5rem = 56px if not found)
+                const navbarHeight = navbar ? navbar.offsetHeight : 56;
+                
+                // Calculate where the main content area starts (after hero)
+                const contentStartY = mainLayout ? mainLayout.offsetTop : 0;
+                const stickyTriggerPoint = contentStartY;
+                
+                // Calculate how far down the sidebar should be positioned when sticky
+                // Need to account for navbar height + some padding
+                const minTopPosition = navbarHeight + 16; // navbar height + 1rem padding
+                const stickyTopPosition = Math.max(minTopPosition, contentStartY - scrollTop + 16);
+                
+                const shouldStick = scrollTop > stickyTriggerPoint - 16;
+                
+                if (shouldStick && !sidebar.classList.contains('sticky')) {
+                    // Create placeholder to maintain layout
+                    if (!placeholder) {
+                        placeholder = document.createElement('div');
+                        placeholder.style.height = sidebar.offsetHeight + 'px';
+                        placeholder.style.width = '320px';
+                        placeholder.classList.add('sidebar-placeholder');
+                    }
+                    
+                    sidebar.classList.add('sticky');
+                    sidebar.style.top = stickyTopPosition + 'px';
+                    sidebarArea.insertBefore(placeholder, sidebar);
+                    
+                } else if (!shouldStick && sidebar.classList.contains('sticky')) {
+                    sidebar.classList.remove('sticky');
+                    sidebar.style.top = '1rem'; // Reset to default
+                    if (placeholder && placeholder.parentNode) {
+                        placeholder.parentNode.removeChild(placeholder);
+                    }
+                }
+            }
+            
+            // Initial check
+            handleScroll();
+            
+            // Add scroll listener
+            window.addEventListener('scroll', handleScroll);
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth <= 1200) {
+                    sidebar.classList.remove('sticky');
+                    if (placeholder && placeholder.parentNode) {
+                        placeholder.parentNode.removeChild(placeholder);
+                    }
+                } else {
+                    handleScroll();
+                }
+            });
+        }
+    }
+});
+</script> 

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Subscription Dashboard - Over Slot{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">Subscription Dashboard</h1>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-4 rounded-md 
+                    {% if message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200
+                    {% elif message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200
+                    {% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800 border border-yellow-200
+                    {% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            {% if subscription and subscription.is_active %}
+                <!-- Active Subscription -->
+                <div class="bg-green-50 px-6 py-4 border-b border-green-200">
+                    <h2 class="text-xl font-semibold text-green-800">Active Subscription</h2>
+                    <p class="text-green-600 mt-1">You have access to all premium content</p>
+                </div>
+                
+                <div class="px-6 py-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-3">Subscription Details</h3>
+                            <dl class="space-y-2">
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Plan</dt>
+                                    <dd class="text-sm text-gray-900">{{ subscription.plan_name|default:"Premium Plan" }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Status</dt>
+                                    <dd class="text-sm text-gray-900 capitalize">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                            {{ subscription.status }}
+                                        </span>
+                                    </dd>
+                                </div>
+                                {% if subscription.current_period_end %}
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Current Period Ends</dt>
+                                    <dd class="text-sm text-gray-900">{{ subscription.current_period_end|date:"F j, Y" }}</dd>
+                                </div>
+                                {% endif %}
+                            </dl>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-3">Manage Subscription</h3>
+                            <div class="space-y-3">
+                                <a href="{% url 'manage_billing' %}" 
+                                   class="block w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200 text-center">
+                                    Manage Billing
+                                </a>
+                                
+                                <form method="post" action="{% url 'cancel_subscription' %}" class="block">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                            onclick="return confirm('Are you sure you want to cancel your subscription? You will continue to have access until the end of your current billing period.')"
+                                            class="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition duration-200">
+                                        Cancel Subscription
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            {% elif subscription and subscription.status == 'canceled' %}
+                <!-- Canceled Subscription -->
+                <div class="bg-yellow-50 px-6 py-4 border-b border-yellow-200">
+                    <h2 class="text-xl font-semibold text-yellow-800">Canceled Subscription</h2>
+                    <p class="text-yellow-600 mt-1">Your subscription has been canceled</p>
+                </div>
+                
+                <div class="px-6 py-6">
+                    {% if subscription.current_period_end %}
+                        <p class="text-gray-700 mb-4">
+                            You will continue to have access to premium content until {{ subscription.current_period_end|date:"F j, Y" }}.
+                        </p>
+                    {% endif %}
+                    
+                    <form method="post" action="{% url 'create_checkout_session' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="bg-green-600 text-white py-2 px-6 rounded-md hover:bg-green-700 transition duration-200">
+                            Reactivate Subscription
+                        </button>
+                    </form>
+                </div>
+                
+            {% else %}
+                <!-- No Subscription -->
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-800">Premium Subscription</h2>
+                    <p class="text-gray-600 mt-1">Get access to all premium content</p>
+                </div>
+                
+                <div class="px-6 py-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-3">What's Included</h3>
+                            <ul class="space-y-2 text-sm text-gray-700">
+                                <li class="flex items-start">
+                                    <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Full access to all articles and analysis
+                                </li>
+                                <li class="flex items-start">
+                                    <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Complete player rankings and scouting reports
+                                </li>
+                                <li class="flex items-start">
+                                    <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Individual player profiles and statistics
+                                </li>
+                                <li class="flex items-start">
+                                    <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Early access to new content
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-3">Subscribe Now</h3>
+                            <div class="bg-blue-50 rounded-lg p-4 mb-4">
+                                <div class="text-2xl font-bold text-blue-900">$9.99<span class="text-lg font-normal text-blue-700">/month</span></div>
+                                <p class="text-sm text-blue-700 mt-1">Cancel anytime</p>
+                            </div>
+                            
+                            <form method="post" action="{% url 'create_checkout_session' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition duration-200 font-medium">
+                                    Subscribe Now
+                                </button>
+                            </form>
+                            
+                            <p class="text-xs text-gray-500 mt-2 text-center">
+                                Secure payment powered by Stripe
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="mt-6 text-center">
+            <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">← Back to Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

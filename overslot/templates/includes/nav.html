@@ -123,12 +123,16 @@
                                     {{ user.email }}
                                 </a>
                                 <div class="navbar-dropdown is-right">
+                                    <a class="navbar-item" href="{% url 'subscription_dashboard' %}">
+                                        Subscription
+                                    </a>
                                     {% if user.is_staff %}
+                                        <hr class="navbar-divider">
                                         <a class="navbar-item" href="{% url 'admin:index' %}">
                                             Admin
                                         </a>
-                                        <hr class="navbar-divider">
                                     {% endif %}
+                                    <hr class="navbar-divider">
                                     <a class="navbar-item" href="{% url 'account_logout' %}">
                                         Sign out
                                     </a>

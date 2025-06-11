@@ -10,7 +10,8 @@ from overslot.models import (
     Player,
     Ranking,
     PlayerRanking,
-    PlayerRankingCarryingTool
+    PlayerRankingCarryingTool,
+    Subscription
 )
 
 
@@ -132,6 +133,60 @@ class RankingAdmin(admin.ModelAdmin):
                 "fields": (
                     "slug",
                     "regenerate_slug"
+                ),
+            },
+        ),
+    )
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    model = Subscription
+    list_display = ["user", "status", "plan_name", "current_period_end", "is_active"]
+    list_filter = ["status", "plan_name", "created"]
+    search_fields = ["user__email", "user__username", "stripe_customer_id", "stripe_subscription_id"]
+    readonly_fields = ["created", "last_modified", "stripe_customer_id", "stripe_subscription_id"]
+    
+    def is_active(self, obj):
+        return obj.is_active
+    is_active.boolean = True
+    is_active.short_description = "Active"
+    
+    fieldsets = (
+        (
+            "User Information",
+            {
+                "fields": ("user",),
+            },
+        ),
+        (
+            "Subscription Details",
+            {
+                "fields": (
+                    "status",
+                    "plan_name",
+                    ("current_period_start", "current_period_end"),
+                ),
+            },
+        ),
+        (
+            "Stripe Information",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "stripe_customer_id",
+                    "stripe_subscription_id",
+                    "price_id",
+                ),
+            },
+        ),
+        (
+            "Timestamps",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "created",
+                    "last_modified",
                 ),
             },
         ),
