@@ -26,7 +26,7 @@ class MailgunEmailer:
             }
         )
 
-def send_magic_link(request, email, is_signup=False):
+def send_magic_link(request, email, is_signup=False, first_name=None, last_name=None):
     try:
         user = User.objects.get(email=email)
         if is_signup:
@@ -41,7 +41,9 @@ def send_magic_link(request, email, is_signup=False):
         user = User.objects.create_user(
             username=email,  # Use email as username
             email=email,
-            password=get_random_string(32)  # Random password since we're using magic links
+            password=get_random_string(32),  # Random password since we're using magic links
+            first_name=first_name or '',
+            last_name=last_name or ''
         )
         
         # Ensure user is saved to database
@@ -65,7 +67,9 @@ def send_magic_link(request, email, is_signup=False):
     subject = "Welcome to Over Slot!" if is_signup else "Sign in to Over Slot"
     html_content = render_to_string('auth/email/magic_link.html', {
         'magic_link': magic_link,
-        'is_signup': is_signup
+        'is_signup': is_signup,
+        'user': user,
+        'first_name': user.first_name
     })
     
     try:
@@ -137,7 +141,15 @@ def magic_link_view(request):
 def magic_link_signup_view(request):
     if request.method == 'POST':
         email = request.POST.get('email')
-        return send_magic_link(request, email, is_signup=True)
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        
+        # Validate required fields
+        if not email or not first_name or not last_name:
+            messages.error(request, "Please fill in all required fields.")
+            return render(request, 'account/signup.html')
+        
+        return send_magic_link(request, email, is_signup=True, first_name=first_name, last_name=last_name)
     return redirect('account_signup')
 
 def magic_link_verify_view(request, token):

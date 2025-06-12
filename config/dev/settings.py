@@ -70,6 +70,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "django.template.context_processors.request",  # Required for django-allauth
+                "overslot.context_processors.settings_context",  # Make settings available in templates
             ],
             "libraries": {
                 "overslot_tags": "overslot.templatetags.overslot_tags",
@@ -123,7 +124,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_SIGNUP_FIELDS = ['email*']
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'first_name*', 'last_name*']
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # Disable allauth email verification since we handle it via magic links
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_UNIQUE_EMAIL = True
@@ -172,6 +173,9 @@ else:
 STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY', default=None)
 STRIPE_PUBLISHABLE_KEY = env('STRIPE_PUBLISHABLE_KEY', default=None)
 STRIPE_WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET', default=None)
+
+# Subscription pricing
+SUBSCRIPTION_PRICE_MONTHLY = 9.99  # Monthly price in USD
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 

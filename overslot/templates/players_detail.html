@@ -431,6 +431,142 @@ body {
     background: var(--dark-bg);
     min-height: 100vh;
 }
+
+/* Preview notice styling */
+.preview-notice {
+    color: var(--dark-text-muted);
+    font-style: italic;
+    font-size: var(--text-sm);
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: var(--dark-surface-hover);
+    border-radius: 0.25rem;
+    border-left: 3px solid var(--theme-primary);
+}
+
+/* Subscription Banner Styles */
+.subscription-banner {
+    position: relative;
+    margin: 2rem 0;
+    z-index: 10;
+}
+
+.subscription-overlay {
+    position: absolute;
+    top: -4rem;
+    left: 0;
+    right: 0;
+    height: 6rem;
+    background: linear-gradient(transparent, var(--dark-bg));
+    pointer-events: none;
+    z-index: 1;
+}
+
+.subscription-content {
+    position: relative;
+    z-index: 2;
+}
+
+.subscription-card {
+    background: var(--dark-surface);
+    border: 2px solid var(--theme-primary);
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.subscription-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.subscription-icon {
+    width: 2rem;
+    height: 2rem;
+    color: var(--theme-primary);
+}
+
+.subscription-header h3 {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--dark-text);
+    margin: 0;
+}
+
+.subscription-description {
+    font-size: var(--text-lg);
+    color: var(--dark-text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: var(--leading-relaxed);
+}
+
+.subscription-price {
+    margin-bottom: 2rem;
+}
+
+.price-amount {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--dark-text);
+}
+
+.price-period {
+    font-size: var(--text-lg);
+    color: var(--dark-text-muted);
+    font-weight: 500;
+}
+
+.subscription-actions {
+    margin-bottom: 1rem;
+}
+
+.btn-subscribe {
+    display: inline-block;
+    background: var(--theme-primary);
+    color: var(--dark-text);
+    padding: 1rem 2rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: var(--text-lg);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-subscribe:hover {
+    background: var(--theme-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(var(--theme-primary-rgb), 0.2);
+}
+
+.subscription-note {
+    font-size: var(--text-sm);
+    color: var(--dark-text-muted);
+    margin: 0;
+}
+
+@media screen and (max-width: 768px) {
+    .subscription-card {
+        padding: 1.5rem;
+    }
+    
+    .subscription-header h3 {
+        font-size: var(--text-xl);
+    }
+    
+    .price-amount {
+        font-size: 2.5rem;
+    }
+    
+    .btn-subscribe {
+        padding: 0.875rem 1.5rem;
+        font-size: var(--text-base);
+    }
+}
 </style>
 
 <div class="hero">
@@ -615,10 +751,86 @@ body {
     </div>
 </div>
 
+{% if preview_mode %}
+<!-- Subscription Banner -->
+{% load overslot_tags %}
+<div class="subscription-banner">
+    <div class="subscription-overlay"></div>
+    <div class="subscription-content">
+        <div class="subscription-card">
+            <div class="subscription-header">
+                <svg class="subscription-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                <h3>Unlock Full Player Profile</h3>
+            </div>
+            <p class="subscription-description">
+                Get complete scouting reports, detailed rankings analysis, and full article access.
+            </p>
+            <div class="subscription-price">
+                <span class="price-amount">${{ settings.SUBSCRIPTION_PRICE_MONTHLY|floatformat:2 }}</span>
+                <span class="price-period">/month</span>
+            </div>
+            <div class="subscription-actions">
+                {% if user_authenticated %}
+                    <a href="{% url 'subscription_dashboard' %}" class="btn-subscribe">
+                        Subscribe Now
+                    </a>
+                {% else %}
+                    <a href="{% url 'account_login' %}?next={{ request.get_full_path }}" class="btn-subscribe">
+                        Log In to Subscribe
+                    </a>
+                {% endif %}
+            </div>
+            <p class="subscription-note">Cancel anytime • No long-term commitment</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <div class="content-section">
     <div class="content-grid">
         <!-- Rankings column -->
         <div>
+            {% if preview_mode %}
+            <!-- Preview Mode: Show partial ranking info -->
+            <div class="section-header">
+                <span class="icon">
+                    <i class="fas fa-chart-line"></i>
+                </span>
+                <h2 class="section-title">Rankings Preview</h2>
+            </div>
+            
+            {% for r in rankings|slice:":2" %}
+            <div class="ranking-card">
+                <div class="ranking-header">
+                    <span>Ranked {{ r.rank|ordinal }} in {{ r.ranking }}</span>
+                </div>
+                
+                {% if r.carrying_tools.all %}
+                <div class="ranking-content">
+                    <div class="tools-grid">
+                        {% for c in r.carrying_tools.all|slice:":3" %}
+                        <div class="tool-tag">
+                            <span class="tool-name">{{ c.tool }}</span>
+                            <span class="tool-score">{{ c.score }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="ranking-content">
+                    <div class="ranking-content-inner">
+                        <div class="preview-notice">
+                            <em>Full scouting report available with subscription</em>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <!-- Full Content for Subscribers -->
             <div class="section-header">
                 <span class="icon">
                     <i class="fas fa-chart-line"></i>
@@ -666,10 +878,43 @@ body {
                 {% endif %}
             </div>
             {% endfor %}
+            {% endif %}
         </div>
 
         <!-- Articles column -->
         <div>
+            {% if preview_mode %}
+            <!-- Preview Mode: Show article headlines only -->
+            <div class="section-header">
+                <span class="icon">
+                    <i class="fas fa-newspaper"></i>
+                </span>
+                <h2 class="section-title">Articles Preview</h2>
+            </div>
+
+            {% for a in articles|slice:":2" %}
+            <div class="article-card">
+                <div class="article-meta">
+                    <span class="icon-text">
+                        <span class="icon">
+                            <i class="fas fa-calendar"></i>
+                        </span>
+                        <span>{{ a.published_at|date:"F j, Y" }}</span>
+                    </span>
+                </div>
+                <div class="article-content">
+                    <div class="article-title">{{ a.headline }}</div>
+                    {% if a.subhead %}
+                    <div class="article-subhead">{{ a.subhead }}</div>
+                    {% endif %}
+                    <div class="preview-notice">
+                        <em>Full article available with subscription</em>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <!-- Full Content for Subscribers -->
             <div class="section-header">
                 <span class="icon">
                     <i class="fas fa-newspaper"></i>
@@ -706,6 +951,7 @@ body {
                 </div>
             </div>
             {% endfor %}
+            {% endif %}
         </div>
     </div>
 </div>

@@ -51,10 +51,10 @@
         </div>
 
         {% if is_signup %}
-        <h1>Welcome to Over Slot!</h1>
+        <h1>Welcome to Over Slot{% if first_name %}, {{ first_name }}{% endif %}!</h1>
         <p>Click the button below to verify your email address and create your account:</p>
         {% else %}
-        <h1>Sign in to Over Slot</h1>
+        <h1>{% if first_name %}Hi {{ first_name }}! {% endif %}Sign in to Over Slot</h1>
         <p>Click the button below to sign in to your account:</p>
         {% endif %}
 

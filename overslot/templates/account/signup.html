@@ -8,6 +8,16 @@
     {% csrf_token %}
     
     <div class="form-group">
+        <label for="first_name" class="form-label">First name</label>
+        <input type="text" id="first_name" name="first_name" class="form-input" required placeholder="Enter your first name">
+    </div>
+    
+    <div class="form-group">
+        <label for="last_name" class="form-label">Last name</label>
+        <input type="text" id="last_name" name="last_name" class="form-input" required placeholder="Enter your last name">
+    </div>
+    
+    <div class="form-group">
         <label for="magic_email" class="form-label">Email address</label>
         <input type="email" id="magic_email" name="email" class="form-input" required placeholder="Enter your email address">
     </div>
