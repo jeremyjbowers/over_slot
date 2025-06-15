@@ -1,7 +1,234 @@
 # Over Slot
+
 **The MLB Draft Podcast Website**
 
 Over Slot is a comprehensive baseball scouting and analysis platform focused on MLB draft prospects. The site serves as the digital home for the Over Slot podcast, featuring in-depth player rankings, scouting reports, and analytical articles about baseball's future stars.
+
+## Key Features
+
+**Passwordless Authentication System**
+Rather than implementing traditional username/password authentication, Over Slot uses magic link authentication exclusively. This decision eliminates password-related security vulnerabilities while providing a frictionless user experience. Users receive secure, time-limited links via email that grant access without requiring password management. The system integrates django-allauth with django-sesame to provide 24-hour token validity, balancing security with user convenience.
+
+**Historical Ranking Preservation**
+Unlike most draft sites that overwrite previous rankings, Over Slot preserves the complete history of how prospect evaluations evolve over time. The PlayerRanking model creates immutable snapshots of player assessments within specific ranking contexts, allowing visitors to track how a prospect's stock rises or falls throughout the draft cycle. This historical perspective provides valuable insight into scouting development and prediction accuracy.
+
+**Denormalized Data Architecture**
+Player information is intentionally denormalized between the Player and PlayerRanking models. While this creates some data redundancy, it serves a critical purpose: preserving the exact context of how a player was described at the time of each ranking. A player's listed school or position might change between rankings, and this architecture ensures those historical details remain accurate rather than being retroactively updated.
+
+**Integrated Content Ecosystem**
+Articles can reference multiple players and rankings through many-to-many relationships, creating a web of interconnected content. This allows readers to discover related analysis naturally - when reading about a specific prospect, they can easily find all rankings and articles that mention that player. The reverse is also true: rankings display associated articles, creating multiple pathways for content discovery.
+
+## Core Models
+
+**Player Model**
+The Player model serves as the canonical representation of baseball prospects, storing biographical and identifying information that persists across multiple rankings. Key design decisions include using UUIDs as primary keys for external API integration and maintaining separate fields for MLB IDs and FanGraphs IDs to support future data partnerships.
+
+**Ranking Model**
+Rankings represent distinct draft boards or prospect lists, uniquely identified by year, type, and whether they represent final evaluations. The model supports multiple ranking variants per year (mid-season updates, mock drafts, final boards) through boolean flags and versioning fields. Each ranking can contain rich editorial content through integrated prose editing.
+
+**PlayerRanking Model**
+This through model captures a player's specific placement within a ranking context. The deliberate denormalization of player details (position, school, country) ensures historical accuracy when these details change over time. The model includes scouting-specific fields like role projections, risk assessments, and detailed scouting reports.
+
+**PlayerRankingCarryingTool Model**
+Scouting tools (hitting ability, power, speed, arm strength, etc.) are modeled as separate entities with grades and descriptions. This flexible approach accommodates different scouting methodologies and allows for detailed tool-by-tool analysis that goes beyond simple numerical grades.
+
+**Article Model**
+Articles serve as the editorial backbone, featuring rich text content through django-prose-editor. The many-to-many relationship with players enables comprehensive tagging that automatically creates content connections. The publish boolean provides content workflow control for draft management.
+
+## Site Architecture
+
+**URL Design Philosophy**
+The site uses SEO-friendly slug-based URLs that prioritize readability and content discovery. Rather than exposing database IDs, all content URLs use descriptive slugs that incorporate UUIDs for uniqueness while maintaining human-readable paths. This approach supports both search engine optimization and intuitive user navigation.
+
+**Template Architecture**
+The template system emphasizes content relationships over isolated pages. Ranking detail pages prominently display associated articles, while player pages aggregate all rankings and articles mentioning that prospect. This interconnected approach encourages content exploration and provides comprehensive context for each piece of information.
+
+**Search Implementation**
+Real-time search functionality queries across all content types simultaneously, returning categorized results that maintain context. The search specifically includes cross-referential queries - rankings containing matching players are surfaced even when the ranking title doesn't match the search term. This approach recognizes that users often search for players while seeking ranking information.
+
+## Security
+
+**Magic Link Security Model**
+The passwordless approach eliminates several attack vectors including password reuse, brute force attempts, and credential stuffing. Magic links use cryptographically secure tokens with built-in expiration, reducing the window of vulnerability compared to permanent passwords. Email delivery provides an additional authentication factor since access requires control of the registered email account.
+
+**Subscription-Based Access Control**
+The custom subscription_required decorator implements flexible access control that distinguishes between authenticated users and staff members. Non-subscribers can access preview versions of content, providing a sampling of full functionality while encouraging subscription conversion. This approach balances content protection with user acquisition.
+
+**Content Preview System**
+Rather than implementing hard paywalls, the system provides contextual previews that maintain SEO value while encouraging subscription. Preview templates include sufficient content for search engine indexing but truncate or limit interactive features for non-subscribers.
+
+## Content Management
+
+**Editorial Workflow**
+The publish boolean on articles enables draft-to-publication workflow management. Content creators can save work in progress without immediately making it public, while the boolean provides simple on/off publishing control. This approach prioritizes editorial control over complex approval workflows.
+
+**Rich Text Integration**
+django-prose-editor provides a professional content creation environment with carefully selected extensions. The configuration emphasizes text formatting and structural elements while avoiding potentially problematic features like unrestricted HTML embedding. Sanitization is enabled to ensure content security.
+
+**Bulk Data Management**
+[Human will update this section soon - involves custom management commands for spreadsheet imports]
+
+**Admin Interface Customization**
+The Django admin is extensively customized for baseball-specific workflows. Inline editing of PlayerRanking objects within Ranking administration allows for efficient ranking creation and updates. Autocomplete fields reduce data entry errors while maintaining referential integrity.
+
+## Design
+
+**Dark Mode First**
+The interface uses dark backgrounds (#111111) as the primary design choice rather than offering theme switching. This decision reflects the target audience's preference for extended reading sessions and creates a distinctive visual identity that stands apart from typical sports sites.
+
+**Typography Hierarchy**
+Aleo serif font for headings creates distinctive character while maintaining readability. The choice of serif typography for a sports site is intentional - it suggests authority and analysis rather than breaking news, aligning with the site's focus on deep scouting content.
+
+**Baseball Field Integration**
+The custom SVG baseball field hero section isn't decorative but functional - it immediately establishes the site's focus while providing visual interest. The field design uses authentic proportions and styling to appeal to baseball enthusiasts who appreciate attention to detail.
+
+**Responsive Grid System**
+Content layouts adapt to screen size while maintaining optimal reading experiences. Player cards, ranking displays, and article previews use flexible grids that prioritize content hierarchy regardless of device constraints.
+
+## Development and Getting Started
+
+**Local Development Environment**
+
+The development setup reflects the site's production architecture choices. You'll need PostgreSQL rather than SQLite because the application uses PostgreSQL-specific features and the data relationships benefit from a full relational database even in development.
+
+**Prerequisites**
+- Python 3.9 or higher
+- PostgreSQL 12 or higher
+- Git
+
+**Initial Setup**
+
+1. **Clone and Environment Setup**
+```bash
+git clone [repository-url]
+cd overslot
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+2. **Database Configuration**
+Create a PostgreSQL database named `overslot` with a user `overslot` (no password required for local development):
+```bash
+createdb overslot
+createuser overslot
+```
+
+3. **Environment Variables**
+Create a `.env` file in the project root. The magic link authentication requires email configuration even in development:
+```bash
+DEBUG=True
+SECRET_KEY=your-secret-key-here
+DATABASE_URL=postgresql://overslot@localhost:5432/overslot
+
+# Email configuration (required for magic links)
+MAILGUN_API_KEY=your-mailgun-key
+MAILGUN_SENDER_DOMAIN=your-domain.com
+DEFAULT_FROM_EMAIL=noreply@your-domain.com
+
+# For development, you can use console backend:
+EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+```
+
+4. **Database Setup**
+```bash
+python manage.py migrate
+python manage.py createsuperuser
+```
+
+**Development Workflow**
+
+**Data Loading**
+[Human will update this section soon - involves custom management commands for importing ranking data from spreadsheets]
+
+**Content Creation**
+While you can create content through the Django admin, understanding the data relationships is crucial:
+
+- Create Players first with basic biographical information
+- Create Rankings with year, type, and metadata
+- Add PlayerRanking objects to connect players to specific rankings with their rank and scouting details
+- Create Articles that reference players to build content connections
+
+**Magic Link Testing**
+In development with console email backend, magic links appear in your terminal output. Copy the full link including the token parameter to test authentication flow.
+
+**Static File Handling**
+The project uses DigitalOcean Spaces for static file storage in production. For development, standard Django static file handling applies:
+```bash
+python manage.py collectstatic
+```
+
+**Testing**
+
+The application includes a comprehensive test suite covering authentication, UI functionality, and integration workflows. The test suite is designed to verify the unique architectural decisions of Over Slot, particularly the magic link authentication system and interconnected content relationships.
+
+**Test Categories**
+- **Authentication Tests**: Magic link generation, email sending, token validation, user creation and login workflows
+- **View Tests**: All page rendering, URL routing, subscription access control, template functionality
+- **Search Tests**: Real-time search across content types, JSON API responses, cross-referential queries
+- **Integration Tests**: End-to-end user workflows, content discovery paths, subscription enforcement
+- **Security Tests**: CSRF protection, XSS prevention, access control verification
+- **Performance Tests**: Large dataset handling, search performance, relationship queries
+
+**Running Tests**
+Use the test runner script for convenient test execution:
+```bash
+# Run all tests
+./bin/run_tests.sh
+
+# Run specific test categories
+./bin/run_tests.sh auth         # Authentication tests only
+./bin/run_tests.sh views        # View and template tests
+./bin/run_tests.sh search       # Search functionality tests
+./bin/run_tests.sh integration  # End-to-end workflows
+./bin/run_tests.sh quick        # Fast unit tests only
+
+# See all options
+./bin/run_tests.sh help
+```
+
+**Test Architecture**
+The test suite uses Django's TestCase framework with mocked external services (Mailgun email delivery). Tests create realistic data scenarios including players, rankings, articles, and user accounts to verify functionality under conditions that mirror production usage.
+
+Key testing approaches include:
+- Magic link authentication flows with mocked email delivery
+- Content relationship integrity across model operations
+- Subscription decorator behavior for different user types
+- Search functionality with various query types and edge cases
+- Template rendering with authentic data relationships
+- Performance testing with larger datasets
+
+The tests prioritize verification of Over Slot's unique features rather than generic Django functionality, focusing on areas where architectural decisions create specific requirements or potential failure points.
+
+**Production Deployment Considerations**
+
+**Database Migration Strategy**
+The denormalized data architecture means migrations require careful consideration. When player information changes, historical PlayerRanking records should retain their original values rather than cascading updates.
+
+**Email Infrastructure**
+Magic link authentication depends entirely on reliable email delivery. Mailgun integration provides delivery tracking and bounce handling that's essential for passwordless authentication to function properly.
+
+**Static Asset Pipeline**
+Player photos and other media assets require CDN distribution for acceptable performance. The DigitalOcean Spaces integration handles this automatically but requires proper configuration of CORS and public access policies.
+
+**Search Performance**
+The real-time search across multiple models can become expensive with large datasets. Consider implementing database indexes on commonly searched fields and potentially moving to dedicated search infrastructure (Elasticsearch) as content volume grows.
+
+**Debugging Common Issues**
+
+**Magic Link Problems**
+If magic links aren't working, verify email backend configuration and check that the SECRET_KEY remains consistent between link generation and validation. Token validity depends on cryptographic consistency.
+
+**Ranking Display Issues**
+Player rankings not displaying correctly usually indicates problems with the PlayerRanking through model relationships. Verify that rank values are properly set and that player foreign keys are correctly established.
+
+**Admin Interface Performance**
+Large rankings with many PlayerRanking inline objects can slow the Django admin significantly. The admin is configured with reasonable limits, but very large datasets may require custom admin interfaces or bulk editing approaches.
+
+**Content Relationship Debugging**
+If articles aren't showing expected player connections, verify that the many-to-many relationships are properly saved. The admin interface's autocomplete fields should prevent most relationship errors, but manual debugging may require checking the through tables directly.
+
+This development approach prioritizes understanding the application's unique architectural decisions over generic Django setup. The passwordless authentication, historical data preservation, and content interconnection patterns require specific understanding to develop and maintain effectively.
 
 ## 🎯 Mission
 
