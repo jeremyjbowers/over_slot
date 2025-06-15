@@ -19,6 +19,10 @@ def index(request):
     context = {}
     context['articles'] = models.Article.objects.filter(publish=True)
     context['rankings'] = models.Ranking.objects.all()
+    
+    # Get the 2 most recent articles and 1 ranking for the hero carousel
+    context['latest_articles'] = models.Article.objects.filter(publish=True).order_by('-created')[:2]
+    context['latest_ranking'] = models.Ranking.objects.filter(active=True).order_by('-created').first()
 
     return render(request, "index.html", context)
 

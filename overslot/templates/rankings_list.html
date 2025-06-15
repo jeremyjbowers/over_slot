@@ -2,49 +2,12 @@
 
 {% block content %}
 <style>
-.hero {
-    background: linear-gradient(
-        rgba(var(--theme-primary-rgb), 0.1),
-        var(--dark-bg)
-    );
-    padding: 4rem 0;
-    margin-bottom: 3rem;
-    border-bottom: 1px solid var(--dark-border);
-}
-
-.hero-title {
-    font-family: var(--font-sans);
-    font-size: var(--text-5xl);
-    font-weight: 800;
-    line-height: var(--leading-tight);
-    color: var(--dark-text);
-    margin-bottom: 1rem;
-    letter-spacing: -0.02em;
-    max-width: 700px;
-}
-
-.hero-subtitle {
-    font-family: var(--font-sans);
-    font-size: var(--text-2xl);
-    line-height: var(--leading-snug);
-    color: var(--dark-text-secondary);
-    margin-bottom: 1rem;
-    font-weight: 400;
-    max-width: 700px;
-}
-
-.hero .container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-}
-
 .rankings-grid {
     max-width: 1400px;
     margin: 0 auto;
     display: grid;
     gap: 2rem;
-    padding: 0 1.5rem 3rem;
+    padding: 3rem 1.5rem 3rem;
 }
 
 .ranking-card {
@@ -182,14 +145,6 @@
 }
 
 @media screen and (max-width: 768px) {
-    .hero-title {
-        font-size: 3rem;
-    }
-    
-    .hero-subtitle {
-        font-size: 1.25rem;
-    }
-
     .ranking-title {
         font-size: 1.75rem;
     }
@@ -205,13 +160,6 @@
     }
 }
 </style>
-
-<div class="hero">
-    <div class="container">
-        <h1 class="hero-title">Rankings</h1>
-        <p class="hero-subtitle">Player rankings and draft boards for amateur baseball</p>
-    </div>
-</div>
 
 <div class="rankings-grid">
     {% for ranking in rankings %}

@@ -6,7 +6,7 @@
 .main-layout {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 1.5rem;
+    padding: 3rem 1.5rem 0;
     display: grid;
     grid-template-columns: 1fr 320px;
     gap: 3rem;
@@ -121,43 +121,6 @@
     border-color: var(--theme-primary);
 }
 
-.hero {
-    background: linear-gradient(
-        rgba(var(--theme-primary-rgb), 0.1),
-        var(--dark-bg)
-    );
-    padding: 4rem 0;
-    margin-bottom: 3rem;
-    border-bottom: 1px solid var(--dark-border);
-}
-
-.hero-title {
-    font-family: var(--font-sans);
-    font-size: var(--text-5xl);
-    font-weight: 800;
-    line-height: var(--leading-tight);
-    color: var(--dark-text);
-    margin-bottom: 1rem;
-    letter-spacing: -0.02em;
-    max-width: 700px;
-}
-
-.hero-subtitle {
-    font-family: var(--font-sans);
-    font-size: var(--text-2xl);
-    line-height: var(--leading-snug);
-    color: var(--dark-text-secondary);
-    margin-bottom: 1rem;
-    font-weight: 400;
-    max-width: 700px;
-}
-
-.hero .container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
-}
-
 /* Mobile layout adjustments */
 @media screen and (max-width: 1200px) {
     .main-layout {
@@ -171,27 +134,12 @@
 }
 
 @media screen and (max-width: 768px) {
-    .hero-title {
-        font-size: 3rem;
-    }
-    
-    .hero-subtitle {
-        font-size: 1.25rem;
-    }
-
     .main-layout {
-        padding: 0 1rem;
+        padding: 3rem 1rem 0;
         gap: 1.5rem;
     }
 }
 </style>
-
-<div class="hero">
-    <div class="container">
-        <h1 class="hero-title">Articles</h1>
-        <p class="hero-subtitle">In-depth analysis and scouting reports</p>
-    </div>
-</div>
 
 <!-- Main content area with sidebar layout -->
 <div class="main-layout">

@@ -189,12 +189,17 @@
     position: absolute;
     bottom: 0;
     right: 0;
-    background: rgba(0, 0, 0, 0.8);
-    color: var(--theme-primary);
-    padding: 0.5rem 0.75rem;
+    background: var(--theme-primary);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 0.75rem 0 0.375rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
     font-weight: 600;
-    font-size: 0.875rem;
-    border-top-left-radius: 0.5rem;
+    border: none;
 }
 
 .player-name {
@@ -256,13 +261,439 @@
         font-size: 1rem;
     }
 }
+
+/* Hero Carousel Styles */
+.hero-carousel {
+    margin-top: 2rem;
+    margin-bottom: 3rem;
+    background: var(--dark-surface);
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 1px solid var(--dark-border);
+    position: relative;
+}
+
+.carousel-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.carousel-track {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+}
+
+.carousel-slide {
+    min-width: 100%;
+    position: relative;
+}
+
+.hero-slide {
+    padding: 3rem;
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    gap: 3rem;
+    background: linear-gradient(135deg, rgba(var(--theme-primary-rgb), 0.1), transparent);
+}
+
+.hero-content {
+    flex: 1;
+}
+
+.hero-badge {
+    display: inline-block;
+    background: var(--theme-primary);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.hero-slide-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--dark-text);
+    line-height: 1.2;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+}
+
+.hero-slide-subtitle {
+    font-size: 1.25rem;
+    color: var(--dark-text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.4;
+}
+
+.hero-slide-description {
+    font-size: 1.1rem;
+    color: var(--dark-text-muted);
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+.hero-slide-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    color: var(--dark-text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+}
+
+.hero-slide-meta .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--theme-primary);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 0.75rem;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.hero-cta:hover {
+    background: var(--theme-primary-dark);
+    transform: translateY(-2px);
+    color: white;
+}
+
+.hero-visual {
+    flex: 0 0 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-players-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+    max-width: 100%;
+    width: 100%;
+}
+
+.hero-player-card {
+    background: var(--dark-bg);
+    border: 1px solid var(--dark-border);
+    border-radius: 0.75rem;
+    padding: 0;
+    text-align: center;
+    transition: all 0.2s ease;
+    min-width: 120px;
+    height: 220px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.hero-player-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-2px);
+}
+
+.hero-player-image {
+    width: 100%;
+    height: 120px;
+    border-radius: 0.75rem 0.75rem 0 0;
+    margin: 0;
+    background: var(--dark-surface);
+    border: none;
+    object-fit: cover;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.hero-player-rank {
+    position: absolute;
+    bottom: 4px;
+    right: 0;
+    background: var(--theme-primary);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 0.75rem 0 0.375rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: none;
+}
+
+.hero-player-info {
+    padding: 0.75rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.hero-player-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 0.25rem;
+    line-height: 1.2;
+}
+
+.hero-player-position {
+    font-size: 0.75rem;
+    color: var(--dark-text-muted);
+}
+
+.carousel-nav {
+    position: absolute;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.carousel-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.carousel-dot.active {
+    background: var(--theme-primary);
+    transform: scale(1.2);
+}
+
+.carousel-arrows {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 1rem;
+    pointer-events: none;
+}
+
+.carousel-arrow {
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    pointer-events: all;
+    opacity: 0.7;
+}
+
+.carousel-arrow:hover {
+    background: rgba(0, 0, 0, 0.8);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+    .hero-slide {
+        flex-direction: column;
+        text-align: center;
+        padding: 2rem 1.5rem;
+        min-height: auto;
+    }
+    
+    .hero-visual {
+        flex: none;
+        width: 100%;
+        margin-top: 2rem;
+    }
+    
+    .hero-slide-title {
+        font-size: 2rem;
+    }
+    
+    .hero-slide-subtitle {
+        font-size: 1.1rem;
+    }
+    
+    .hero-players-preview {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    }
+    
+    .hero-player-card {
+        min-width: 100px;
+        height: 180px;
+    }
+    
+    .hero-player-image {
+        height: 100px;
+    }
+    
+    .hero-player-info {
+        padding: 0.5rem;
+    }
+    
+    .carousel-arrows {
+        display: none;
+    }
+}
 </style>
 
+<!-- Hero Carousel -->
+<div class="content-section">
+    {% if latest_articles or latest_ranking %}
+    <div class="hero-carousel">
+        <div class="carousel-container">
+            <div class="carousel-track" id="carouselTrack">
+                
+                <!-- Latest Articles Slides -->
+                {% for article in latest_articles %}
+                <div class="carousel-slide">
+                    <div class="hero-slide">
+                        <div class="hero-content">
+                            <div class="hero-badge">{% if forloop.first %}Latest Article{% else %}Recent Article{% endif %}</div>
+                            <h2 class="hero-slide-title">{{ article.headline }}</h2>
+                            {% if article.subhead %}
+                            <p class="hero-slide-subtitle">{{ article.subhead }}</p>
+                            {% endif %}
+                            {% if article.blurb %}
+                            <p class="hero-slide-description">{{ article.blurb }}</p>
+                            {% endif %}
+                            <div class="hero-slide-meta">
+                                {% if article.authors.all %}
+                                <div class="meta-item">
+                                    <i class="fas fa-user-edit"></i>
+                                    <span>{% for author in article.authors.all %}{{ author.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+                                </div>
+                                {% endif %}
+                                <div class="meta-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>{{ article.created|date:"F j, Y" }}</span>
+                                </div>
+                            </div>
+                            <a href="/articles/{{ article.slug }}/" class="hero-cta">
+                                <span>Read Article</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                        {% if article.players.all %}
+                        <div class="hero-visual">
+                            <div class="hero-players-preview">
+                                {% for player in article.players.all|slice:":6" %}
+                                <a href="/players/{{ player.slug }}/" class="hero-player-card">
+                                    <img src="{{ player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
+                                         alt="{{ player.name }}" class="hero-player-image">
+                                    <div class="hero-player-info">
+                                        <div class="hero-player-name">{{ player.name }}</div>
+                                        <div class="hero-player-position">{{ player.position }}</div>
+                                    </div>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
 
-
-<style>
-
-</style>
+                <!-- Latest Ranking Slide -->
+                {% if latest_ranking %}
+                <div class="carousel-slide">
+                    <div class="hero-slide">
+                        <div class="hero-content">
+                            <div class="hero-badge">Latest Ranking</div>
+                            <h2 class="hero-slide-title">{{ latest_ranking }}</h2>
+                            {% if latest_ranking.subhead %}
+                            <p class="hero-slide-subtitle">{{ latest_ranking.subhead }}</p>
+                            {% endif %}
+                            {% if latest_ranking.blurb %}
+                            <p class="hero-slide-description">{{ latest_ranking.blurb }}</p>
+                            {% endif %}
+                            <div class="hero-slide-meta">
+                                <div class="meta-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>{{ latest_ranking.created|date:"F j, Y" }}</span>
+                                </div>
+                                {% if latest_ranking.ranking_type %}
+                                <div class="meta-item">
+                                    <i class="fas fa-tag"></i>
+                                    <span>{{ latest_ranking.ranking_type }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <a href="/rankings/{{ latest_ranking.slug }}/" class="hero-cta">
+                                <span>View Rankings</span>
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                        {% if latest_ranking.get_initial_players %}
+                        <div class="hero-visual">
+                            <div class="hero-players-preview">
+                                {% for pr in latest_ranking.get_initial_players|slice:":6" %}
+                                <a href="/players/{{ pr.player.slug }}/" class="hero-player-card">
+                                    <div style="position: relative;">
+                                        <img src="{{ pr.player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
+                                             alt="{{ pr.player.name }}" class="hero-player-image">
+                                        <div class="hero-player-rank">#{{ pr.rank }}</div>
+                                    </div>
+                                    <div class="hero-player-info">
+                                        <div class="hero-player-name">{{ pr.player.name }}</div>
+                                        <div class="hero-player-position">{{ pr.player.position }}</div>
+                                    </div>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+            </div>
+        </div>
+        
+        <!-- Carousel Navigation -->
+        {% if latest_articles or latest_ranking %}
+        <div class="carousel-arrows">
+            <button class="carousel-arrow" id="prevBtn">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="carousel-arrow" id="nextBtn">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+        
+        <div class="carousel-nav">
+            {% for article in latest_articles %}
+            <button class="carousel-dot {% if forloop.first %}active{% endif %}" data-slide="{{ forloop.counter0 }}"></button>
+            {% endfor %}
+            {% if latest_ranking %}
+            <button class="carousel-dot" data-slide="{{ latest_articles|length }}"></button>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
 
 <div class="content-section">
     <div class="columns-layout">
@@ -367,4 +798,113 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const track = document.getElementById('carouselTrack');
+    const slides = document.querySelectorAll('.carousel-slide');
+    const dots = document.querySelectorAll('.carousel-dot');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    if (!track || slides.length === 0) return;
+    
+    let currentSlide = 0;
+    let isTransitioning = false;
+    
+    function updateCarousel() {
+        if (isTransitioning) return;
+        isTransitioning = true;
+        
+        const translateX = -currentSlide * 100;
+        track.style.transform = `translateX(${translateX}%)`;
+        
+        // Update dots
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('active', index === currentSlide);
+        });
+        
+        setTimeout(() => {
+            isTransitioning = false;
+        }, 500);
+    }
+    
+    function nextSlide() {
+        currentSlide = (currentSlide + 1) % slides.length;
+        updateCarousel();
+    }
+    
+    function prevSlide() {
+        currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+        updateCarousel();
+    }
+    
+    // Event listeners for navigation
+    if (nextBtn) {
+        nextBtn.addEventListener('click', nextSlide);
+    }
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', prevSlide);
+    }
+    
+    // Dot navigation
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            if (currentSlide !== index && !isTransitioning) {
+                currentSlide = index;
+                updateCarousel();
+            }
+        });
+    });
+    
+    // Auto-advance carousel if there are multiple slides
+    if (slides.length > 1) {
+        setInterval(() => {
+            nextSlide();
+        }, 8000); // Auto-advance every 8 seconds
+    }
+    
+    // Touch/swipe support for mobile
+    let startX = 0;
+    let currentX = 0;
+    let isDragging = false;
+    
+    track.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        isDragging = true;
+    });
+    
+    track.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        currentX = e.touches[0].clientX;
+    });
+    
+    track.addEventListener('touchend', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        
+        const deltaX = startX - currentX;
+        const threshold = 50; // Minimum swipe distance
+        
+        if (Math.abs(deltaX) > threshold) {
+            if (deltaX > 0) {
+                nextSlide();
+            } else {
+                prevSlide();
+            }
+        }
+    });
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') {
+            prevSlide();
+        } else if (e.key === 'ArrowRight') {
+            nextSlide();
+        }
+    });
+});
+</script>
+
 {% endblock %}
