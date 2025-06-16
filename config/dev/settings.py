@@ -22,7 +22,6 @@ SECRET_KEY = env('DJANGO_SECRET_KEY', default=")(hv#e)wqd-9pwuvd94wq5-snmz+@m(&-
 DEBUG = True
 
 ALLOWED_HOSTS = env('ALLOWED_HOSTS')
-CSRF_TRUSTED_ORIGINS = ["https://ruling-badger-really.ngrok-free.app"]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -156,6 +155,16 @@ AWS_DEFAULT_ACL = "public-read"
 AWS_STORAGE_BUCKET_NAME = "the-over-slot"
 AWS_S3_CUSTOM_DOMAIN = "the-over-slot.nyc3.cdn.digitaloceanspaces.com"
 AWS_LOCATION = "static"
+
+CORS_ALLOWED_ORIGINS = [
+    "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://overslot-prod-wxrbl.ondigitalocean.app",
+    "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
+    "https://ruling-badger-really.ngrok-free.app",
+]
 
 # Email settings
 MAILGUN_API_KEY = env('MAILGUN_API_KEY', default=None)
