@@ -195,9 +195,9 @@
         {% if article.blurb %}
         <p class="article-blurb">{{ article.blurb }}</p>
         {% endif %}
-        {% if article.players.all %}
+        {% if article.active_players %}
         <div class="player-tags">
-            {% for player in article.players.all %}
+            {% for player in article.active_players %}
             <a href="/players/{{ player.slug }}/" class="player-tag">
                 {{ player.name }}
             </a>

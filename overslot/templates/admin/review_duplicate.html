@@ -1,0 +1,360 @@
+{% extends "admin/duplicate_base.html" %}
+
+{% block title %}Review Duplicate{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-separator">›</span>
+<span>Review Duplicate</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-title">Review Potential Duplicate</div>
+
+<div class="grid grid-2" style="margin-bottom: 2rem;">
+    <!-- Player 1 -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">{{ player1.name }}</div>
+        </div>
+        <div class="card-body">
+            <!-- Basic Info -->
+            <div class="form-group">
+                <label class="form-label">School</label>
+                <div style="color: #4a5568; font-weight: 500;">{{ player1.school|default:"Unknown" }}</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Position</label>
+                <div style="color: #4a5568; font-weight: 500;">{{ player1.position|default:"Unknown" }}</div>
+            </div>
+            
+            <!-- Location Info -->
+            <div class="grid grid-2" style="gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Hometown</label>
+                    <div style="color: #4a5568;">{{ player1.hometown|default:"Unknown" }}</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">State</label>
+                    <div style="color: #4a5568;">{{ player1.state|default:"Unknown" }}</div>
+                </div>
+            </div>
+            
+            <!-- Physical Stats -->
+            {% if player1.height or player1.weight or player1.bats or player1.throws %}
+            <div class="grid grid-2" style="gap: 1rem;">
+                {% if player1.height %}
+                <div class="form-group">
+                    <label class="form-label">Height</label>
+                    <div style="color: #4a5568;">{{ player1.height }}</div>
+                </div>
+                {% endif %}
+                {% if player1.weight %}
+                <div class="form-group">
+                    <label class="form-label">Weight</label>
+                    <div style="color: #4a5568;">{{ player1.weight }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% if player1.bats or player1.throws %}
+            <div class="grid grid-2" style="gap: 1rem;">
+                {% if player1.bats %}
+                <div class="form-group">
+                    <label class="form-label">Bats</label>
+                    <div style="color: #4a5568;">{{ player1.bats }}</div>
+                </div>
+                {% endif %}
+                {% if player1.throws %}
+                <div class="form-group">
+                    <label class="form-label">Throws</label>
+                    <div style="color: #4a5568;">{{ player1.throws }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endif %}
+            
+            <!-- Birthdate -->
+            {% if player1.birthdate %}
+            <div class="form-group">
+                <label class="form-label">Birthdate</label>
+                <div style="color: #4a5568;">{{ player1.birthdate|date:"M d, Y" }}</div>
+            </div>
+            {% endif %}
+            
+            <!-- Player ID -->
+            <div class="form-group">
+                <label class="form-label">Player ID</label>
+                <div style="color: #718096; font-size: 0.85rem; font-family: monospace;">{{ player1.uuid }}</div>
+            </div>
+            
+            {% if player1_rankings %}
+            <div class="form-group">
+                <label class="form-label">Rankings ({{ player1_rankings|length }})</label>
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    {% for ranking in player1_rankings %}
+                    <div style="padding: 1rem; border-bottom: 1px solid #e2e8f0;{% if forloop.last %} border-bottom: none;{% endif %}">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <div style="font-weight: 600; color: #2d3748; font-size: 1.1rem;">#{{ ranking.rank }}</div>
+                            <div style="font-size: 0.85rem; color: #718096;">{{ ranking.ranking.year }}</div>
+                        </div>
+                        <div style="font-weight: 500; color: #4a5568; margin-bottom: 0.25rem;">
+                            {{ ranking.ranking.ranking_type|default:"Overall" }} Rankings
+                        </div>
+                        {% if ranking.position %}
+                        <div style="font-size: 0.9rem; color: #718096; margin-bottom: 0.25rem;">
+                            Position: {{ ranking.position }}
+                        </div>
+                        {% endif %}
+                        {% if ranking.school %}
+                        <div style="font-size: 0.9rem; color: #718096; margin-bottom: 0.25rem;">
+                            School: {{ ranking.school }}
+                        </div>
+                        {% endif %}
+                        {% if ranking.commitment %}
+                        <div style="font-size: 0.9rem; color: #2b6cb0; font-weight: 500;">
+                            Committed: {{ ranking.commitment }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="form-group">
+                <label class="form-label">Rankings</label>
+                <div style="padding: 1rem; background: #f7fafc; border-radius: 6px; text-align: center; color: #718096;">
+                    No rankings found
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if player1_articles %}
+            <div class="form-group">
+                <label class="form-label">Articles</label>
+                <div style="max-height: 200px; overflow-y: auto;">
+                    {% for article in player1_articles %}
+                    <div style="padding: 0.5rem; background: #f7fafc; border-radius: 6px; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 500; color: #2d3748;">{{ article.title }}</div>
+                        <div style="font-size: 0.9rem; color: #718096;">{{ article.published_date|date:"M d, Y" }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if player1.photo %}
+            <div class="form-group">
+                <label class="form-label">Photo</label>
+                <img src="{{ player1.photo.url }}" alt="{{ player1.name }}" style="max-width: 200px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Player 2 -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">{{ player2.name }}</div>
+        </div>
+        <div class="card-body">
+            <!-- Basic Info -->
+            <div class="form-group">
+                <label class="form-label">School</label>
+                <div style="color: #4a5568; font-weight: 500;">{{ player2.school|default:"Unknown" }}</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Position</label>
+                <div style="color: #4a5568; font-weight: 500;">{{ player2.position|default:"Unknown" }}</div>
+            </div>
+            
+            <!-- Location Info -->
+            <div class="grid grid-2" style="gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Hometown</label>
+                    <div style="color: #4a5568;">{{ player2.hometown|default:"Unknown" }}</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">State</label>
+                    <div style="color: #4a5568;">{{ player2.state|default:"Unknown" }}</div>
+                </div>
+            </div>
+            
+            <!-- Physical Stats -->
+            {% if player2.height or player2.weight or player2.bats or player2.throws %}
+            <div class="grid grid-2" style="gap: 1rem;">
+                {% if player2.height %}
+                <div class="form-group">
+                    <label class="form-label">Height</label>
+                    <div style="color: #4a5568;">{{ player2.height }}</div>
+                </div>
+                {% endif %}
+                {% if player2.weight %}
+                <div class="form-group">
+                    <label class="form-label">Weight</label>
+                    <div style="color: #4a5568;">{{ player2.weight }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% if player2.bats or player2.throws %}
+            <div class="grid grid-2" style="gap: 1rem;">
+                {% if player2.bats %}
+                <div class="form-group">
+                    <label class="form-label">Bats</label>
+                    <div style="color: #4a5568;">{{ player2.bats }}</div>
+                </div>
+                {% endif %}
+                {% if player2.throws %}
+                <div class="form-group">
+                    <label class="form-label">Throws</label>
+                    <div style="color: #4a5568;">{{ player2.throws }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endif %}
+            
+            <!-- Birthdate -->
+            {% if player2.birthdate %}
+            <div class="form-group">
+                <label class="form-label">Birthdate</label>
+                <div style="color: #4a5568;">{{ player2.birthdate|date:"M d, Y" }}</div>
+            </div>
+            {% endif %}
+            
+            <!-- Player ID -->
+            <div class="form-group">
+                <label class="form-label">Player ID</label>
+                <div style="color: #718096; font-size: 0.85rem; font-family: monospace;">{{ player2.uuid }}</div>
+            </div>
+            
+            {% if player2_rankings %}
+            <div class="form-group">
+                <label class="form-label">Rankings ({{ player2_rankings|length }})</label>
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    {% for ranking in player2_rankings %}
+                    <div style="padding: 1rem; border-bottom: 1px solid #e2e8f0;{% if forloop.last %} border-bottom: none;{% endif %}">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <div style="font-weight: 600; color: #2d3748; font-size: 1.1rem;">#{{ ranking.rank }}</div>
+                            <div style="font-size: 0.85rem; color: #718096;">{{ ranking.ranking.year }}</div>
+                        </div>
+                        <div style="font-weight: 500; color: #4a5568; margin-bottom: 0.25rem;">
+                            {{ ranking.ranking.ranking_type|default:"Overall" }} Rankings
+                        </div>
+                        {% if ranking.position %}
+                        <div style="font-size: 0.9rem; color: #718096; margin-bottom: 0.25rem;">
+                            Position: {{ ranking.position }}
+                        </div>
+                        {% endif %}
+                        {% if ranking.school %}
+                        <div style="font-size: 0.9rem; color: #718096; margin-bottom: 0.25rem;">
+                            School: {{ ranking.school }}
+                        </div>
+                        {% endif %}
+                        {% if ranking.commitment %}
+                        <div style="font-size: 0.9rem; color: #2b6cb0; font-weight: 500;">
+                            Committed: {{ ranking.commitment }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="form-group">
+                <label class="form-label">Rankings</label>
+                <div style="padding: 1rem; background: #f7fafc; border-radius: 6px; text-align: center; color: #718096;">
+                    No rankings found
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if player2_articles %}
+            <div class="form-group">
+                <label class="form-label">Articles</label>
+                <div style="max-height: 200px; overflow-y: auto;">
+                    {% for article in player2_articles %}
+                    <div style="padding: 0.5rem; background: #f7fafc; border-radius: 6px; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 500; color: #2d3748;">{{ article.title }}</div>
+                        <div style="font-size: 0.9rem; color: #718096;">{{ article.published_date|date:"M d, Y" }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if player2.photo %}
+            <div class="form-group">
+                <label class="form-label">Photo</label>
+                <img src="{{ player2.photo.url }}" alt="{{ player2.name }}" style="max-width: 200px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Decision Forms -->
+<div class="grid grid-2">
+    <!-- Merge Form -->
+    <div class="card">
+        <div class="card-header" style="background: #f0fff4; border-color: #9ae6b4;">
+            <div class="card-title" style="color: #22543d;">Merge Players</div>
+        </div>
+        <div class="card-body">
+            <p style="color: #22543d; margin-bottom: 1.5rem;">
+                These are the same person. Merge them into one player record.
+            </p>
+            <form method="post" action="{% url 'merge_players' player1.uuid player2.uuid %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Primary Player (data will be kept)</label>
+                    <select name="primary_player" class="form-select" required>
+                        <option value="">Choose which player to keep as primary</option>
+                        <option value="{{ player1.uuid }}">
+                            {{ player1.name }} (Player 1) - {{ player1.school|default:"Unknown School" }} - ID: {{ player1.uuid|slice:":8" }}
+                        </option>
+                        <option value="{{ player2.uuid }}">
+                            {{ player2.name }} (Player 2) - {{ player2.school|default:"Unknown School" }} - ID: {{ player2.uuid|slice:":8" }}
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes (optional)</label>
+                    <textarea name="notes" class="form-textarea" placeholder="Add any notes about this merge decision..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-success" style="width: 100%;">
+                    Merge Players
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Keep Separate Form -->
+    <div class="card">
+        <div class="card-header" style="background: #fed7d7; border-color: #fc8181;">
+            <div class="card-title" style="color: #742a2a;">Keep Separate</div>
+        </div>
+        <div class="card-body">
+            <p style="color: #742a2a; margin-bottom: 1.5rem;">
+                These are different people. Keep them as separate players.
+            </p>
+            <form method="post" action="{% url 'mark_separate' player1.uuid player2.uuid %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Notes (optional)</label>
+                    <textarea name="notes" class="form-textarea" placeholder="Add any notes about why these should remain separate..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-danger" style="width: 100%;">
+                    Keep Separate
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div style="margin-top: 2rem; text-align: center;">
+    <a href="{% url 'duplicate_dashboard' %}" class="btn btn-outline">
+        Back to Dashboard
+    </a>
+</div>
+{% endblock %} 

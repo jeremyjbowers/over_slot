@@ -150,5 +150,6 @@ STATE_NAME_TO_ABBREV = {
     "Wisconsin": "WI",
     "Wyoming": "WY",
     "Australia": "AUS",
-    "Canada": "CAN"
+    "Canada": "CAN",
+    "Panama": "PAN",
 }

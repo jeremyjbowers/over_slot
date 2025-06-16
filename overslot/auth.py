@@ -59,6 +59,13 @@ def send_magic_link(request, email, is_signup=False, first_name=None, last_name=
     magic_link = request.build_absolute_uri(
         reverse('magic_link_verify', kwargs={'token': token})
     )
+    
+    # Add next parameter if present
+    from django.contrib.auth import REDIRECT_FIELD_NAME
+    next_url = request.GET.get(REDIRECT_FIELD_NAME)
+    if next_url:
+        magic_link += f'?{REDIRECT_FIELD_NAME}={next_url}'
+    
     # Force HTTPS for magic links
     if magic_link.startswith('http://'):
         magic_link = magic_link.replace('http://', 'https://', 1)
@@ -154,12 +161,20 @@ def magic_link_signup_view(request):
 
 def magic_link_verify_view(request, token):
     from sesame.utils import get_user
+    from django.contrib.auth import REDIRECT_FIELD_NAME
+    from django.utils.http import url_has_allowed_host_and_scheme
     
     user = get_user(token)
     
     if user is not None:
         login(request, user)
         messages.success(request, "You've been signed in!")
+        
+        # Handle redirect after login
+        next_url = request.GET.get(REDIRECT_FIELD_NAME)
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+            return redirect(next_url)
+        
         return redirect('index')
     
     messages.error(request, "This magic link is invalid or has expired.")

@@ -35,8 +35,12 @@ class Command(BaseCommand):
                 print(row['name'], row.get('bat_throw'))
                 if row.get('bat_throw', None):
                     
-                    p.bats = row['bat_throw'].split('-')[0]
-                    p.throws = row['bat_throw'].split('-')[1]
+                    if "-" in row['bat_throw']:
+                        p.bats = row['bat_throw'].split('-')[0]
+                        p.throws = row['bat_throw'].split('-')[1]
+                    elif "/" in row['bat_throw']:
+                        p.bats = row['bat_throw'].split('/')[0]
+                        p.throws = row['bat_throw'].split('/')[1]
     
                 p.height = row.get('height', None)
                 p.weight = row.get('weight', None)
@@ -45,7 +49,10 @@ class Command(BaseCommand):
                 p.state = row.get('state', None)
                 if p.state:
                     if len(p.state) >3:
-                        p.state = utils.STATE_NAME_TO_ABBREV[p.state.strip()]
+                        try:
+                            p.state = utils.STATE_NAME_TO_ABBREV[p.state.strip()]
+                        except:
+                            pass
 
                 p.photo_url = row.get('photo_url', None)
                 p.video_url = row.get('draft_spotlight', None)

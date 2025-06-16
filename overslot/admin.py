@@ -1,9 +1,39 @@
 from django.contrib import admin
+from django.contrib.admin import AdminSite
+from django.urls import reverse_lazy
 
+# Override the default admin site's login URL to use magic link authentication
 admin.site.site_title = "Overslot"
 admin.site.site_header = "Overslot: Admin"
 admin.site.index_title = "Administer The Overslot Website"
 
+# Custom login method for the admin site
+def custom_admin_login(request, extra_context=None):
+    """
+    Override login to redirect to magic link authentication
+    """
+    from django.shortcuts import redirect
+    from django.contrib.auth import REDIRECT_FIELD_NAME
+    from django.urls import reverse
+    
+    # If user is already authenticated, proceed to admin
+    if request.user.is_authenticated:
+        return admin.site.login(request, extra_context)
+    
+    # Get the redirect URL (where to go after login)
+    redirect_to = request.GET.get(REDIRECT_FIELD_NAME, request.get_full_path())
+    
+    # Redirect to magic link login with next parameter
+    magic_link_url = reverse('account_login')
+    if redirect_to:
+        magic_link_url += f'?{REDIRECT_FIELD_NAME}={redirect_to}'
+    
+    return redirect(magic_link_url)
+
+# Override the admin site's login method
+admin.site.login = custom_admin_login
+
+# Import models
 from overslot.models import (
     Article,
     Author,
@@ -11,7 +41,8 @@ from overslot.models import (
     Ranking,
     PlayerRanking,
     PlayerRankingCarryingTool,
-    Subscription
+    Subscription,
+    DuplicateDecision
 )
 
 
@@ -188,6 +219,35 @@ class SubscriptionAdmin(admin.ModelAdmin):
                     "created",
                     "last_modified",
                 ),
+            },
+        ),
+    )
+
+
+@admin.register(DuplicateDecision)
+class DuplicateDecisionAdmin(admin.ModelAdmin):
+    model = DuplicateDecision
+    list_display = ["player1", "player2", "decision", "decided_by", "created"]
+    list_filter = ["decision", "created"]
+    search_fields = ["player1__name", "player2__name", "decided_by__username"]
+    readonly_fields = ["created"]
+    
+    fieldsets = (
+        (
+            "Decision Details",
+            {
+                "fields": (
+                    ("player1", "player2"),
+                    "decision",
+                    "decided_by",
+                    "notes",
+                ),
+            },
+        ),
+        (
+            "Timestamps",
+            {
+                "fields": ("created",),
             },
         ),
     )

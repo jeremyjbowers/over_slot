@@ -358,3 +358,80 @@ class Article(BaseModel):
 
     def __unicode__(self):
         return self.headline
+
+
+class DuplicateDecision(BaseModel):
+    """
+    Stores decisions about whether two players are duplicates or separate entities.
+    This prevents the duplicate finder from asking about the same pair repeatedly.
+    """
+    player1 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='duplicate_decisions_as_player1')
+    player2 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='duplicate_decisions_as_player2')
+    decision = models.CharField(max_length=20, choices=[
+        ('merged', 'Merged - players are the same person'),
+        ('separate', 'Separate - players are different people')
+    ])
+    decided_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    primary_player = models.ForeignKey(Player, on_delete=models.SET_NULL, null=True, blank=True, 
+                                     related_name='duplicate_decisions_as_primary',
+                                     help_text="For merged decisions, which player was kept as primary")
+    notes = models.TextField(blank=True, null=True, help_text="Optional notes about the decision")
+    
+    class Meta:
+        unique_together = ['player1', 'player2']
+        ordering = ['-created']
+    
+    def save(self, *args, **kwargs):
+        # Ensure consistent ordering of players (smaller UUID first)
+        if str(self.player1.uuid) > str(self.player2.uuid):
+            self.player1, self.player2 = self.player2, self.player1
+        super().save(*args, **kwargs)
+    
+    def __unicode__(self):
+        return f"{self.player1.name} vs {self.player2.name} - {self.decision}"
+
+
+class PotentialDuplicate(BaseModel):
+    """
+    Pre-calculated potential duplicate pairs for fast duplicate management.
+    This table is populated by a management command and cleared/rebuilt as needed.
+    """
+    player1 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='potential_duplicates_as_player1')
+    player2 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='potential_duplicates_as_player2')
+    similarity_score = models.FloatField(help_text="Similarity score between 0 and 1")
+    match_reasons = models.JSONField(default=list, help_text="List of reasons why these might be duplicates")
+    
+    # Denormalized fields for fast filtering/sorting
+    player1_name = models.CharField(max_length=255)
+    player2_name = models.CharField(max_length=255)
+    player1_school = models.CharField(max_length=255, blank=True, null=True)
+    player2_school = models.CharField(max_length=255, blank=True, null=True)
+    player1_state = models.CharField(max_length=255, blank=True, null=True)
+    player2_state = models.CharField(max_length=255, blank=True, null=True)
+    
+    class Meta:
+        unique_together = ['player1', 'player2']
+        ordering = ['-similarity_score', 'player1_name', 'player2_name']
+        indexes = [
+            models.Index(fields=['similarity_score']),
+            models.Index(fields=['player1_name']),
+            models.Index(fields=['player2_name']),
+        ]
+    
+    def save(self, *args, **kwargs):
+        # Ensure consistent ordering of players (smaller UUID first)
+        if str(self.player1.uuid) > str(self.player2.uuid):
+            self.player1, self.player2 = self.player2, self.player1
+        
+        # Update denormalized fields
+        self.player1_name = self.player1.name
+        self.player2_name = self.player2.name
+        self.player1_school = self.player1.school
+        self.player2_school = self.player2.school
+        self.player1_state = self.player1.state
+        self.player2_state = self.player2.state
+        
+        super().save(*args, **kwargs)
+    
+    def __unicode__(self):
+        return f"{self.player1.name} vs {self.player2.name} ({self.similarity_score:.2f})"

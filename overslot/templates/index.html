@@ -595,10 +595,10 @@
                                 <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
-                        {% if article.players.all %}
+                        {% if article.active_players %}
                         <div class="hero-visual">
                             <div class="hero-players-preview">
-                                {% for player in article.players.all|slice:":6" %}
+                                {% for player in article.active_players|slice:":6" %}
                                 <a href="/players/{{ player.slug }}/" class="hero-player-card">
                                     <img src="{{ player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
                                          alt="{{ player.name }}" class="hero-player-image">
@@ -784,9 +784,9 @@
                 {% if article.blurb %}
                 <p class="item-description">{{ article.blurb }}</p>
                 {% endif %}
-                {% if article.players.all %}
+                {% if article.active_players %}
                 <div class="player-tags">
-                    {% for player in article.players.all %}
+                    {% for player in article.active_players|slice:":6" %}
                     <a href="/players/{{ player.slug }}/" class="player-tag">
                         {{ player.name }}
                     </a>

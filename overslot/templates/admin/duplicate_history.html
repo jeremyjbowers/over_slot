@@ -1,0 +1,187 @@
+{% extends "admin/duplicate_base.html" %}
+
+{% block title %}Decision History{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-separator">›</span>
+<span>Decision History</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-title">Duplicate Decision History</div>
+
+<!-- Summary Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ total_decisions }}</div>
+        <div class="stat-label">Total Decisions</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ merged_count }}</div>
+        <div class="stat-label">Players Merged</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ separate_count }}</div>
+        <div class="stat-label">Kept Separate</div>
+    </div>
+</div>
+
+<!-- Filter and Search -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <div class="card-title">Filter & Search</div>
+    </div>
+    <div class="card-body">
+        <form method="get" class="grid grid-3" style="align-items: end;">
+            <div class="form-group">
+                <label class="form-label">Decision Type</label>
+                <select name="decision_type" class="form-select">
+                    <option value="">All Decisions</option>
+                    <option value="merged" {% if request.GET.decision_type == 'merged' %}selected{% endif %}>Merged Only</option>
+                    <option value="separate" {% if request.GET.decision_type == 'separate' %}selected{% endif %}>Separate Only</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Search Player Name</label>
+                <input type="text" name="search" class="form-input" value="{{ request.GET.search }}" placeholder="Type player name...">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Decision History Table -->
+{% if decisions %}
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            Decision History 
+            <span style="color: #718096; font-weight: normal;">({{ decisions|length }} of {{ total_decisions }})</span>
+        </div>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <div style="overflow-x: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Players</th>
+                        <th>Decision</th>
+                        <th>Decided By</th>
+                        <th>Date</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for decision in decisions %}
+                    <tr>
+                        <td>
+                            <div style="font-weight: 500; color: #2d3748;">
+                                {{ decision.player1.name }}
+                            </div>
+                            <div style="font-size: 0.85rem; color: #718096; margin: 0.25rem 0;">
+                                {{ decision.player1.high_school|default:"Unknown school" }} ({{ decision.player1.graduation_year|default:"?" }})
+                            </div>
+                            <div style="font-size: 0.8rem; color: #a0aec0; margin-bottom: 0.5rem;">
+                                &amp;
+                            </div>
+                            <div style="font-weight: 500; color: #2d3748;">
+                                {{ decision.player2.name }}
+                            </div>
+                            <div style="font-size: 0.85rem; color: #718096;">
+                                {{ decision.player2.high_school|default:"Unknown school" }} ({{ decision.player2.graduation_year|default:"?" }})
+                            </div>
+                        </td>
+                        <td>
+                            {% if decision.decision == 'merged' %}
+                                <span class="badge badge-success">Merged</span>
+                            {% else %}
+                                <span class="badge badge-danger">Kept Separate</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="font-weight: 500; color: #2d3748;">{{ decision.decided_by.username }}</div>
+                            <div style="font-size: 0.85rem; color: #718096;">{{ decision.decided_by.get_full_name|default:"" }}</div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 500; color: #2d3748;">{{ decision.created|date:"M d, Y" }}</div>
+                            <div style="font-size: 0.85rem; color: #718096;">{{ decision.created|date:"H:i" }}</div>
+                        </td>
+                        <td>
+                            {% if decision.notes %}
+                                <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ decision.notes }}">
+                                    {{ decision.notes }}
+                                </div>
+                            {% else %}
+                                <span style="color: #a0aec0; font-style: italic;">No notes</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem;">
+                                {% if decision.decision == 'merged' %}
+                                    <a href="{% url 'view_player' decision.primary_player.uuid %}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+                                        View Player
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'review_duplicate' decision.player1.uuid decision.player2.uuid %}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+                                        Review Again
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div style="margin-top: 2rem; display: flex; justify-content: center; align-items: center; gap: 1rem;">
+    {% if page_obj.has_previous %}
+        <a href="?page=1{% if request.GET.decision_type %}&decision_type={{ request.GET.decision_type }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="btn btn-outline">First</a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.decision_type %}&decision_type={{ request.GET.decision_type }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="btn btn-outline">Previous</a>
+    {% endif %}
+    
+    <span style="color: #718096;">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+    
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.decision_type %}&decision_type={{ request.GET.decision_type }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="btn btn-outline">Next</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.decision_type %}&decision_type={{ request.GET.decision_type }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="btn btn-outline">Last</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="card">
+    <div class="card-body" style="text-align: center; padding: 3rem;">
+        <h3 style="color: #718096; margin-bottom: 1rem;">No Decisions Found</h3>
+        <p style="color: #a0aec0; margin: 0;">
+            {% if request.GET.search or request.GET.decision_type %}
+                No decisions match your current filters.
+            {% else %}
+                No duplicate decisions have been made yet.
+            {% endif %}
+        </p>
+        {% if request.GET.search or request.GET.decision_type %}
+        <div style="margin-top: 1rem;">
+            <a href="{% url 'duplicate_history' %}" class="btn btn-outline">Clear Filters</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Navigation -->
+<div style="margin-top: 2rem; text-align: center;">
+    <a href="{% url 'duplicate_dashboard' %}" class="btn btn-outline">
+        Back to Dashboard
+    </a>
+</div>
+{% endblock %} 

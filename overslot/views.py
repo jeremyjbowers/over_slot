@@ -17,18 +17,29 @@ from overslot.decorators import subscription_required
 
 def index(request):
     context = {}
-    context['articles'] = models.Article.objects.filter(publish=True)
+    articles = models.Article.objects.filter(publish=True)
+    # Add active players to each article
+    for article in articles:
+        article.active_players = article.players.filter(active=True)
+    context['articles'] = articles
     context['rankings'] = models.Ranking.objects.all()
     
     # Get the 2 most recent articles and 1 ranking for the hero carousel
-    context['latest_articles'] = models.Article.objects.filter(publish=True).order_by('-created')[:2]
+    latest_articles = models.Article.objects.filter(publish=True).order_by('-created')[:2]
+    for article in latest_articles:
+        article.active_players = article.players.filter(active=True)
+    context['latest_articles'] = latest_articles
     context['latest_ranking'] = models.Ranking.objects.filter(active=True).order_by('-created').first()
 
     return render(request, "index.html", context)
 
 def articles_list(request):
     context = {}
-    context['articles'] = models.Article.objects.filter(publish=True)
+    articles = models.Article.objects.filter(publish=True)
+    # Add active players to each article
+    for article in articles:
+        article.active_players = article.players.filter(active=True)
+    context['articles'] = articles
     
     # Add recent rankings for sidebar
     context['recent_rankings'] = models.Ranking.objects.filter(
@@ -42,6 +53,8 @@ def articles_list(request):
 def articles_detail(request, slug):
     context = {}
     context['article'] = get_object_or_404(models.Article, slug=slug)
+    # Filter out inactive players from the article
+    context['article'].active_players = context['article'].players.filter(active=True)
 
     return render(request, "articles_detail.html", context)
 
@@ -69,7 +82,7 @@ def rankings_detail(request, slug):
 @subscription_required
 def players_detail(request, slug):
     context = {}
-    context['player'] = get_object_or_404(models.Player, slug=slug)
+    context['player'] = get_object_or_404(models.Player, slug=slug, active=True)
     context['rankings'] = models.PlayerRanking.objects.filter(player=context['player'])
     context['articles'] = models.Article.objects.filter(players=context['player'])
 
@@ -98,14 +111,15 @@ def search(request):
         Q(subhead__icontains=query) |
         Q(blurb__icontains=query) |
         Q(year__icontains=query) |
-        Q(playerranking__player__name__icontains=query)
+        Q(playerranking__player__name__icontains=query, playerranking__player__active=True)
     ).distinct()[:5]
 
-    # Search players
+    # Search players (only active players)
     players = models.Player.objects.filter(
         Q(name__icontains=query) |
         Q(position__icontains=query) |
-        Q(school__icontains=query)
+        Q(school__icontains=query),
+        active=True
     )[:5]
 
     def get_ranking_title(ranking):
@@ -139,7 +153,7 @@ def search(request):
             'slug': ranking.slug,
             'year': ranking.year,
             'preview': next(
-                (pr.player.name for pr in ranking.playerranking_set.all()
+                (pr.player.name for pr in ranking.playerranking_set.filter(player__active=True)
                  if query.lower() in pr.player.name.lower()),
                 None
             )
