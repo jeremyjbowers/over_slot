@@ -164,6 +164,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://overslot-prod-wxrbl.ondigitalocean.app",
     "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
     "https://ruling-badger-really.ngrok-free.app",
+    "http://overslotbaseball.com"
 ]
 
 # Email settings
