@@ -53,7 +53,3 @@ urlpatterns = [
 # Serve media files during development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-# Serve static files in production when not using CDN
-if not settings.DEBUG or getattr(settings, 'SERVE_STATIC_FILES', False):
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
