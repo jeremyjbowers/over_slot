@@ -22,6 +22,24 @@ DATABASES = {
     "default": dj_database_url.parse(DATABASE_URL),
 }
 
+# Session settings for multi-pod deployment
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_COOKIE_AGE = 86400 * 30  # 30 days
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True  # HTTPS only
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_SAVE_EVERY_REQUEST = False  # Only save when session is modified
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# Security settings for production
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
 STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
@@ -59,3 +77,21 @@ CSRF_TRUSTED_ORIGINS = [
     "https://overslotbaseball.com",
     "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
 ]
+
+# Cache configuration - use database for simplicity in multi-pod setup
+# For better performance, consider Redis or Memcached in the future
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'cache_table',
+    }
+}
+
+# CSRF settings for multi-pod deployment
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Production-specific settings
+DEBUG = False  # Turn off debug in production
+DEVELOPMENT_MODE = False

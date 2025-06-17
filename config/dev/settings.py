@@ -57,6 +57,14 @@ MIDDLEWARE = [
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
+# Session settings (dev environment)
+SESSION_COOKIE_AGE = 86400 * 7  # 7 days for dev
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = False  # False for local development (HTTP)
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_SAVE_EVERY_REQUEST = False
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
 ROOT_URLCONF = "overslot.urls"
 
 TEMPLATES = [
