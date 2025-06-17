@@ -17,34 +17,54 @@ from overslot.decorators import subscription_required
 
 def index(request):
     context = {}
-    articles = models.Article.objects.filter(publish=True)
+    # Show unpublished articles only to staff users
+    if request.user.is_staff:
+        articles = models.Article.objects.all()
+        latest_articles = models.Article.objects.all().order_by('-created')[:2]
+    else:
+        articles = models.Article.objects.filter(publish=True)
+        latest_articles = models.Article.objects.filter(publish=True).order_by('-created')[:2]
+    
     # Add active players to each article
     for article in articles:
         article.active_players = article.players.filter(active=True)
     context['articles'] = articles
-    context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False)
+    # Show unpublished rankings only to staff users
+    if request.user.is_staff:
+        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False)
+    else:
+        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False, publish=True)
     
-    # Get the 2 most recent articles and 1 ranking for the hero carousel
-    latest_articles = models.Article.objects.filter(publish=True).order_by('-created')[:2]
+    # Add active players to latest articles
     for article in latest_articles:
         article.active_players = article.players.filter(active=True)
     context['latest_articles'] = latest_articles
-    context['latest_ranking'] = models.Ranking.objects.filter(active=True, is_mock_draft=False).order_by('-created').first()
+    # Show unpublished latest ranking only to staff users
+    if request.user.is_staff:
+        context['latest_ranking'] = models.Ranking.objects.filter(active=True, is_mock_draft=False).order_by('-created').first()
+    else:
+        context['latest_ranking'] = models.Ranking.objects.filter(active=True, is_mock_draft=False, publish=True).order_by('-created').first()
 
     return render(request, "index.html", context)
 
 def articles_list(request):
     context = {}
-    articles = models.Article.objects.filter(publish=True)
+    # Show unpublished articles only to staff users
+    if request.user.is_staff:
+        articles = models.Article.objects.all()
+    else:
+        articles = models.Article.objects.filter(publish=True)
+    
     # Add active players to each article
     for article in articles:
         article.active_players = article.players.filter(active=True)
     context['articles'] = articles
     
-    # Add recent rankings for sidebar
-    context['recent_rankings'] = models.Ranking.objects.filter(
-        active=True
-    ).order_by('-created')[:3]
+    # Add recent rankings for sidebar - show drafts to staff
+    if request.user.is_staff:
+        context['recent_rankings'] = models.Ranking.objects.filter(active=True).order_by('-created')[:3]
+    else:
+        context['recent_rankings'] = models.Ranking.objects.filter(active=True, publish=True).order_by('-created')[:3]
 
     return render(request, "articles_list.html", context)
 
@@ -52,7 +72,12 @@ def articles_list(request):
 @subscription_required
 def articles_detail(request, slug):
     context = {}
-    context['article'] = get_object_or_404(models.Article, slug=slug)
+    # Non-staff users can only access published articles
+    if request.user.is_staff:
+        context['article'] = get_object_or_404(models.Article, slug=slug)
+    else:
+        context['article'] = get_object_or_404(models.Article, slug=slug, publish=True)
+    
     # Filter out inactive players from the article
     context['article'].active_players = context['article'].players.filter(active=True)
 
@@ -61,14 +86,22 @@ def articles_detail(request, slug):
 
 def rankings_list(request):
     context = {}
-    context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False)
+    # Show unpublished rankings only to staff users
+    if request.user.is_staff:
+        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False)
+    else:
+        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False, publish=True)
 
     return render(request, "rankings_list.html", context)
 
 
 def mock_drafts_list(request):
     context = {}
-    context['rankings'] = models.Ranking.objects.filter(is_mock_draft=True)
+    # Show unpublished mock drafts only to staff users
+    if request.user.is_staff:
+        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=True)
+    else:
+        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=True, publish=True)
 
     return render(request, "rankings_list.html", context)
 
@@ -76,7 +109,11 @@ def mock_drafts_list(request):
 @subscription_required
 def rankings_detail(request, slug):
     context = {}
-    ranking = get_object_or_404(models.Ranking, slug=slug)
+    # Non-staff users can only access published rankings
+    if request.user.is_staff:
+        ranking = get_object_or_404(models.Ranking, slug=slug)
+    else:
+        ranking = get_object_or_404(models.Ranking, slug=slug, publish=True)
     context['ranking'] = ranking
     
     # Get all player rankings for this ranking
@@ -122,10 +159,11 @@ def rankings_detail(request, slug):
     context['filter_commitments'] = commitments
     context['filter_states'] = states
     
-    # Add recent articles for sidebar
-    context['recent_articles'] = models.Article.objects.filter(
-        publish=True
-    ).order_by('-created')[:5]
+    # Add recent articles for sidebar - show drafts to staff
+    if request.user.is_staff:
+        context['recent_articles'] = models.Article.objects.all().order_by('-created')[:5]
+    else:
+        context['recent_articles'] = models.Article.objects.filter(publish=True).order_by('-created')[:5]
 
     return render(request, "rankings_detail.html", context)
 
@@ -135,7 +173,11 @@ def players_detail(request, slug):
     context = {}
     context['player'] = get_object_or_404(models.Player, slug=slug, active=True)
     context['rankings'] = models.PlayerRanking.objects.filter(player=context['player'])
-    context['articles'] = models.Article.objects.filter(players=context['player'])
+    # Show unpublished articles only to staff users
+    if request.user.is_staff:
+        context['articles'] = models.Article.objects.filter(players=context['player'])
+    else:
+        context['articles'] = models.Article.objects.filter(players=context['player'], publish=True)
 
     return render(request, "players_detail.html", context)
 

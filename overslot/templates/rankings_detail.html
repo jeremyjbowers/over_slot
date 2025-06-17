@@ -680,6 +680,26 @@
         grid-row: 1;
     }
 }
+
+.draft-badge {
+    display: inline-block;
+    background: #ff6b35;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.25rem;
+    margin-left: 1rem;
+    vertical-align: middle;
+}
+
+.hero-title.has-draft {
+    background: rgba(255, 107, 53, 0.15);
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    border-left: 6px solid #ff6b35;
+    display: inline-block;
+}
 </style>
 
 <div class="hero{% if ranking.featured_image %} hero-with-image{% endif %}"{% if ranking.featured_image %} style="background-image: url('{{ ranking.featured_image.url }}')"{% endif %}>
@@ -687,7 +707,12 @@
     <div class="hero-overlay"></div>
     {% endif %}
     <div class="container">
-        <h1 class="hero-title">{{ ranking }}</h1>
+        <h1 class="hero-title{% if not ranking.publish and user.is_staff %} has-draft{% endif %}">
+            {{ ranking }}
+            {% if not ranking.publish and user.is_staff %}
+            <span class="draft-badge">DRAFT</span>
+            {% endif %}
+        </h1>
         {% if ranking.subhead %}
         <h2 class="hero-subhead">{{ ranking.subhead }}</h2>
         {% endif %}

@@ -146,6 +146,7 @@ class Ranking(BaseModel):
     subhead = models.CharField(max_length=255, blank=True, null=True)
     blurb = models.CharField(max_length=255, blank=True, null=True)
     featured_image = models.ImageField(upload_to='rankings/featured/', blank=True, null=True, help_text="Featured image for the ranking")
+    publish = models.BooleanField(default=False)
     body = ProseEditorField(
         extensions={
             # Core text formatting

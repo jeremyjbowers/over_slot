@@ -247,6 +247,25 @@
     font-size: 0.8rem;
 }
 
+.draft-badge {
+    display: inline-block;
+    background: #ff6b35;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+
+.item-title.has-draft {
+    background: rgba(255, 107, 53, 0.15);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border-left: 4px solid #ff6b35;
+}
+
 @media screen and (max-width: 1024px) {
     .top-players-grid {
         grid-template-columns: repeat(4, 1fr);
@@ -910,7 +929,12 @@
                         </span>
                     </div>
                     <a href="/rankings/{{ ranking.slug }}/">
-                        <h3 class="item-title">{{ ranking }}</h3>
+                        <h3 class="item-title{% if not ranking.publish and user.is_staff %} has-draft{% endif %}">
+                            {{ ranking }}
+                            {% if not ranking.publish and user.is_staff %}
+                            <span class="draft-badge">DRAFT</span>
+                            {% endif %}
+                        </h3>
                     </a>
                     {% if ranking.subhead %}
                     <div class="item-description">{{ ranking.subhead }}</div>
@@ -974,7 +998,12 @@
                         </span>
                     </div>
                     <a href="/articles/{{ article.slug }}/">
-                        <h3 class="item-title">{{ article.headline }}</h3>
+                        <h3 class="item-title{% if not article.publish and user.is_staff %} has-draft{% endif %}">
+                            {{ article.headline }}
+                            {% if not article.publish and user.is_staff %}
+                            <span class="draft-badge">DRAFT</span>
+                            {% endif %}
+                        </h3>
                     </a>
                     {% if article.subhead %}
                     <div class="item-description">{{ article.subhead }}</div>

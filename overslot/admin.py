@@ -131,8 +131,8 @@ class PlayerRankingAdmin(admin.ModelAdmin):
 @admin.register(Ranking)
 class RankingAdmin(admin.ModelAdmin):
     model = Ranking
-    list_display = ["year", "ranking_type", "ranking_length", "is_final"]
-    list_editable = ["ranking_type", "is_final"]
+    list_display = ["year", "ranking_type", "ranking_length", "is_final", "publish"]
+    list_editable = ["ranking_type", "is_final", "publish"]
     fieldsets = (
         (
             "Board details",
@@ -153,6 +153,7 @@ class RankingAdmin(admin.ModelAdmin):
                     "subhead",
                     "blurb",
                     "featured_image",
+                    "publish",
                     "body"
                 ),
             },

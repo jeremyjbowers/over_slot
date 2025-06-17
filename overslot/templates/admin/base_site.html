@@ -46,5 +46,24 @@
 #content {
     margin-bottom: 80px;
 }
+
+/* Django Prose Editor styling - make editor taller */
+.prose-editor {
+    min-height: 300px !important;
+}
+
+.prose-editor .ProseMirror {
+    min-height: 250px !important;
+    padding: 1rem !important;
+}
+
+/* Ensure the editor container has proper height */
+.field-body .prose-editor-wrapper {
+    min-height: 300px;
+}
+
+.field-body .prose-editor-wrapper .prose-editor-content {
+    min-height: 250px;
+}
 </style>
 {% endblock %} 
