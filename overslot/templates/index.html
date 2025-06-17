@@ -78,11 +78,37 @@
     background: var(--dark-surface);
     margin-bottom: 2rem;
     transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
 }
 
 .list-item:hover {
     background: rgba(255, 255, 255, 0.08);
     transform: translateY(-2px);
+}
+
+.list-item-with-image {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.list-item-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        rgba(0, 0, 0, 0.75),
+        rgba(0, 0, 0, 0.6)
+    );
+    z-index: 1;
+}
+
+.list-item-content {
+    position: relative;
+    z-index: 2;
 }
 
 .list-item a {
@@ -864,41 +890,46 @@
                 <span class="count">{{ rankings|length }} Draft Board{% if rankings|length != 1 %}s{% endif %}</span>
             </h2>
             {% for ranking in rankings %}
-            <div class="list-item">
-                <div class="item-meta">
-                    <span class="icon-text">
-                        <span class="icon">
-                            <i class="fas fa-calendar"></i>
+            <div class="list-item{% if ranking.featured_image %} list-item-with-image{% endif %}"{% if ranking.featured_image %} style="background-image: url('{{ ranking.featured_image.url }}')"{% endif %}>
+                {% if ranking.featured_image %}
+                <div class="list-item-overlay"></div>
+                {% endif %}
+                <div class="list-item-content">
+                    <div class="item-meta">
+                        <span class="icon-text">
+                            <span class="icon">
+                                <i class="fas fa-calendar"></i>
+                            </span>
+                            <span>{{ ranking.created|date:"F j, Y" }}</span>
                         </span>
-                        <span>{{ ranking.created|date:"F j, Y" }}</span>
-                    </span>
-                </div>
-                <a href="/rankings/{{ ranking.slug }}/">
-                    <h3 class="item-title">{{ ranking }}</h3>
-                </a>
-                {% if ranking.subhead %}
-                <div class="item-description">{{ ranking.subhead }}</div>
-                {% endif %}
-                {% if ranking.blurb %}
-                <p class="item-description">{{ ranking.blurb }}</p>
-                {% endif %}
-                {% if ranking.get_initial_players %}
-                <div class="top-players">
-                    <div class="top-players-grid">
-                        {% for pr in ranking.get_initial_players|slice:":5" %}
-                        <a href="/players/{{ pr.player.slug }}/" class="player-preview">
-                            <div class="image-wrapper">
-                                <img src="{{ pr.player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
-                                     alt="{{ pr.player.name }}">
-                                <div class="rank-badge">#{{ pr.rank }}</div>
-                            </div>
-                            <p class="player-name">{{ pr.player.name }}</p>
-                            <p class="player-position">{{ pr.player.position }}</p>
-                        </a>
-                        {% endfor %}
                     </div>
+                    <a href="/rankings/{{ ranking.slug }}/">
+                        <h3 class="item-title">{{ ranking }}</h3>
+                    </a>
+                    {% if ranking.subhead %}
+                    <div class="item-description">{{ ranking.subhead }}</div>
+                    {% endif %}
+                    {% if ranking.blurb %}
+                    <p class="item-description">{{ ranking.blurb }}</p>
+                    {% endif %}
+                    {% if ranking.get_initial_players %}
+                    <div class="top-players">
+                        <div class="top-players-grid">
+                            {% for pr in ranking.get_initial_players|slice:":5" %}
+                            <a href="/players/{{ pr.player.slug }}/" class="player-preview">
+                                <div class="image-wrapper">
+                                    <img src="{{ pr.player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
+                                         alt="{{ pr.player.name }}">
+                                    <div class="rank-badge">#{{ pr.rank }}</div>
+                                </div>
+                                <p class="player-name">{{ pr.player.name }}</p>
+                                <p class="player-position">{{ pr.player.position }}</p>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -913,43 +944,48 @@
                 <span class="count">{{ articles|length }} Article{% if articles|length != 1 %}s{% endif %}</span>
             </h2>
             {% for article in articles %}
-            <div class="list-item">
-                <div class="item-meta">
-                    {% if article.authors.all %}
-                    <span class="icon-text has-text-info">
-                        <span class="icon">
-                            <i class="fas fa-users"></i>
-                        </span>
-                        <span class="has-text-weight-medium">
-                            {% for author in article.authors.all %}{{ author.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                        </span>
-                    </span>
-                    {% endif %}
-                    <span class="icon-text">
-                        <span class="icon">
-                            <i class="fas fa-calendar"></i>
-                        </span>
-                        <span>{{ article.created|date:"F j, Y" }}</span>
-                    </span>
-                </div>
-                <a href="/articles/{{ article.slug }}/">
-                    <h3 class="item-title">{{ article.headline }}</h3>
-                </a>
-                {% if article.subhead %}
-                <div class="item-description">{{ article.subhead }}</div>
+            <div class="list-item{% if article.featured_image %} list-item-with-image{% endif %}"{% if article.featured_image %} style="background-image: url('{{ article.featured_image.url }}')"{% endif %}>
+                {% if article.featured_image %}
+                <div class="list-item-overlay"></div>
                 {% endif %}
-                {% if article.blurb %}
-                <p class="item-description">{{ article.blurb }}</p>
-                {% endif %}
-                {% if article.active_players %}
-                <div class="player-tags">
-                    {% for player in article.active_players|slice:":6" %}
-                    <a href="/players/{{ player.slug }}/" class="player-tag">
-                        {{ player.name }}
+                <div class="list-item-content">
+                    <div class="item-meta">
+                        {% if article.authors.all %}
+                        <span class="icon-text has-text-info">
+                            <span class="icon">
+                                <i class="fas fa-users"></i>
+                            </span>
+                            <span class="has-text-weight-medium">
+                                {% for author in article.authors.all %}{{ author.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                            </span>
+                        </span>
+                        {% endif %}
+                        <span class="icon-text">
+                            <span class="icon">
+                                <i class="fas fa-calendar"></i>
+                            </span>
+                            <span>{{ article.created|date:"F j, Y" }}</span>
+                        </span>
+                    </div>
+                    <a href="/articles/{{ article.slug }}/">
+                        <h3 class="item-title">{{ article.headline }}</h3>
                     </a>
-                    {% endfor %}
+                    {% if article.subhead %}
+                    <div class="item-description">{{ article.subhead }}</div>
+                    {% endif %}
+                    {% if article.blurb %}
+                    <p class="item-description">{{ article.blurb }}</p>
+                    {% endif %}
+                    {% if article.active_players %}
+                    <div class="player-tags">
+                        {% for player in article.active_players|slice:":6" %}
+                        <a href="/players/{{ player.slug }}/" class="player-tag">
+                            {{ player.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
             {% endfor %}
         </div>
