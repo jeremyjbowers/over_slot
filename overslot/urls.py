@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.urls import include, path
 from django.contrib.auth.views import LogoutView
+from django.conf import settings
+from django.conf.urls.static import static
 
 from overslot import views, subscription_views, duplicate_views
 from . import auth
@@ -47,3 +49,7 @@ urlpatterns = [
     path('magic-link/verify/<str:token>/', auth.magic_link_verify_view, name='magic_link_verify'),
 
 ]
+
+# Serve media files during development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

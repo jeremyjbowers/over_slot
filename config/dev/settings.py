@@ -149,6 +149,10 @@ SESAME_INVALIDATE_ON_PASSWORD_CHANGE = False  # Prevent password changes from af
 STATIC_URL = "/static/"
 STATIC_ROOT = "static/"
 
+# MEDIA FILES
+MEDIA_URL = "/media/"
+MEDIA_ROOT = "media/"
+
 AWS_S3_REGION_NAME = "nyc3"
 AWS_S3_ENDPOINT_URL = f"https://{AWS_S3_REGION_NAME}.digitaloceanspaces.com"
 AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', default=None)

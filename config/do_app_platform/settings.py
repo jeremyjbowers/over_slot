@@ -25,6 +25,10 @@ DATABASES = {
 STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
 STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
+# Media files (uploads) configuration
+MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
 INSTALLED_APPS = INSTALLED_APPS + ["storages"]
 
 # Production-specific CORS settings

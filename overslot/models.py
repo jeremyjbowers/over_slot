@@ -145,6 +145,7 @@ class Ranking(BaseModel):
     regenerate_slug = models.BooleanField(default=False)
     subhead = models.CharField(max_length=255, blank=True, null=True)
     blurb = models.CharField(max_length=255, blank=True, null=True)
+    featured_image = models.ImageField(upload_to='rankings/featured/', blank=True, null=True, help_text="Featured image for the ranking")
     body = ProseEditorField(
         extensions={
             # Core text formatting
@@ -313,6 +314,7 @@ class Article(BaseModel):
     headline = models.CharField(max_length=255, blank=True, null=True)
     subhead = models.CharField(max_length=255, blank=True, null=True)
     blurb = models.CharField(max_length=255, blank=True, null=True)
+    featured_image = models.ImageField(upload_to='articles/featured/', blank=True, null=True, help_text="Featured image for the article")
 
     players = models.ManyToManyField(Player, blank=True)
     authors = models.ManyToManyField(Author, blank=True, related_name='articles')
