@@ -21,7 +21,6 @@ class Command(BaseCommand):
 
             return None
 
-        # for year in ["2024", "2025"]:
         for year in ["2020", "2021", "2022", "2023", "2024", "2025"]:
             print(year)
             sheet = utils.get_sheet("15kLgnYACmlcrYV3QI5TECb2Vzkz-9jkrc8kc_IG6rkE", f"{year}!A:Z", value_cutoff=None)

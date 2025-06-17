@@ -24,6 +24,8 @@ urlpatterns = [
     path("rankings/", views.rankings_list, name="rankings_list"),
     path("rankings/<slug:slug>/", views.rankings_detail, name="rankings_detail"),
 
+    path("mock-drafts/", views.mock_drafts_list, name="mock_drafts_list"),
+
     path("players/<slug:slug>/", views.players_detail, name="players_detail"),
 
     path("", views.index, name="index"),

@@ -22,14 +22,14 @@ def index(request):
     for article in articles:
         article.active_players = article.players.filter(active=True)
     context['articles'] = articles
-    context['rankings'] = models.Ranking.objects.all()
+    context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False)
     
     # Get the 2 most recent articles and 1 ranking for the hero carousel
     latest_articles = models.Article.objects.filter(publish=True).order_by('-created')[:2]
     for article in latest_articles:
         article.active_players = article.players.filter(active=True)
     context['latest_articles'] = latest_articles
-    context['latest_ranking'] = models.Ranking.objects.filter(active=True).order_by('-created').first()
+    context['latest_ranking'] = models.Ranking.objects.filter(active=True, is_mock_draft=False).order_by('-created').first()
 
     return render(request, "index.html", context)
 
@@ -61,7 +61,14 @@ def articles_detail(request, slug):
 
 def rankings_list(request):
     context = {}
-    context['rankings'] = models.Ranking.objects.all()
+    context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False)
+
+    return render(request, "rankings_list.html", context)
+
+
+def mock_drafts_list(request):
+    context = {}
+    context['rankings'] = models.Ranking.objects.filter(is_mock_draft=True)
 
     return render(request, "rankings_list.html", context)
 
