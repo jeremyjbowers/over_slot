@@ -22,10 +22,12 @@ DATABASES = {
     "default": dj_database_url.parse(DATABASE_URL),
 }
 
-STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
-STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+# Serve static files locally to avoid CORS issues with admin
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+SERVE_STATIC_FILES = True
 
-# Media files (uploads) configuration
+# Media files (uploads) configuration - keep these on CDN
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
 DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
