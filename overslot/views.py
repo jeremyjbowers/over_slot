@@ -19,11 +19,11 @@ def index(request):
     context = {}
     # Show unpublished articles only to staff users
     if request.user.is_staff:
-        articles = models.Article.objects.all()
-        latest_articles = models.Article.objects.all().order_by('-created')[:2]
+        articles = models.Article.objects.filter(is_carousel=True)
+        latest_articles = models.Article.objects.filter(is_carousel=True).order_by('-created')[:2]
     else:
-        articles = models.Article.objects.filter(publish=True)
-        latest_articles = models.Article.objects.filter(publish=True).order_by('-created')[:2]
+        articles = models.Article.objects.filter(publish=True, is_carousel=True)
+        latest_articles = models.Article.objects.filter(publish=True, is_carousel=True).order_by('-created')[:2]
     
     # Add active players to each article
     for article in articles:
@@ -31,9 +31,9 @@ def index(request):
     context['articles'] = articles
     # Show unpublished rankings only to staff users
     if request.user.is_staff:
-        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False)
+        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False, is_carousel=True)
     else:
-        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False, publish=True)
+        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False, publish=True, is_carousel=True)
     
     # Add active players to latest articles
     for article in latest_articles:
@@ -41,9 +41,9 @@ def index(request):
     context['latest_articles'] = latest_articles
     # Show unpublished latest ranking only to staff users
     if request.user.is_staff:
-        context['latest_ranking'] = models.Ranking.objects.filter(active=True, is_mock_draft=False).order_by('-created').first()
+        context['latest_ranking'] = models.Ranking.objects.filter(active=True, is_mock_draft=False, is_carousel=True).order_by('-created').first()
     else:
-        context['latest_ranking'] = models.Ranking.objects.filter(active=True, is_mock_draft=False, publish=True).order_by('-created').first()
+        context['latest_ranking'] = models.Ranking.objects.filter(active=True, is_mock_draft=False, publish=True, is_carousel=True).order_by('-created').first()
 
     return render(request, "index.html", context)
 

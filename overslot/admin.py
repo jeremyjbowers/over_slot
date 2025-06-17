@@ -58,9 +58,9 @@ class AuthorAdmin(admin.ModelAdmin):
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
     model = Article
-    list_display = ["headline", "subhead", "blurb", "publish"]
+    list_display = ["headline", "subhead", "blurb", "publish", "is_carousel"]
     search_fields = ["headline", "body", "subhead", "blurb"]
-    list_editable = ["subhead", "blurb", "publish"]
+    list_editable = ["publish", "is_carousel"]
     autocomplete_fields = ["players", "authors"]
 
 
@@ -131,8 +131,8 @@ class PlayerRankingAdmin(admin.ModelAdmin):
 @admin.register(Ranking)
 class RankingAdmin(admin.ModelAdmin):
     model = Ranking
-    list_display = ["year", "ranking_type", "ranking_length", "is_final", "publish"]
-    list_editable = ["ranking_type", "is_final", "publish"]
+    list_display = ["year", "ranking_length", "publish", "is_carousel"]
+    list_editable = ["publish", "is_carousel"]
     fieldsets = (
         (
             "Board details",

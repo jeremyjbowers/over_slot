@@ -147,6 +147,7 @@ class Ranking(BaseModel):
     blurb = models.CharField(max_length=255, blank=True, null=True)
     featured_image = models.ImageField(upload_to='rankings/featured/', blank=True, null=True, help_text="Featured image for the ranking")
     publish = models.BooleanField(default=False)
+    is_carousel = models.BooleanField(default=False, help_text="Display in homepage carousel")
     body = ProseEditorField(
         extensions={
             # Core text formatting
@@ -352,6 +353,7 @@ class Article(BaseModel):
     regenerate_slug = models.BooleanField(default=False)
 
     publish = models.BooleanField(default=False)
+    is_carousel = models.BooleanField(default=False, help_text="Display in homepage carousel")
 
     class Meta:
         ordering = ["-created"]
