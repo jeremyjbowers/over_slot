@@ -187,6 +187,9 @@
                         </div>
                         <p class="player-name">{{ pr.player.name }}</p>
                         <p class="player-position">{{ pr.player.position }}</p>
+                        {% if pr.commitment %}
+                        <p class="player-commitment" style="color: var(--theme-primary); font-size: 0.75rem; font-weight: 500; margin-top: 0.25rem;">{{ pr.commitment }}</p>
+                        {% endif %}
                     </a>
                     {% endfor %}
                 </div>

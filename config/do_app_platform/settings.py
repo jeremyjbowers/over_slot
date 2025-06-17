@@ -26,3 +26,32 @@ STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
 STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
 INSTALLED_APPS = INSTALLED_APPS + ["storages"]
+
+# Production-specific CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
+    "https://overslot-prod-wxrbl.ondigitalocean.app",
+    "https://overslotbaseball.com",
+]
+
+CORS_ALLOW_ALL_ORIGINS = False
+
+# Allow specific headers for CORS
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# Update CSRF trusted origins for production
+CSRF_TRUSTED_ORIGINS = [
+    "https://overslot-prod-wxrbl.ondigitalocean.app",
+    "https://overslotbaseball.com",
+    "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
+]

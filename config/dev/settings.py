@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "django.contrib.staticfiles",
     "django.contrib.sites",  # Required for django-allauth
+    "corsheaders",
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -158,6 +160,23 @@ AWS_LOCATION = "static"
 
 CORS_ALLOWED_ORIGINS = [
     "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
+    "https://overslot-prod-wxrbl.ondigitalocean.app",
+    "https://overslotbaseball.com",
+]
+
+CORS_ALLOW_ALL_ORIGINS = False
+
+# Allow specific headers for CORS
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
