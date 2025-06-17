@@ -174,6 +174,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
     "https://overslot-prod-wxrbl.ondigitalocean.app",
     "https://overslotbaseball.com",
+    "https://www.overslotbaseball.com",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = False
@@ -195,6 +196,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://overslot-prod-wxrbl.ondigitalocean.app",
     "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
     "https://ruling-badger-really.ngrok-free.app",
+    "https://overslotbaseball.com",
+    "https://www.overslotbaseball.com",
     "http://overslotbaseball.com"
 ]
 

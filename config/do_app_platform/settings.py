@@ -12,7 +12,11 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", None)
 
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "overslotbaseball.com",
+    "www.overslotbaseball.com", 
+    "overslot-prod-wxrbl.ondigitalocean.app",
+]
 
 DEVELOPMENT_MODE = True
 
@@ -28,6 +32,7 @@ SESSION_COOKIE_AGE = 86400 * 30  # 30 days
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = True  # HTTPS only
 SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_DOMAIN = '.overslotbaseball.com'  # Works for www.overslotbaseball.com and overslotbaseball.com
 SESSION_SAVE_EVERY_REQUEST = False  # Only save when session is modified
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
@@ -54,6 +59,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
     "https://overslot-prod-wxrbl.ondigitalocean.app",
     "https://overslotbaseball.com",
+    "https://www.overslotbaseball.com",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = False
@@ -75,6 +81,7 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     "https://overslot-prod-wxrbl.ondigitalocean.app",
     "https://overslotbaseball.com",
+    "https://www.overslotbaseball.com",
     "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
 ]
 
@@ -91,7 +98,23 @@ CACHES = {
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_DOMAIN = '.overslotbaseball.com'  # Match session cookie domain
 
 # Production-specific settings
 DEBUG = False  # Turn off debug in production
 DEVELOPMENT_MODE = False
+
+# Email settings for production
+MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY', None)
+MAILGUN_DOMAIN = os.environ.get('MAILGUN_DOMAIN', 'overslotbaseball.com')
+
+# Email backend configuration for production
+if MAILGUN_API_KEY and MAILGUN_DOMAIN:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Use actual email in production
+    DEFAULT_FROM_EMAIL = f'Over Slot <noreply@{MAILGUN_DOMAIN}>'
+    SERVER_EMAIL = DEFAULT_FROM_EMAIL
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Fallback
+
+# Site configuration for django.contrib.sites
+SITE_ID = 1
