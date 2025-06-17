@@ -131,7 +131,6 @@ class PlayerRankingAdmin(admin.ModelAdmin):
 @admin.register(Ranking)
 class RankingAdmin(admin.ModelAdmin):
     model = Ranking
-    inlines = [PlayerRankingInline]
     list_display = ["year", "ranking_type", "ranking_length", "is_final"]
     list_editable = ["ranking_type", "is_final"]
     fieldsets = (
@@ -153,6 +152,7 @@ class RankingAdmin(admin.ModelAdmin):
                     "headline",
                     "subhead",
                     "blurb",
+                    "featured_image",
                     "body"
                 ),
             },
