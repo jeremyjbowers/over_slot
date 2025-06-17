@@ -70,35 +70,7 @@
     margin-top: 1rem;
 }
 
-.toggle-all-button {
-    background: var(--dark-surface);
-    color: var(--theme-primary);
-    border: 1px solid var(--dark-border);
-    border-radius: 4px;
-    padding: 0.5rem 1rem;
-    font-family: var(--font-sans);
-    font-size: var(--text-sm);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
 
-.toggle-all-button:hover {
-    background: var(--dark-surface-hover);
-    border-color: var(--theme-primary);
-}
-
-.toggle-all-button .icon {
-    font-size: 0.75rem;
-    transition: transform 0.2s ease;
-}
-
-.toggle-all-button[aria-expanded="true"] .icon {
-    transform: rotate(180deg);
-}
 
 .hero .container {
     max-width: 1000px;
@@ -527,6 +499,159 @@
         font-size: var(--text-base);
     }
 }
+
+/* Controls Toolbar Styles */
+.controls-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.filters-container {
+    flex: 1;
+}
+
+.filters-grid {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.filter-select {
+    background: var(--dark-bg);
+    border: 1px solid var(--dark-border);
+    border-radius: 0.5rem;
+    color: var(--dark-text);
+    padding: 0.5rem 1rem 0.5rem 0.75rem;
+    font-size: var(--text-sm);
+    min-width: 120px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb), 0.1);
+}
+
+.filter-select:hover {
+    border-color: var(--theme-primary);
+}
+
+.clear-filters-btn {
+    background: var(--dark-bg);
+    border: 1px solid var(--dark-border);
+    border-radius: 0.5rem;
+    color: var(--dark-text-secondary);
+    padding: 0.5rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clear-filters-btn:hover {
+    background: var(--dark-surface-hover);
+    border-color: var(--theme-primary);
+    color: var(--theme-primary);
+}
+
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+}
+
+.toggle-all-button {
+    background: var(--dark-bg);
+    color: var(--theme-primary);
+    border: 1px solid var(--dark-border);
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toggle-all-button:hover {
+    background: var(--dark-surface-hover);
+    border-color: var(--theme-primary);
+}
+
+.toggle-all-button .icon {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+.toggle-all-button[aria-expanded="true"] .icon {
+    transform: rotate(180deg);
+}
+
+.player-cards-header {
+    margin-bottom: 0;
+}
+
+@media screen and (max-width: 1024px) {
+    .controls-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .filters-grid {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .filter-select {
+        min-width: 100px;
+        flex: 1;
+    }
+    
+    .toolbar-actions {
+        justify-content: center;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .controls-toolbar {
+        padding: 0.75rem;
+    }
+    
+    .filters-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 40px;
+        gap: 0.5rem;
+    }
+    
+    .filter-select {
+        min-width: unset;
+    }
+    
+    .filter-select:nth-child(3),
+    .filter-select:nth-child(4) {
+        grid-column: 1 / 3;
+    }
+    
+    .clear-filters-btn {
+        grid-column: 3;
+        grid-row: 1;
+    }
+}
 </style>
 
 <div class="hero">
@@ -630,16 +755,60 @@
         <!-- Full Content for Subscribers -->
         <div class="player-cards">
             <div class="player-cards-header">
-                <button class="toggle-all-button" aria-expanded="false">
-                    <span>Expand All Scouting Reports</span>
-                    <span class="icon">
-                        <i class="fas fa-chevron-down"></i>
-                    </span>
-                </button>
+                <div class="controls-toolbar">
+                    <div class="filters-container">
+                        <div class="filters-grid">
+                            <select id="position-filter" class="filter-select">
+                                <option value="">Position</option>
+                                {% for position in filter_positions %}
+                                <option value="{{ position }}">{{ position }}</option>
+                                {% endfor %}
+                            </select>
+                            
+                            <select id="school-filter" class="filter-select">
+                                <option value="">School</option>
+                                {% for school in filter_schools %}
+                                <option value="{{ school }}">{{ school }}</option>
+                                {% endfor %}
+                            </select>
+                            
+                            <select id="commitment-filter" class="filter-select">
+                                <option value="">Commitment</option>
+                                {% for commitment in filter_commitments %}
+                                <option value="{{ commitment }}">{{ commitment }}</option>
+                                {% endfor %}
+                            </select>
+                            
+                            <select id="state-filter" class="filter-select">
+                                <option value="">State</option>
+                                {% for state in filter_states %}
+                                <option value="{{ state }}">{{ state }}</option>
+                                {% endfor %}
+                            </select>
+                            
+                            <button id="clear-filters" class="clear-filters-btn">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="toolbar-actions">
+                        <button class="toggle-all-button" aria-expanded="false">
+                            <span>Expand All</span>
+                            <span class="icon">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </button>
+                    </div>
+                </div>
             </div>
     
     {% for pr in ranking.get_playerrankings %}
-    <div id="{{ pr.player.slug }}" class="player-card">
+    <div id="{{ pr.player.slug }}" class="player-card" 
+         data-position="{{ pr.position|default:'' }}"
+         data-school="{{ pr.school|default:'' }}"
+         data-commitment="{{ pr.commitment|default:'' }}"
+         data-state="{{ pr.player.state|default:'' }}">
         <div class="player-rank-accent">
             {{ pr.rank }}
         </div>
@@ -748,6 +917,71 @@ function toggleContent(button) {
     icon.style.transform = !expanded ? 'rotate(180deg)' : '';
 }
 
+function filterPlayers() {
+    const positionFilter = document.getElementById('position-filter')?.value || '';
+    const schoolFilter = document.getElementById('school-filter')?.value || '';
+    const commitmentFilter = document.getElementById('commitment-filter')?.value || '';
+    const stateFilter = document.getElementById('state-filter')?.value || '';
+    
+    const playerCards = document.querySelectorAll('.player-card');
+    let visibleCount = 0;
+    
+    // Position mapping for intelligent matching
+    const positionMapping = [
+        ['P', ['P', 'RHP', 'LHP']],
+        ['C', ['C']],
+        ['1B', ['1B']],
+        ['2B', ['2B']],
+        ['3B', ['3B']],
+        ['SS', ['SS']],
+        ['OF', ['OF', 'LF', 'CF', 'RF']],
+        ['INF', ['INF']],
+        ['UTL', ['UTL', 'UTIL']]
+    ];
+    
+    playerCards.forEach(card => {
+        const position = card.dataset.position || '';
+        const school = card.dataset.school || '';
+        const commitment = card.dataset.commitment || '';
+        const state = card.dataset.state || '';
+        
+        // Smart position matching
+        let positionMatch = !positionFilter;
+        if (positionFilter && position) {
+            const mapping = positionMapping.find(([pos, variants]) => pos === positionFilter);
+            const variants = mapping ? mapping[1] : [positionFilter];
+            positionMatch = variants.some(variant => position.toUpperCase().includes(variant));
+        }
+        
+        const schoolMatch = !schoolFilter || school === schoolFilter;
+        const commitmentMatch = !commitmentFilter || commitment === commitmentFilter;
+        const stateMatch = !stateFilter || state === stateFilter;
+        
+        const shouldShow = positionMatch && schoolMatch && commitmentMatch && stateMatch;
+        
+        if (shouldShow) {
+            card.style.display = '';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    // Update any visible count display if needed
+    console.log(`Showing ${visibleCount} of ${playerCards.length} players`);
+}
+
+function clearAllFilters() {
+    const filters = ['position-filter', 'school-filter', 'commitment-filter', 'state-filter'];
+    filters.forEach(filterId => {
+        const element = document.getElementById(filterId);
+        if (element) {
+            element.value = '';
+        }
+    });
+    filterPlayers();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Individual toggle buttons (excluding ranking body)
     document.querySelectorAll('.player-card .toggle-button').forEach(button => {
@@ -759,7 +993,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (toggleAllButton) {
         toggleAllButton.addEventListener('click', () => {
             const expanded = toggleAllButton.getAttribute('aria-expanded') === 'true';
-            const toggleButtons = document.querySelectorAll('.player-card .toggle-button');
+            const toggleButtons = document.querySelectorAll('.player-card:not([style*="display: none"]) .toggle-button');
             
             toggleButtons.forEach(button => {
                 const contentId = button.getAttribute('data-content');
@@ -775,10 +1009,25 @@ document.addEventListener('DOMContentLoaded', () => {
             
             toggleAllButton.setAttribute('aria-expanded', !expanded);
             toggleAllButton.querySelector('span:not(.icon)').textContent = 
-                expanded ? 'Expand All Scouting Reports' : 'Collapse All Scouting Reports';
+                expanded ? 'Expand All' : 'Collapse All';
             toggleAllButton.querySelector('.icon').style.transform = 
                 !expanded ? 'rotate(180deg)' : '';
         });
+    }
+    
+    // Filter event listeners
+    const filters = ['position-filter', 'school-filter', 'commitment-filter', 'state-filter'];
+    filters.forEach(filterId => {
+        const element = document.getElementById(filterId);
+        if (element) {
+            element.addEventListener('change', filterPlayers);
+        }
+    });
+    
+    // Clear filters button
+    const clearButton = document.getElementById('clear-filters');
+    if (clearButton) {
+        clearButton.addEventListener('click', clearAllFilters);
     }
 });
 </script>
