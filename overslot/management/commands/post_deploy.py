@@ -9,10 +9,5 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         call_command('migrate')
         call_command('collectstatic', '--noinput')
-        
-        # Set up cache table for multi-pod deployment
-        try:
-            call_command('createcachetable')
-            self.stdout.write('Cache table created/verified')
-        except Exception as e:
-            self.stdout.write(f'Cache table setup: {e}')
+        call_command('initial_load_carryingtools')
+        call_command('sheet_load_rankings', '--clear')

@@ -134,6 +134,25 @@
     color: var(--theme-primary);
 }
 
+/* Video link label styling */
+.video-label {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.video-meet {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    color: var(--dark-text-muted);
+}
+
+.video-name {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--theme-primary);
+}
+
 .player-info-card {
     background: var(--dark-surface);
     border: 1px solid var(--dark-border);
@@ -356,6 +375,11 @@
     position: relative;
     font-family: var(--font-serif);
     line-height: var(--leading-relaxed);
+}
+
+/* Added spacing between paragraphs within scouting reports */
+.scouting-report p {
+    margin-bottom: 1.25rem;
 }
 
 .scouting-report-preview {
@@ -627,7 +651,10 @@ body {
                 <span class="icon">
                     <i class="fas fa-video"></i>
                 </span>
-                <span>Watch Highlights</span>
+                <span class="video-label">
+                    <span class="video-meet">Meet</span>
+                    <span class="video-name">{{ player.name }}</span>
+                </span>
             </a>
             {% endif %}
         </div>

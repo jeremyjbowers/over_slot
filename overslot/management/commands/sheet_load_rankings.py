@@ -5,11 +5,48 @@ from overslot import models, utils
 
 
 class Command(BaseCommand):
-    def handle(self, *args, **options):
+    help = 'Load rankings, players and player rankings from Google Sheets'
 
-        # models.Player.objects.all().delete()
-        # models.PlayerRanking.objects.all().delete()
-        # models.Ranking.objects.all().delete()
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--clear',
+            action='store_true',
+            help='Clear all existing players, rankings, and player rankings before loading (DESTRUCTIVE)',
+        )
+
+    def handle(self, *args, **options):
+        # Only delete if explicitly requested
+        if options['clear']:
+            self.stdout.write(self.style.WARNING('DESTRUCTIVE MODE: Clearing all existing data...'))
+            models.Player.objects.all().delete()
+            models.PlayerRanking.objects.all().delete()
+            models.Ranking.objects.all().delete()
+            self.stdout.write(self.style.SUCCESS('Cleared existing data'))
+        else:
+            self.stdout.write('Running in non-destructive mode. Use --clear to delete existing data.')
+
+        def get_primary_player(player):
+            """
+            Check if this player has been merged into another player.
+            If so, return the primary player. Otherwise, return the original player.
+            """
+            # Check if this player was merged into another (it would be inactive)
+            if not player.active:
+                # Look for a merge decision where this player was the secondary
+                merge_decision = models.DuplicateDecision.objects.filter(
+                    decision='merged',
+                    primary_player__isnull=False
+                ).filter(
+                    models.Q(player1=player) | models.Q(player2=player)
+                ).exclude(
+                    primary_player=player  # Don't match if this player was the primary
+                ).first()
+                
+                if merge_decision and merge_decision.primary_player.active:
+                    print(f"  → Player {player.name} was merged into {merge_decision.primary_player.name}")
+                    return merge_decision.primary_player
+            
+            return player
 
         def transform_level(level):
             if level:
@@ -24,14 +61,19 @@ class Command(BaseCommand):
         for year in ["2020", "2021", "2022", "2023", "2024", "2025"]:
             print(year)
             sheet = utils.get_sheet("15kLgnYACmlcrYV3QI5TECb2Vzkz-9jkrc8kc_IG6rkE", f"{year}!A:Z", value_cutoff=None)
-            r, r_created = models.Ranking.objects.get_or_create(year=year, ranking_type=None, ranking_length=len(sheet), is_draft=True, is_final=True)
+            r, r_created = models.Ranking.objects.get_or_create(year=year, ranking_type=None, is_draft=True, is_final=True)
+            r.ranking_length = len(sheet)
+            r.save()
 
             for row in sheet:
                 # player object
                 p, created = models.Player.objects.get_or_create(name=row['name'], position = row['position'])
+                
+                # Check if this player has been merged into another player
+                p = get_primary_player(p)
+                
                 p.school=row.get('school')
 
-                print(row['name'], row.get('bat_throw'))
                 if row.get('bat_throw', None):
                     
                     if "-" in row['bat_throw']:
@@ -66,6 +108,39 @@ class Command(BaseCommand):
                 pr.raw_carrying_tools = row.get('carrying_tool', None)
                 pr.role = row.get('role', None)
                 pr.risk = row.get('risk', None)
-                pr.scouting_report = row.get('blurb', None)
+                pr.scouting_report = ''  # Will set below after processing blurb
+
+                # Save now so we can work with M2M relationships
+                pr.save()
+
+                # Process carrying tools
+                pr.carrying_tools.clear()
+                raw_tools = pr.raw_carrying_tools
+                if raw_tools:
+                    for line in str(raw_tools).splitlines():
+                        if not line.strip():
+                            continue
+                        if ":" in line:
+                            tool_part, score_part = line.split(":", 1)
+                            tool_name = tool_part.strip()
+                            score_val = score_part.strip()
+                            if tool_name and score_val:
+                                ct_obj = models.PlayerRankingCarryingTool.objects.filter(tool=tool_name, score=score_val).first()
+                                if ct_obj:
+                                    pr.carrying_tools.add(ct_obj)
+                                else:
+                                    print(f"Warning: Carrying tool '{tool_name}:{score_val}' not found for player {p.name}")
+
+                # Update scouting report with formatted blurb
+                blurb = row.get('blurb', None)
+                if blurb:
+                    paragraphs = []
+                    for paragraph in blurb.split('\n\n'):
+                        if paragraph.strip():
+                            paragraph_html = paragraph.strip().replace('\n', '<br>')
+                            paragraphs.append(f'<p>{paragraph_html}</p>')
+                    pr.scouting_report = ''.join(paragraphs) if paragraphs else blurb
+                else:
+                    pr.scouting_report = None
 
                 pr.save()

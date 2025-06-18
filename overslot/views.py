@@ -17,33 +17,42 @@ from overslot.decorators import subscription_required
 
 def index(request):
     context = {}
-    # Show unpublished articles only to staff users
+    # Carousel content - show unpublished articles only to staff users
     if request.user.is_staff:
-        articles = models.Article.objects.filter(is_carousel=True)
+        carousel_articles = models.Article.objects.filter(is_carousel=True)
         latest_articles = models.Article.objects.filter(is_carousel=True).order_by('-created')[:2]
     else:
-        articles = models.Article.objects.filter(publish=True, is_carousel=True)
+        carousel_articles = models.Article.objects.filter(publish=True, is_carousel=True)
         latest_articles = models.Article.objects.filter(publish=True, is_carousel=True).order_by('-created')[:2]
     
-    # Add active players to each article
-    for article in articles:
+    # Add active players to carousel articles
+    for article in carousel_articles:
         article.active_players = article.players.filter(active=True)
-    context['articles'] = articles
-    # Show unpublished rankings only to staff users
-    if request.user.is_staff:
-        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False, is_carousel=True)
-    else:
-        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False, publish=True, is_carousel=True)
     
     # Add active players to latest articles
     for article in latest_articles:
         article.active_players = article.players.filter(active=True)
     context['latest_articles'] = latest_articles
-    # Show unpublished latest ranking only to staff users
+    
+    # Carousel rankings - show unpublished rankings only to staff users
     if request.user.is_staff:
+        carousel_rankings = models.Ranking.objects.filter(is_mock_draft=False, is_carousel=True)
         context['latest_ranking'] = models.Ranking.objects.filter(active=True, is_mock_draft=False, is_carousel=True).order_by('-created').first()
     else:
+        carousel_rankings = models.Ranking.objects.filter(is_mock_draft=False, publish=True, is_carousel=True)
         context['latest_ranking'] = models.Ranking.objects.filter(active=True, is_mock_draft=False, publish=True, is_carousel=True).order_by('-created').first()
+    
+    # Content lists below carousel - last 10 regardless of carousel flag
+    if request.user.is_staff:
+        context['articles'] = models.Article.objects.all().order_by('-created')[:10]
+        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False).order_by('-created')[:10]
+    else:
+        context['articles'] = models.Article.objects.filter(publish=True).order_by('-created')[:10]
+        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False, publish=True).order_by('-created')[:10]
+    
+    # Add active players to content articles
+    for article in context['articles']:
+        article.active_players = article.players.filter(active=True)
 
     return render(request, "index.html", context)
 

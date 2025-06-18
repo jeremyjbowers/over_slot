@@ -5,6 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from overslot import views, subscription_views, duplicate_views
+from overslot.admin import admin_site
 from . import auth
 
 urlpatterns = [
@@ -18,7 +19,7 @@ urlpatterns = [
     path('admin/duplicates/search/', duplicate_views.search_duplicates, name='search_duplicates'),
     path('admin/duplicates/check/<uuid:player1_uuid>/<uuid:player2_uuid>/', duplicate_views.manual_duplicate_check, name='manual_duplicate_check'),
 
-    path("admin/", admin.site.urls),
+    path("admin/", admin_site.urls),
 
     path("articles/", views.articles_list, name="articles_list"),
     path("articles/<slug:slug>/", views.articles_detail, name="articles_detail"),
