@@ -6,6 +6,15 @@ import dj_database_url
 
 from config.dev.settings import *
 
+# Override AWS settings for production to ensure they're properly configured
+AWS_S3_REGION_NAME = "nyc3"
+AWS_S3_ENDPOINT_URL = f"https://{AWS_S3_REGION_NAME}.digitaloceanspaces.com"
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+AWS_DEFAULT_ACL = "public-read"
+AWS_STORAGE_BUCKET_NAME = "the-over-slot"
+AWS_S3_CUSTOM_DOMAIN = "the-over-slot.nyc3.cdn.digitaloceanspaces.com"
+
 # Custom storage classes for separating static and media files
 from storages.backends.s3boto3 import S3Boto3Storage
 
@@ -56,6 +65,14 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# AWS S3 / DigitalOcean Spaces additional settings
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+AWS_PRELOAD_METADATA = True
+AWS_QUERYSTRING_AUTH = False
+AWS_S3_FILE_OVERWRITE = False
 
 # Static files configuration
 STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
