@@ -21,11 +21,33 @@ from storages.backends.s3boto3 import S3Boto3Storage
 class StaticStorage(S3Boto3Storage):
     location = 'static'
     default_acl = 'public-read'
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update({
+            'access_key': AWS_ACCESS_KEY_ID,
+            'secret_key': AWS_SECRET_ACCESS_KEY,
+            'bucket_name': AWS_STORAGE_BUCKET_NAME,
+            'endpoint_url': AWS_S3_ENDPOINT_URL,
+            'region_name': AWS_S3_REGION_NAME,
+            'custom_domain': AWS_S3_CUSTOM_DOMAIN,
+        })
+        super().__init__(*args, **kwargs)
 
 class MediaStorage(S3Boto3Storage):
     location = 'media'
     default_acl = 'public-read'
     file_overwrite = False
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.update({
+            'access_key': AWS_ACCESS_KEY_ID,
+            'secret_key': AWS_SECRET_ACCESS_KEY,
+            'bucket_name': AWS_STORAGE_BUCKET_NAME,
+            'endpoint_url': AWS_S3_ENDPOINT_URL,
+            'region_name': AWS_S3_REGION_NAME,
+            'custom_domain': AWS_S3_CUSTOM_DOMAIN,
+        })
+        super().__init__(*args, **kwargs)
 
 WSGI_APPLICATION = "config.do_app_platform.app.application"
 
@@ -78,9 +100,15 @@ AWS_S3_FILE_OVERWRITE = False
 STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
 STATICFILES_STORAGE = "config.do_app_platform.settings.StaticStorage"
 
-# Media files (uploads) configuration
+# Media files (uploads) configuration - try both approaches
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+
+# Primary approach: Custom storage class
 DEFAULT_FILE_STORAGE = "config.do_app_platform.settings.MediaStorage"
+
+# Backup approach: Direct storages configuration
+# Uncomment this line and comment the above if custom class doesn't work:
+# DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
 INSTALLED_APPS = INSTALLED_APPS + ["storages"]
 
