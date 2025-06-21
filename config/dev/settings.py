@@ -154,9 +154,10 @@ SESAME_ONE_TIME = False  # Allow multiple uses for testing
 SESAME_INVALIDATE_ON_PASSWORD_CHANGE = False  # Prevent password changes from affecting tokens
 # Let sesame use its default packer
 
-# STATICFILES - keep local for dev
-STATIC_URL = "/static/"
-STATIC_ROOT = "static/"
+# STATICFILES - use DigitalOcean Spaces CDN for both dev and prod
+STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
+STATICFILES_STORAGE = "storages.backends.s3boto3.S3StaticStorage"
+STATIC_ROOT = "static/"  # Still needed for collectstatic
 
 # MEDIA FILES - use DigitalOcean Spaces for both dev and prod
 AWS_S3_REGION_NAME = "nyc3"

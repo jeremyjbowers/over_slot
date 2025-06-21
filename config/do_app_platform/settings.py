@@ -51,8 +51,8 @@ SECURE_HSTS_PRELOAD = True
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Storage settings are inherited from dev - no need to override
-# (Both dev and production now use DigitalOcean Spaces)
+# Static and media files settings inherited from dev 
+# (Both use DigitalOcean Spaces)
 
 # Production-specific CORS settings
 CORS_ALLOWED_ORIGINS = [
