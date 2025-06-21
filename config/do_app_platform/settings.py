@@ -6,16 +6,11 @@ import dj_database_url
 
 from config.dev.settings import *
 
-# Override AWS settings for production to ensure they're properly configured
-AWS_S3_REGION_NAME = "nyc3"
-AWS_S3_ENDPOINT_URL = f"https://{AWS_S3_REGION_NAME}.digitaloceanspaces.com"
+# Production overrides for AWS credentials (use environment variables instead of .env file)
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
-AWS_DEFAULT_ACL = "public-read"
-AWS_STORAGE_BUCKET_NAME = "the-over-slot"
-AWS_S3_CUSTOM_DOMAIN = "the-over-slot.nyc3.cdn.digitaloceanspaces.com"
 
-# Import custom storage classes from separate module
+# All other AWS/storage settings inherited from dev settings
 
 WSGI_APPLICATION = "config.do_app_platform.app.application"
 
@@ -56,28 +51,8 @@ SECURE_HSTS_PRELOAD = True
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# AWS S3 / DigitalOcean Spaces additional settings
-AWS_S3_OBJECT_PARAMETERS = {
-    'CacheControl': 'max-age=86400',
-}
-AWS_PRELOAD_METADATA = True
-AWS_QUERYSTRING_AUTH = False
-AWS_S3_FILE_OVERWRITE = False
-
-# Static files configuration
-STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
-STATICFILES_STORAGE = "config.storage.StaticStorage"
-
-# Media files (uploads) configuration
-MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
-
-# Try direct storages configuration since boto3 test works
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-
-# Override the location for media files
-AWS_LOCATION = "media"
-
-INSTALLED_APPS = INSTALLED_APPS + ["storages"]
+# Storage settings are inherited from dev - no need to override
+# (Both dev and production now use DigitalOcean Spaces)
 
 # Production-specific CORS settings
 CORS_ALLOWED_ORIGINS = [
