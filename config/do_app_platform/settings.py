@@ -70,7 +70,12 @@ STATICFILES_STORAGE = "config.storage.StaticStorage"
 
 # Media files (uploads) configuration
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
-DEFAULT_FILE_STORAGE = "config.storage.MediaStorage"
+
+# Try direct storages configuration since boto3 test works
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
+# Override the location for media files
+AWS_LOCATION = "media"
 
 INSTALLED_APPS = INSTALLED_APPS + ["storages"]
 
