@@ -154,12 +154,7 @@ SESAME_ONE_TIME = False  # Allow multiple uses for testing
 SESAME_INVALIDATE_ON_PASSWORD_CHANGE = False  # Prevent password changes from affecting tokens
 # Let sesame use its default packer
 
-# STATICFILES - use DigitalOcean Spaces CDN for both dev and prod
-STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
-STATICFILES_STORAGE = "storages.backends.s3boto3.S3StaticStorage"
-STATIC_ROOT = "static/"  # Still needed for collectstatic
-
-# MEDIA FILES - use DigitalOcean Spaces for both dev and prod
+# AWS / DigitalOcean Spaces Configuration
 AWS_S3_REGION_NAME = "nyc3"
 AWS_S3_ENDPOINT_URL = f"https://{AWS_S3_REGION_NAME}.digitaloceanspaces.com"
 AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', default=None)
@@ -177,7 +172,12 @@ AWS_QUERYSTRING_AUTH = False
 AWS_S3_FILE_OVERWRITE = False
 AWS_LOCATION = "media"
 
-# Media files configuration - use Spaces storage
+# STATICFILES - use DigitalOcean Spaces CDN for both dev and prod
+STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
+STATICFILES_STORAGE = "storages.backends.s3boto3.S3StaticStorage"
+STATIC_ROOT = "static/"  # Still needed for collectstatic
+
+# MEDIA FILES - use DigitalOcean Spaces for both dev and prod
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
 DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
