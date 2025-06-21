@@ -170,16 +170,28 @@ AWS_S3_OBJECT_PARAMETERS = {
 AWS_PRELOAD_METADATA = True
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_FILE_OVERWRITE = False
-AWS_LOCATION = "media"
+# AWS_LOCATION = "media"  # Commented out - might be causing path conflicts
 
-# STATICFILES - use DigitalOcean Spaces CDN for both dev and prod
+# Django 4.2+ STORAGES configuration
+STORAGES = {
+    'default': {
+        'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+        'OPTIONS': {
+            'location': 'media',
+        },
+    },
+    'staticfiles': {
+        'BACKEND': 'storages.backends.s3boto3.S3StaticStorage',
+        'OPTIONS': {
+            'location': 'static',
+        },
+    },
+}
+
+# Static and Media URLs
 STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
-STATICFILES_STORAGE = "storages.backends.s3boto3.S3StaticStorage"
-STATIC_ROOT = "static/"  # Still needed for collectstatic
-
-# MEDIA FILES - use DigitalOcean Spaces for both dev and prod
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+STATIC_ROOT = "static/"  # Still needed for collectstatic
 
 CORS_ALLOWED_ORIGINS = [
     "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
