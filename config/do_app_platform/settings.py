@@ -6,6 +6,18 @@ import dj_database_url
 
 from config.dev.settings import *
 
+# Custom storage classes for separating static and media files
+from storages.backends.s3boto3 import S3Boto3Storage
+
+class StaticStorage(S3Boto3Storage):
+    location = 'static'
+    default_acl = 'public-read'
+
+class MediaStorage(S3Boto3Storage):
+    location = 'media'
+    default_acl = 'public-read'
+    file_overwrite = False
+
 WSGI_APPLICATION = "config.do_app_platform.app.application"
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", None)
@@ -45,12 +57,13 @@ SECURE_HSTS_PRELOAD = True
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
-STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+# Static files configuration
+STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
+STATICFILES_STORAGE = "config.do_app_platform.settings.StaticStorage"
 
 # Media files (uploads) configuration
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+DEFAULT_FILE_STORAGE = "config.do_app_platform.settings.MediaStorage"
 
 INSTALLED_APPS = INSTALLED_APPS + ["storages"]
 
