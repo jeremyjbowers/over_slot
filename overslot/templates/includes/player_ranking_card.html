@@ -1,0 +1,119 @@
+{% load overslot_tags %}
+
+<div class="player-ranking-card" 
+     data-position="{{ player_ranking.position|default:'' }}"
+     data-school="{{ player_ranking.school|default:'' }}"
+     data-commitment="{{ player_ranking.commitment|default:'' }}"
+     data-state="{{ player_ranking.player.state|default:'' }}"
+     id="{{ player_ranking.player.slug }}">
+    
+    <!-- Rank Badge -->
+    <div class="player-rank-badge">
+        {{ player_ranking.rank }}
+    </div>
+    
+    <!-- Player Info and Photo Container -->
+    <div class="player-card-content">
+        
+        <!-- Player Details -->
+        <div class="player-details">
+            <h3 class="player-name">
+                <a href="/players/{{ player_ranking.player.slug }}/">{{ player_ranking.player.name }}</a>
+            </h3>
+            
+            <div class="player-position-school">
+                {{ player_ranking.position }}{% if player_ranking.school %} — {{ player_ranking.school }}{% endif %}
+            </div>
+            
+            <div class="player-bio-info">
+                {% if player_ranking.player.birthdate %}
+                <span class="bio-item">DOB: {{ player_ranking.player.birthdate|date:"m-d-Y" }}</span>
+                {% endif %}
+                {% if player_ranking.player.height %}
+                <span class="bio-item">Height: {{ player_ranking.player.height }}</span>
+                {% endif %}
+                {% if player_ranking.player.weight %}
+                <span class="bio-item">Weight: {{ player_ranking.player.weight }}</span>
+                {% endif %}
+            </div>
+            
+            {% if player_ranking.player.bats and player_ranking.player.throws %}
+            <div class="player-batting-info">
+                Bats: {{ player_ranking.player.bats }}, Throws: {{ player_ranking.player.throws }}
+            </div>
+            {% endif %}
+            
+            {% if player_ranking.commitment %}
+            <div class="player-commitment">
+                Committed to {{ player_ranking.commitment }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Position and Level Tags -->
+        <div class="player-tags">
+            {% if player_ranking.position %}
+            <span class="position-tag">{{ player_ranking.position }}</span>
+            {% endif %}
+            {% if player_ranking.level %}
+            <span class="level-tag">{{ player_ranking.level|upper }}</span>
+            {% endif %}
+            {% if player_ranking.role %}
+            <span class="role-tag">{{ player_ranking.role }}</span>
+            {% endif %}
+        </div>
+        
+        <!-- Player Photo -->
+        <div class="player-photo-container">
+            {% if player_ranking.player.photo_url %}
+                <img src="{{ player_ranking.player.photo_url }}" 
+                     alt="{{ player_ranking.player.name }}" 
+                     class="player-photo">
+            {% else %}
+                <div class="player-photo-placeholder"></div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Expand Button -->
+    {% if player_ranking.scouting_report %}
+    <button class="expand-button" aria-expanded="false">
+        <span class="expand-icon">
+            <i class="fas fa-chevron-down"></i>
+        </span>
+    </button>
+    {% endif %}
+    
+    <!-- Expandable Scouting Report -->
+    {% if player_ranking.scouting_report %}
+    <div class="scouting-report-section" style="display: none;">
+        <div class="scouting-report-header">
+            <h4>Scouting Report</h4>
+            {% if player_ranking.player.bats and player_ranking.player.throws %}
+            <div class="scouting-meta">Bats: {{ player_ranking.player.bats }}, Throws: {{ player_ranking.player.throws }}</div>
+            {% endif %}
+        </div>
+        
+        {% if player_ranking.carrying_tools.all %}
+        <div class="carrying-tools">
+            {% for tool in player_ranking.carrying_tools.all %}
+            <div class="tool-item">
+                <span class="tool-name">{{ tool.tool }}</span>
+                <span class="tool-score">{{ tool.score }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="scouting-report-content">
+            {{ player_ranking.scouting_report|safe }}
+        </div>
+        
+        {% if player_ranking.player.photo_url %}
+        <div class="photo-credit">
+            Photo: USA Today Network
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div> 
