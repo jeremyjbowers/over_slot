@@ -756,11 +756,9 @@
                             <p class="welcome-subhead">The MLB Draft and Scouting Hub</p>
                             <div class="welcome-buttons">
                                 <a href="/articles/" class="welcome-btn welcome-btn-secondary">
-                                    <i class="fas fa-newspaper"></i>
-                                    <span>Articles</span>
+                                    <span>News</span>
                                 </a>
                                 <a href="/rankings/" class="welcome-btn welcome-btn-secondary">
-                                    <i class="fas fa-list-ol"></i>
                                     <span>Rankings</span>
                                 </a>
                             </div>
@@ -784,17 +782,15 @@
                             <div class="hero-slide-meta">
                                 {% if article.authors.all %}
                                 <div class="meta-item">
-                                    <i class="fas fa-user-edit"></i>
                                     <span>{% for author in article.authors.all %}{{ author.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
                                 </div>
                                 {% endif %}
                                 <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
                                     <span>{{ article.created|date:"F j, Y" }}</span>
                                 </div>
                             </div>
                             <a href="/articles/{{ article.slug }}/" class="welcome-btn welcome-btn-secondary">
-                                <span>Read Article</span>
+                                <span>Read</span>
                                 <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -833,18 +829,16 @@
                             {% endif %}
                             <div class="hero-slide-meta">
                                 <div class="meta-item">
-                                    <i class="fas fa-calendar"></i>
                                     <span>{{ latest_ranking.created|date:"F j, Y" }}</span>
                                 </div>
                                 {% if latest_ranking.ranking_type %}
                                 <div class="meta-item">
-                                    <i class="fas fa-tag"></i>
                                     <span>{{ latest_ranking.ranking_type }}</span>
                                 </div>
                                 {% endif %}
                             </div>
                             <a href="/rankings/{{ latest_ranking.slug }}/" class="welcome-btn welcome-btn-secondary">
-                                <span>View Rankings</span>
+                                <span>Rankings</span>
                                 <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -902,9 +896,6 @@
         <!-- Rankings Section -->
         <div class="rankings-column">
             <h2 class="section-title">
-                <span class="icon">
-                    <i class="fas fa-list-ol"></i>
-                </span>
                 <span class="title-text">Rankings</span>
                 <span class="count">{{ rankings|length }} Draft Board{% if rankings|length != 1 %}s{% endif %}</span>
             </h2>
@@ -916,9 +907,6 @@
                 <div class="list-item-content">
                     <div class="item-meta">
                         <span class="icon-text">
-                            <span class="icon">
-                                <i class="fas fa-calendar"></i>
-                            </span>
                             <span>{{ ranking.created|date:"F j, Y" }}</span>
                         </span>
                     </div>
@@ -961,9 +949,6 @@
         <!-- Articles Section -->
         <div class="articles-column">
             <h2 class="section-title">
-                <span class="icon">
-                    <i class="fas fa-newspaper"></i>
-                </span>
                 <span class="title-text">Articles</span>
                 <span class="count">{{ articles|length }} Article{% if articles|length != 1 %}s{% endif %}</span>
             </h2>
@@ -976,18 +961,12 @@
                     <div class="item-meta">
                         {% if article.authors.all %}
                         <span class="icon-text has-text-info">
-                            <span class="icon">
-                                <i class="fas fa-users"></i>
-                            </span>
                             <span class="has-text-weight-medium">
                                 {% for author in article.authors.all %}{{ author.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
                             </span>
                         </span>
                         {% endif %}
                         <span class="icon-text">
-                            <span class="icon">
-                                <i class="fas fa-calendar"></i>
-                            </span>
                             <span>{{ article.created|date:"F j, Y" }}</span>
                         </span>
                     </div>
