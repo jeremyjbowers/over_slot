@@ -156,6 +156,7 @@ class Ranking(BaseModel):
             "Strike": True,
             "Underline": True,
             "HardBreak": True,
+            "Link": True,
 
             # Structure
             "Heading": {
@@ -270,6 +271,7 @@ class PlayerRanking(BaseModel):
     # Mock draft fields
     mock_team = models.CharField(max_length=255, blank=True, null=True, help_text="Team that drafted this player in mock draft")
     mock_team_logo_url = models.CharField(max_length=255, blank=True, null=True, help_text="URL to the team's logo image")
+    mock_pick_number = models.IntegerField(blank=True, null=True, help_text="Pick number in mock draft")
 
     level = models.CharField(max_length=255, choices=LEVEL_CHOICES, blank=True, null=True)
 
@@ -285,6 +287,7 @@ class PlayerRanking(BaseModel):
             "Strike": True,
             "Underline": True,
             "HardBreak": True,
+            "Link": True,
 
             # Structure
             "Heading": {
@@ -329,6 +332,7 @@ class Article(BaseModel):
             "Strike": True,
             "Underline": True,
             "HardBreak": True,
+            "Link": True,
 
             # Structure
             "Heading": {

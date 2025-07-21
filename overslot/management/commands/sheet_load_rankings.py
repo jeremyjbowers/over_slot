@@ -58,10 +58,10 @@ class Command(BaseCommand):
 
             return None
 
-        for year in ["2020", "2021", "2022", "2023", "2024", "2025"]:
+        for year in ["2025", "2026", "2027"]:
             print(year)
             sheet = utils.get_sheet("15kLgnYACmlcrYV3QI5TECb2Vzkz-9jkrc8kc_IG6rkE", f"{year}!A:Z", value_cutoff=None)
-            r, r_created = models.Ranking.objects.get_or_create(year=year, ranking_type=None, is_draft=True, is_final=True)
+            r, r_created = models.Ranking.objects.get_or_create(year=year, ranking_type=None, is_mock_draft=False, is_draft=True, is_final=True)
             r.ranking_length = len(sheet)
             r.save()
 

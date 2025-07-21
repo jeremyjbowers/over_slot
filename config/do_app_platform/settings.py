@@ -6,6 +6,12 @@ import dj_database_url
 
 from config.dev.settings import *
 
+# Production overrides for AWS credentials (use environment variables instead of .env file)
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+
+# All other AWS/storage settings inherited from dev settings
+
 WSGI_APPLICATION = "config.do_app_platform.app.application"
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", None)
@@ -45,14 +51,8 @@ SECURE_HSTS_PRELOAD = True
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
-STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-
-# Media files (uploads) configuration
-MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-
-INSTALLED_APPS = INSTALLED_APPS + ["storages"]
+# Static and media files settings inherited from dev 
+# (Both use DigitalOcean Spaces)
 
 # Production-specific CORS settings
 CORS_ALLOWED_ORIGINS = [

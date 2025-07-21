@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "allauth.account",
     "allauth.socialaccount",
     "sesame",
+    "storages",  # Add storages for S3/Spaces support
     "overslot",
     "django_prose_editor"
 ]
@@ -153,14 +154,7 @@ SESAME_ONE_TIME = False  # Allow multiple uses for testing
 SESAME_INVALIDATE_ON_PASSWORD_CHANGE = False  # Prevent password changes from affecting tokens
 # Let sesame use its default packer
 
-# STATICFILES
-STATIC_URL = "/static/"
-STATIC_ROOT = "static/"
-
-# MEDIA FILES
-MEDIA_URL = "/media/"
-MEDIA_ROOT = "media/"
-
+# AWS / DigitalOcean Spaces Configuration
 AWS_S3_REGION_NAME = "nyc3"
 AWS_S3_ENDPOINT_URL = f"https://{AWS_S3_REGION_NAME}.digitaloceanspaces.com"
 AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', default=None)
@@ -168,7 +162,36 @@ AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', default=None)
 AWS_DEFAULT_ACL = "public-read"
 AWS_STORAGE_BUCKET_NAME = "the-over-slot"
 AWS_S3_CUSTOM_DOMAIN = "the-over-slot.nyc3.cdn.digitaloceanspaces.com"
-AWS_LOCATION = "static"
+
+# AWS S3 / DigitalOcean Spaces additional settings
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+AWS_PRELOAD_METADATA = True
+AWS_QUERYSTRING_AUTH = False
+AWS_S3_FILE_OVERWRITE = False
+# AWS_LOCATION = "media"  # Commented out - might be causing path conflicts
+
+# Django 4.2+ STORAGES configuration
+STORAGES = {
+    'default': {
+        'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
+        'OPTIONS': {
+            'location': 'media',
+        },
+    },
+    'staticfiles': {
+        'BACKEND': 'storages.backends.s3boto3.S3StaticStorage',
+        'OPTIONS': {
+            'location': 'static',
+        },
+    },
+}
+
+# Static and Media URLs
+STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
+MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+STATIC_ROOT = "static/"  # Still needed for collectstatic
 
 CORS_ALLOWED_ORIGINS = [
     "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",

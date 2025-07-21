@@ -9,3 +9,4 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         call_command('generate_duplicates')
         call_command('sheet_load_rankings')
+        call_command('sheet_load_mocks')

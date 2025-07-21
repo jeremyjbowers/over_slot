@@ -283,6 +283,15 @@ class PlayerRankingAdmin(admin.ModelAdmin):
                 ),
             },
         ),
+        (
+            "Mock Draft Information",
+            {
+                "fields": (
+                    ("mock_team", "mock_pick_number"),
+                    "mock_team_logo_url",
+                ),
+            },
+        ),
     )
 
 @admin.register(Ranking, site=admin_site)
@@ -292,6 +301,8 @@ class RankingAdmin(admin.ModelAdmin):
     list_display = [
         "year",
         "ranking_length",
+        "is_mock_draft",
+        "mock_draft_version",
         "is_final",
         "publish",
         "is_carousel",

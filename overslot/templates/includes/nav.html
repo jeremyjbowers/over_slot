@@ -3,6 +3,9 @@
         <div class="navbar-brand" style="min-height: 3.5rem; display: flex; align-items: center;">
             <a class="navbar-item logo" href="/">
                 <div class="logo-content">
+                    <figure class="image is-32x32">
+                        <img src="https://img.icons8.com/ios-filled/100/FFFFFF/microphone--v1.png" alt="microphone--v1" style="max-height: none;"/>
+                    </figure>
                     <span class="logo-text">Over-Slot</span>
                 </div>
             </a>
@@ -24,11 +27,6 @@
                    href="/articles/"
                    style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
                     News
-                </a>
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
-                   href="/"
-                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
-                    Analytics
                 </a>
                 <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
                    href="/rankings/"
@@ -187,7 +185,6 @@
 }
 
 .logo-svg {
-    border-radius: 50%;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -261,7 +258,6 @@
     width: 100%;
     padding: 0.75rem 2.5rem 0.75rem 1rem;
     border: 1px solid var(--dark-border);
-    border-radius: 6px;
     background: var(--dark-surface);
     color: var(--dark-text);
     font-size: var(--text-base);
@@ -293,7 +289,6 @@
     max-width: 1200px;
     background: var(--dark-surface);
     border: 1px solid var(--dark-border);
-    border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     z-index: 998;
     max-height: calc(100vh - 6rem);
@@ -334,7 +329,6 @@
 
 .search-item {
     padding: 0.5rem;
-    border-radius: 4px;
     transition: all 0.2s ease;
 }
 
@@ -389,7 +383,7 @@
     border: 1px solid var(--dark-border);
     border-top: none; /* Remove top border if it touches the navbar */
     box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    border-radius: 0 0 6px 6px; /* Optional: match other border-radius */
+    border-radius: 0px;
 }
 
 .navbar-dropdown .navbar-item {

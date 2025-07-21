@@ -1,7 +1,317 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>
+<style type="text/css">
+.player-ranking-card {
+    background: var(--dark-surface);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 15px;
+    position: relative;
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.player-ranking-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.player-rank-badge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: var(--theme-primary);
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 700;
+    padding: 1rem;
+    min-width: 80px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.player-card-content {
+    display: grid;
+    grid-template-columns: 1fr auto 200px;
+    align-items: center;
+    padding: 0;
+    padding-left: 6rem;
+    gap: 1.5rem;
+    min-height: 120px;
+}
+
+.player-photo-container {
+    width: 200px;
+    height: 200px;
+    flex-shrink: 0;
+    position: relative;
+    align-self: stretch;
+}
+
+.player-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: none;
+}
+
+.player-photo-placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--dark-surface-hover);
+    border: none;
+}
+
+.player-details {
+    flex: 1;
+    min-width: 0;
+    padding: 1rem 0 0 0;
+}
+
+.player-name {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.player-name a {
+    color: white;
+    text-decoration: none;
+}
+
+.player-name a:hover {
+    color: var(--theme-primary);
+}
+
+.player-position-school {
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+}
+
+.player-bio-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.bio-item {
+    display: flex;
+    align-items: center;
+}
+
+.player-batting-info {
+    font-size: 0.875rem;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.player-commitment {
+    font-size: 0.875rem;
+    color: var(--theme-primary);
+    font-weight: 600;
+}
+
+.player-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+
+.position-tag,
+.level-tag,
+.role-tag {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.position-tag {
+    background: var(--dark-surface-hover);
+    color: var(--dark-text);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.level-tag {
+    background: rgba(var(--theme-primary-rgb), 0.2);
+    color: var(--theme-primary);
+    border: 1px solid var(--theme-primary);
+}
+
+.role-tag {
+    background: rgba(var(--theme-primary-rgb), 0.1);
+    color: var(--theme-primary);
+    border: 1px solid rgba(var(--theme-primary-rgb), 0.3);
+}
+
+.expand-button {
+    background: none;
+    border: none;
+    color: var(--theme-primary);
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.expand-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--theme-primary-hover);
+}
+
+.expand-button[aria-expanded="true"] .expand-icon {
+    transform: rotate(180deg);
+}
+
+.expand-icon {
+    transition: transform 0.3s ease;
+    font-size: 1.25rem;
+}
+
+.scouting-report-section {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+    padding: 1rem 2rem 1rem 6rem;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 1000px;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+}
+
+.scouting-report-header {
+    margin-bottom: 1.5rem;
+}
+
+.scouting-report-header h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--dark-text);
+}
+
+.scouting-meta {
+    font-size: 0.875rem;
+    color: var(--dark-text-muted);
+}
+
+.carrying-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.tool-item {
+    display: flex;
+    overflow: hidden;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.tool-name {
+    background: var(--dark-surface-hover);
+    color: var(--dark-text);
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: none;
+}
+
+.tool-score {
+    background: var(--theme-primary);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--theme-primary);
+}
+
+.scouting-report-content {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--dark-text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.scouting-report-content p {
+    margin-bottom: 1.25rem;
+}
+
+.photo-credit {
+    font-size: 0.75rem;
+    color: var(--dark-text-muted);
+    text-align: right;
+    font-style: italic;
+}
+
+/* Mobile adjustments */
+@media screen and (max-width: 768px) {
+    .player-card-content {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+        padding-left: 4.5rem;
+        gap: 1rem;
+    }
+    
+    .player-rank-badge {
+        min-width: 60px;
+        font-size: 1.25rem;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .player-photo-container {
+        width: 100%;
+        height: 120px;
+        order: 1;
+    }
+    
+    .player-details {
+        order: 2;
+    }
+    
+    .player-tags {
+        flex-direction: row;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        order: 3;
+    }
+    
+    .expand-button {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        width: 100%;
+        justify-content: center;
+        min-height: 50px;
+    }
+}
+
 .hero {
     background: linear-gradient(
         rgba(var(--theme-primary-rgb), 0.1),
@@ -128,15 +438,15 @@
     height: fit-content;
 }
 
-.player-cards {
+.player-rankings-container {
     padding: 0;
 }
 
-.player-cards-header {
+.player-rankings-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: 15px;
 }
 
 .player-cards-actions {
@@ -145,222 +455,138 @@
     align-items: center;
 }
 
-.player-card {
+/* Filter and toolbar styles */
+.controls-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
     background: var(--dark-surface);
     border: 1px solid var(--dark-border);
-    border-radius: 0.75rem;
-    overflow: hidden;
-    margin-bottom: 1rem;
-    display: grid;
-    grid-template-columns: 75px 1fr auto;
-    position: relative;
-}
-
-.player-card:hover {
-    transform: translateY(-2px);
-}
-
-.player-rank-accent {
-    background: var(--theme-primary);
-    color: var(--dark-text);
-    font-size: var(--text-3xl);
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     padding: 1rem;
-    min-width: 75px;
+    width: 100%;
 }
 
-.player-main {
-    padding: 1.25rem;
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-}
-
-.player-info {
+.filters-container {
     flex: 1;
 }
 
-.player-name {
-    font-size: var(--text-2xl);
-    font-weight: 700;
-    color: var(--dark-text);
-    display: block;
-    line-height: var(--leading-tight);
-    margin-bottom: 0.5rem;
-}
-
-.player-position {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    color: var(--dark-text-secondary);
-    text-transform: uppercase;
-    margin-bottom: 0.75rem;
-}
-
-.player-meta {
+.filters-grid {
     display: flex;
+    gap: 0.75rem;
+    align-items: center;
     flex-wrap: wrap;
-    gap: 1rem;
+}
+
+.filter-select {
+    background: var(--dark-bg);
+    border: 1px solid var(--dark-border);
+    color: var(--dark-text);
+    padding: 0.5rem 1rem 0.5rem 0.75rem;
     font-size: var(--text-sm);
-    color: var(--dark-text-muted);
-}
-
-.player-meta-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.meta-label {
-    color: var(--dark-text-secondary);
-}
-
-.meta-label::after {
-    content: ":";
-}
-
-.player-photo {
-    width: 120px;
-    height: 120px;
-    border-radius: 0.5rem;
-    object-fit: cover;
-}
-
-.toggle-section {
-    display: flex;
-    align-items: stretch;
-    border-left: 1px solid var(--dark-border);
-}
-
-.toggle-button {
-    padding: 0 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--theme-primary);
-    background: none;
-    border: none;
+    min-width: 120px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.toggle-button:hover {
-    background: var(--dark-surface-hover);
-}
-
-.player-content {
-    display: none;
-    grid-column: 1 / -1;
-    padding: 1.25rem;
-    border-top: 1px solid var(--dark-border);
-    color: var(--dark-text-secondary);
-    background: var(--dark-surface);
-}
-
-.player-content.expanded {
-    display: block;
-}
-
-.player-content-inner {
-    max-width: 700px;
-    margin: 0 auto;
-}
-
-.tools-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.tool-tag {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-family: var(--font-mono);
-    font-size: var(--text-sm);
-}
-
-.tool-name {
-    background: var(--dark-surface-hover);
-    color: var(--dark-text);
-    padding: 0.25rem 0.75rem;
-    border-radius: 0.5rem 0 0 0.5rem;
-    border: 1px solid var(--dark-border);
-}
-
-.tool-score {
-    background: var(--theme-primary);
-    color: var(--dark-text);
-    padding: 0.25rem 0.75rem;
-    border-radius: 0 0.5rem 0.5rem 0;
-    font-weight: 600;
-}
-
-.section-label {
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--dark-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 1rem;
-}
-
-.player-metrics {
-    font-family: var(--font-sans);
-    font-size: var(--text-sm);
-    color: var(--dark-text-muted);
-    margin: 1rem 0;
-}
-
-.scouting-report {
-    font-family: var(--font-serif);
-    line-height: var(--leading-relaxed);
-    color: var(--dark-text-secondary);
-}
-
-/* Added spacing between paragraphs within scouting reports */
-.scouting-report p {
-    margin-bottom: 1.25rem;
-}
-
-.toggle-report {
-    background: var(--dark-surface);
-    border: 1px solid var(--dark-border);
-    color: var(--theme-primary);
     transition: all 0.2s ease;
 }
 
-.toggle-report:hover {
+.filter-select:focus {
+    border-color: var(--theme-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb), 0.1);
+}
+
+.filter-select:hover {
+    border-color: var(--theme-primary);
+}
+
+.clear-filters-btn {
+    background: var(--dark-bg);
+    border: 1px solid var(--dark-border);
+    color: var(--dark-text-secondary);
+    padding: 0.5rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clear-filters-btn:hover {
+    background: var(--dark-surface-hover);
+    border-color: var(--theme-primary);
+    color: var(--theme-primary);
+}
+
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+}
+
+.toggle-all-button {
+    background: var(--dark-bg);
+    color: var(--theme-primary);
+    border: 1px solid var(--dark-border);
+    padding: 0.5rem 1rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toggle-all-button:hover {
     background: var(--dark-surface-hover);
     border-color: var(--theme-primary);
 }
 
-.ranking-toggle {
+.toggle-all-button .icon {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+.clear-filters-btn:hover {
+    background: var(--dark-surface-hover);
+    color: var(--theme-primary);
+}
+
+.toolbar-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.toggle-all-button {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    color: var(--theme-primary);
+    padding: 0.25rem;
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--theme-primary);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.5rem 0;
-    font-size: var(--text-sm);
+    font-size: 0.875rem;
     font-weight: 500;
+    transition: all 0.2s ease;
 }
 
-.ranking-toggle:hover {
-    color: var(--theme-primary-hover);
+.toggle-all-button:hover {
+    background: var(--dark-surface-hover);
+    border-color: var(--theme-primary);
 }
 
-@media screen and (min-width: 769px) {
-    .player-card-content {
-        padding: 2rem;
-    }
+.toggle-all-button .icon {
+    transition: transform 0.3s ease;
 }
+
+
+
+
 
 /* Mobile layout adjustments */
 @media screen and (max-width: 1200px) {
@@ -370,44 +596,12 @@
     }
     
     .sidebar-area {
-        order: -1; /* Put sidebar above content on mobile */
+        /* Remove order: -1 to keep articles below rankings on mobile */
+        margin-top: 2rem;
     }
 }
 
-@media screen and (max-width: 768px) {
-    .hero-title {
-        font-size: 3rem;
-    }
 
-    .main-layout {
-        padding: 0 1rem;
-        gap: 1.5rem;
-    }
-
-    .player-card {
-        grid-template-columns: 50px 1fr auto;
-    }
-
-    .player-main {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-        padding: 1rem;
-    }
-
-    .player-photo {
-        width: 100px;
-        height: 100px;
-    }
-
-    .player-meta {
-        gap: 0.75rem;
-    }
-
-    .toggle-button {
-        padding: 0 1rem;
-    }
-}
 
 /* Subscription Banner Styles */
 .subscription-banner {
@@ -435,7 +629,6 @@
 .subscription-card {
     background: var(--dark-surface);
     border: 2px solid var(--theme-primary);
-    border-radius: 1rem;
     padding: 2rem;
     text-align: center;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
@@ -495,7 +688,6 @@
     background: var(--theme-primary);
     color: var(--dark-text);
     padding: 1rem 2rem;
-    border-radius: 0.5rem;
     font-weight: 600;
     font-size: var(--text-lg);
     text-decoration: none;
@@ -514,121 +706,7 @@
     margin: 0;
 }
 
-@media screen and (max-width: 768px) {
-    .subscription-card {
-        padding: 1.5rem;
-    }
-    
-    .subscription-header h3 {
-        font-size: var(--text-xl);
-    }
-    
-    .price-amount {
-        font-size: 2.5rem;
-    }
-    
-    .btn-subscribe {
-        padding: 0.875rem 1.5rem;
-        font-size: var(--text-base);
-    }
-}
 
-/* Controls Toolbar Styles */
-.controls-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--dark-surface);
-    border: 1px solid var(--dark-border);
-    border-radius: 0.75rem;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    gap: 1rem;
-}
-
-.filters-container {
-    flex: 1;
-}
-
-.filters-grid {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-}
-
-.filter-select {
-    background: var(--dark-bg);
-    border: 1px solid var(--dark-border);
-    border-radius: 0.5rem;
-    color: var(--dark-text);
-    padding: 0.5rem 1rem 0.5rem 0.75rem;
-    font-size: var(--text-sm);
-    min-width: 120px;
-    transition: all 0.2s ease;
-    cursor: pointer;
-}
-
-.filter-select:focus {
-    outline: none;
-    border-color: var(--theme-primary);
-    box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb), 0.1);
-}
-
-.filter-select:hover {
-    border-color: var(--theme-primary);
-}
-
-.clear-filters-btn {
-    background: var(--dark-bg);
-    border: 1px solid var(--dark-border);
-    border-radius: 0.5rem;
-    color: var(--dark-text-secondary);
-    padding: 0.5rem;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.clear-filters-btn:hover {
-    background: var(--dark-surface-hover);
-    border-color: var(--theme-primary);
-    color: var(--theme-primary);
-}
-
-.toolbar-actions {
-    display: flex;
-    align-items: center;
-}
-
-.toggle-all-button {
-    background: var(--dark-bg);
-    color: var(--theme-primary);
-    border: 1px solid var(--dark-border);
-    border-radius: 0.5rem;
-    padding: 0.5rem 1rem;
-    font-family: var(--font-sans);
-    font-size: var(--text-sm);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.toggle-all-button:hover {
-    background: var(--dark-surface-hover);
-    border-color: var(--theme-primary);
-}
-
-.toggle-all-button .icon {
-    font-size: 0.75rem;
-    transition: transform 0.2s ease;
-}
 
 .toggle-all-button[aria-expanded="true"] .icon {
     transform: rotate(180deg);
@@ -638,6 +716,7 @@
     margin-bottom: 0;
 }
 
+/* Responsive Design */
 @media screen and (max-width: 1024px) {
     .controls-toolbar {
         flex-direction: column;
@@ -661,18 +740,32 @@
 }
 
 @media screen and (max-width: 768px) {
+    .hero-title {
+        font-size: 3rem;
+    }
+
+    .main-layout {
+        padding: 0 1rem;
+        gap: 1.5rem;
+    }
+    
     .controls-toolbar {
         padding: 0.75rem;
+        flex-direction: column;
+        align-items: stretch;
     }
     
     .filters-grid {
         display: grid;
         grid-template-columns: 1fr 1fr 40px;
         gap: 0.5rem;
+        justify-content: stretch;
+        flex-direction: column;
     }
     
     .filter-select {
         min-width: unset;
+        width: 100%;
     }
     
     .filter-select:nth-child(3),
@@ -684,6 +777,28 @@
         grid-column: 3;
         grid-row: 1;
     }
+    
+    .toolbar-actions {
+        justify-content: center;
+        margin-top: 1rem;
+    }
+    
+    .subscription-card {
+        padding: 1.5rem;
+    }
+    
+    .subscription-header h3 {
+        font-size: var(--text-xl);
+    }
+    
+    .price-amount {
+        font-size: 2.5rem;
+    }
+    
+    .btn-subscribe {
+        padding: 0.875rem 1.5rem;
+        font-size: var(--text-base);
+    }
 }
 
 .draft-badge {
@@ -693,7 +808,6 @@
     font-size: 0.8rem;
     font-weight: 600;
     padding: 0.4rem 0.8rem;
-    border-radius: 0.25rem;
     margin-left: 1rem;
     vertical-align: middle;
 }
@@ -701,7 +815,6 @@
 .hero-title.has-draft {
     background: rgba(255, 107, 53, 0.15);
     padding: 1rem 1.5rem;
-    border-radius: 0.75rem;
     border-left: 6px solid #ff6b35;
     display: inline-block;
 }
@@ -737,44 +850,13 @@
     <div class="content-area">
         {% if preview_mode %}
         <!-- Preview Mode: Show partial ranking with subscription prompt -->
-        <div class="player-cards">
-            <div class="player-cards-header">
+        <div class="player-rankings-container">
+            <div class="player-rankings-header">
                 <h2 style="color: var(--dark-text); font-size: var(--text-xl); margin: 0;">Preview: Top 5 Players</h2>
             </div>
             
             {% for pr in ranking.get_playerrankings|slice:":5" %}
-            <div id="{{ pr.player.slug }}" class="player-card">
-                <div class="player-rank-accent">
-                    {{ pr.rank }}
-                </div>
-                <div class="player-main">
-                    <div class="player-info">
-                        <div class="player-name">{{ pr.player.name }}</div>
-                        <div class="player-position">
-                            {{ pr.position }} — {{ pr.school }}
-                        </div>
-                        <div class="player-meta">
-                            <div class="player-meta-item">
-                                <span class="meta-label">Height</span>
-                                <span>{{ pr.player.height }}</span>
-                            </div>
-                            <div class="player-meta-item">
-                                <span class="meta-label">Weight</span>
-                                <span>{{ pr.player.weight }} lbs</span>
-                            </div>
-                            {% if pr.commitment %}
-                            <div class="player-meta-item">
-                                <span class="meta-label">Commitment</span>
-                                <span>{{ pr.commitment }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <img src="{{ pr.player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
-                         alt="{{ pr.player.name }}" 
-                         class="player-photo">
-                </div>
-            </div>
+                {% include 'includes/player_ranking_card.html' with player_ranking=pr %}
             {% endfor %}
         </div>
         
@@ -814,8 +896,8 @@
         </div>
         {% else %}
         <!-- Full Content for Subscribers -->
-        <div class="player-cards">
-            <div class="player-cards-header">
+        <div class="player-rankings-container">
+            <div class="player-rankings-header">
                 <div class="controls-toolbar">
                     <div class="filters-container">
                         <div class="filters-grid">
@@ -864,93 +946,9 @@
                 </div>
             </div>
     
-    {% for pr in ranking.get_playerrankings %}
-    <div id="{{ pr.player.slug }}" class="player-card" 
-         data-position="{{ pr.position|default:'' }}"
-         data-school="{{ pr.school|default:'' }}"
-         data-commitment="{{ pr.commitment|default:'' }}"
-         data-state="{{ pr.player.state|default:'' }}">
-        <div class="player-rank-accent">
-            {{ pr.rank }}
-        </div>
-        <div class="player-main">
-            <div class="player-info">
-                <a href="/players/{{ pr.player.slug }}/" class="player-name">
-                    {{ pr.player.name }}
-                </a>
-                <div class="player-position">
-                    {{ pr.position }} — {{ pr.school }}
-                </div>
-                <div class="player-meta">
-                    <div class="player-meta-item">
-                        <span class="meta-label">Height</span>
-                        <span>{{ pr.player.height }}</span>
-                    </div>
-                    <div class="player-meta-item">
-                        <span class="meta-label">Weight</span>
-                        <span>{{ pr.player.weight }} lbs</span>
-                    </div>
-                    <div class="player-meta-item">
-                        <span class="meta-label">Bats</span>
-                        <span>{{ pr.player.bats }}</span>
-                    </div>
-                    <div class="player-meta-item">
-                        <span class="meta-label">Throws</span>
-                        <span>{{ pr.player.throws }}</span>
-                    </div>
-                    {% if pr.commitment %}
-                    <div class="player-meta-item">
-                        <span class="meta-label">Commitment</span>
-                        <span>{{ pr.commitment }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            <img src="{{ pr.player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
-                 alt="{{ pr.player.name }}" 
-                 class="player-photo">
-        </div>
-        <div class="toggle-section">
-            <button class="toggle-button" aria-expanded="false" data-content="report-{{ pr.player.slug }}">
-                <span class="icon">
-                    <i class="fas fa-chevron-down"></i>
-                </span>
-            </button>
-        </div>
-        <div class="player-content" id="report-{{ pr.player.slug }}">
-            <div class="player-content-inner">
-                {% if pr.carrying_tools.all %}
-                <div class="tools-grid">
-                    {% for c in pr.carrying_tools.all %}
-                    <div class="tool-tag">
-                        <span class="tool-name">{{ c.tool }}</span>
-                        <span class="tool-score">{{ c.score }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                {% if pr.role or pr.risk %}
-                <div class="player-metrics">
-                    {% if pr.role %}
-                    <span class="mr-3">Role: {{ pr.role }}</span>
-                    {% endif %}
-                    {% if pr.risk %}
-                    <span>Risk: {{ pr.risk }}</span>
-                    {% endif %}
-                </div>
-                {% endif %}
-
-                {% if pr.scouting_report %}
-                <div class="section-label">Scouting Report</div>
-                <div class="scouting-report">
-                    {{ pr.scouting_report|safe }}
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    {% endfor %}
+            {% for pr in ranking.get_playerrankings %}
+                {% include 'includes/player_ranking_card.html' with player_ranking=pr %}
+            {% endfor %}
         </div>
         {% endif %}
     </div>
@@ -962,21 +960,7 @@
 </div>
 
 <script>
-function toggleContent(button) {
-    const expanded = button.getAttribute('aria-expanded') === 'true';
-    const contentId = button.getAttribute('data-content');
-    const content = document.getElementById(contentId);
-    
-    if (contentId !== 'rankingBody') {
-        content.classList.toggle('expanded');
-    }
-    
-    button.setAttribute('aria-expanded', !expanded);
-    
-    // Rotate chevron
-    const icon = button.querySelector('.icon');
-    icon.style.transform = !expanded ? 'rotate(180deg)' : '';
-}
+
 
 function filterPlayers() {
     const positionFilter = document.getElementById('position-filter')?.value || '';
@@ -984,7 +968,7 @@ function filterPlayers() {
     const commitmentFilter = document.getElementById('commitment-filter')?.value || '';
     const stateFilter = document.getElementById('state-filter')?.value || '';
     
-    const playerCards = document.querySelectorAll('.player-card');
+    const playerCards = document.querySelectorAll('.player-ranking-card');
     let visibleCount = 0;
     
     // Position mapping for intelligent matching
@@ -1044,28 +1028,48 @@ function clearAllFilters() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Individual toggle buttons (excluding ranking body)
-    document.querySelectorAll('.player-card .toggle-button').forEach(button => {
-        button.addEventListener('click', () => toggleContent(button));
+    // Individual scouting report toggle function
+    function toggleScoutingReport(button) {
+        const card = button.closest('.player-ranking-card');
+        const reportSection = card.querySelector('.scouting-report-section');
+        const isExpanded = button.getAttribute('aria-expanded') === 'true';
+        
+        if (isExpanded) {
+            reportSection.style.display = 'none';
+            button.setAttribute('aria-expanded', 'false');
+        } else {
+            reportSection.style.display = 'block';
+            button.setAttribute('aria-expanded', 'true');
+        }
+    }
+    
+    // Add click listeners to all expand buttons
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.expand-button')) {
+            toggleScoutingReport(e.target.closest('.expand-button'));
+        }
     });
-
+    
     // Toggle all button for scouting reports
     const toggleAllButton = document.querySelector('.toggle-all-button');
     if (toggleAllButton) {
         toggleAllButton.addEventListener('click', () => {
             const expanded = toggleAllButton.getAttribute('aria-expanded') === 'true';
-            const toggleButtons = document.querySelectorAll('.player-card:not([style*="display: none"]) .toggle-button');
+            const expandButtons = document.querySelectorAll('.player-ranking-card:not([style*="display: none"]) .expand-button');
             
-            toggleButtons.forEach(button => {
-                const contentId = button.getAttribute('data-content');
-                const content = document.getElementById(contentId);
+            expandButtons.forEach(button => {
+                const card = button.closest('.player-ranking-card');
+                const reportSection = card.querySelector('.scouting-report-section');
                 
-                button.setAttribute('aria-expanded', !expanded);
-                content.classList.toggle('expanded', !expanded);
-                
-                // Rotate chevron
-                const icon = button.querySelector('.icon');
-                icon.style.transform = !expanded ? 'rotate(180deg)' : '';
+                if (reportSection) {
+                    button.setAttribute('aria-expanded', !expanded);
+                    
+                    if (!expanded) {
+                        reportSection.style.display = 'block';
+                    } else {
+                        reportSection.style.display = 'none';
+                    }
+                }
             });
             
             toggleAllButton.setAttribute('aria-expanded', !expanded);
