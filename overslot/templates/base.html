@@ -6,6 +6,8 @@
         <title>{% block title %}Over Slot{% endblock %}</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+        <!-- Tailwind CSS (needed for subscription pages that use Tailwind utility classes) -->
+        <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -193,6 +195,52 @@
             .preview-content.expanded::after {
                 display: none;
             }
+
+            /* --- Dark Theme overrides for Tailwind utility classes used in subscription pages --- */
+            .bg-white,
+            .bg-gray-50,
+            .bg-blue-50,
+            .bg-green-50,
+            .bg-yellow-50 {
+                background: var(--dark-surface) !important;
+            }
+
+            .text-gray-900,
+            .text-blue-900,
+            .text-green-900,
+            .text-yellow-900 {
+                color: var(--dark-text) !important;
+            }
+
+            .text-gray-800,
+            .text-gray-700,
+            .text-gray-600 {
+                color: var(--dark-text-secondary) !important;
+            }
+
+            .border-gray-200,
+            .border-blue-200,
+            .border-green-200,
+            .border-yellow-200 {
+                border-color: var(--dark-border) !important;
+            }
+
+            /* Buttons */
+            .bg-blue-600 { background: #2563eb !important; }
+            .hover\:bg-blue-700:hover { background: #1d4ed8 !important; }
+
+            .bg-green-600 { background: #16a34a !important; }
+            .hover\:bg-green-700:hover { background: #15803d !important; }
+
+            .bg-red-600 { background: #dc2626 !important; }
+            .hover\:bg-red-700:hover { background: #b91c1c !important; }
+
+            .bg-yellow-50 { background: rgba(253, 224, 71, 0.08) !important; }
+            .bg-green-50 { background: rgba(22, 163, 74, 0.08) !important; }
+            .bg-blue-50 { background: rgba(59, 130, 246, 0.08) !important; }
+
+            /* Improve contrast for green text labels */
+            .text-green-800 { color: var(--dark-text) !important; }
         </style>
         {% block extra_css %}{% endblock %}
     </head>

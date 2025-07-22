@@ -57,7 +57,7 @@ def create_checkout_session(request):
                 customer=subscription.stripe_customer_id,
                 payment_method_types=['card'],
                 line_items=[{
-                    'price': 'price_1234567890',  # Replace with your actual price ID
+                    'price': settings.STRIPE_PRICE_ID,
                     'quantity': 1,
                 }],
                 mode='subscription',
@@ -198,10 +198,10 @@ def handle_subscription_created(subscription_data):
         customer_id = subscription_data.get('customer')
         subscription_obj = Subscription.objects.get(stripe_customer_id=customer_id)
         
-        subscription_obj.stripe_subscription_id = subscription_data['id']
-        subscription_obj.status = subscription_data['status']
-        subscription_obj.current_period_start = stripe_timestamp_to_datetime(subscription_data['current_period_start'])
-        subscription_obj.current_period_end = stripe_timestamp_to_datetime(subscription_data['current_period_end'])
+        subscription_obj.stripe_subscription_id = subscription_data.get('id')
+        subscription_obj.status = subscription_data.get('status')
+        subscription_obj.current_period_start = stripe_timestamp_to_datetime(subscription_data.get('current_period_start'))
+        subscription_obj.current_period_end = stripe_timestamp_to_datetime(subscription_data.get('current_period_end'))
         
         # Get plan details
         if subscription_data.get('items', {}).get('data'):
@@ -221,9 +221,9 @@ def handle_subscription_updated(subscription_data):
             stripe_subscription_id=subscription_data['id']
         )
         
-        subscription_obj.status = subscription_data['status']
-        subscription_obj.current_period_start = stripe_timestamp_to_datetime(subscription_data['current_period_start'])
-        subscription_obj.current_period_end = stripe_timestamp_to_datetime(subscription_data['current_period_end'])
+        subscription_obj.status = subscription_data.get('status')
+        subscription_obj.current_period_start = stripe_timestamp_to_datetime(subscription_data.get('current_period_start'))
+        subscription_obj.current_period_end = stripe_timestamp_to_datetime(subscription_data.get('current_period_end'))
         subscription_obj.save()
     except Subscription.DoesNotExist:
         pass
