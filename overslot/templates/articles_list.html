@@ -171,9 +171,6 @@
         <div class="article-meta">
             {% if article.authors.all %}
             <span class="icon-text has-text-info">
-                <span class="icon">
-                    <i class="fas fa-users"></i>
-                </span>
                 <span class="has-text-weight-medium">
                     {% for author in article.authors.all %}
                         {{ author.display_name }}
@@ -201,9 +198,6 @@
             </span>
             {% endif %}
             <span class="icon-text">
-                <span class="icon">
-                    <i class="fas fa-calendar"></i>
-                </span>
                 <span>{{ article.created|date:"F j, Y" }}</span>
             </span>
         </div>

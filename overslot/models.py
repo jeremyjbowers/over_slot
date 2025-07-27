@@ -448,3 +448,35 @@ class PotentialDuplicate(BaseModel):
     
     def __unicode__(self):
         return f"{self.player1.name} vs {self.player2.name} ({self.similarity_score:.2f})"
+
+
+class DataSheet(models.Model):
+    """
+    Model for storing sheet locations.
+    """
+    sheet_url = models.CharField(max_length=255)
+
+    def __unicode__(self):
+        return self.sheet_url
+
+
+class DataSheetTab(models.Model):
+    """
+    Model for storing tabs within sheets.
+    """
+    data_sheet = models.ForeignKey(DataSheet, on_delete=models.CASCADE)
+    ranking = models.ForeignKey(Ranking, blank=True, null=True, on_delete=models.CASCADE)
+    tab = models.CharField(max_length=255)
+
+    year = models.CharField(max_length=255)
+    ranking_type = models.CharField(max_length=255, choices=LEVEL_CHOICES, blank=True, null=True)
+    ranking_length = models.CharField(max_length=255, blank=True, null=True)
+    is_final = models.BooleanField(default=False)
+    is_draft = models.BooleanField(default=False)
+    is_mock_draft = models.BooleanField(default=False)
+    mock_draft_version = models.CharField(max_length=255, blank=True, null=True)
+
+    def __unicode__(self):
+        if self.data_sheet:
+            return f"{self.data_sheet} {self.tab}"
+        return self.tab
