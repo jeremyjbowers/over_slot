@@ -1132,7 +1132,7 @@ svg.selectAll(".lollipop-line")
     .attr("x1", x(0))
     .attr("x2", d => x(d.value))
     .attr("stroke", d => colorScale(d.value))
-    .style("stroke-width", "1px");
+    .style("stroke-width", "3px");
 
 // Lollipop Circles
 svg.selectAll(".lollipop-circle")
@@ -1141,7 +1141,7 @@ svg.selectAll(".lollipop-circle")
   .append("circle")
     .attr("cy", d => y(d.axis))
     .attr("cx", d => x(d.value))
-    .attr("r", "3")
+    .attr("r", "4")
     .style("fill", d => colorScale(d.value))
     .attr("stroke", d => colorScale(d.value));
 
@@ -1150,8 +1150,8 @@ svg.selectAll(".score-label")
   .data(data)
   .enter()
   .append("text")
-    .attr("y", d => y(d.axis))
-    .attr("x", d => x(d.value) + 10)
+    .attr("y", d => y(d.axis) +15)
+    .attr("x", d => x(d.value)-10)
     .text(d => (d.value * 100).toFixed(0))
     .style("fill", "#E2E8F0")
     .style("font-size", "12px")
