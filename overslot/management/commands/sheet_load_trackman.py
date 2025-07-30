@@ -195,30 +195,26 @@ class Command(BaseCommand):
                         obj = self._fuzzy_find_player(row['Name'])
 
                     if obj:
-                    
-                        rankings = models.Ranking.objects.filter(year=year)
+                        prs = models.PlayerRanking.objects.filter(player=obj)
+                        for pr in prs:
+                            pr.hitter_score = row['hitter_score']
+                            pr.game_power_score = row['game_power_score']
+                            pr.raw_power_score = row['raw_power_score']
+                            pr.approach_score = row['approach_score']
+                            pr.hitter_percentile = row['hitter_percentile']
+                            pr.game_power_percentile = row['game_power_percentile']
+                            pr.raw_power_percentile = row['raw_power_percentile']
+                            pr.approach_percentile = row['approach_percentile']
 
-                        for ranking in rankings:
-                            prs = models.PlayerRanking.objects.filter(ranking=ranking, player=obj)
-                            for pr in prs:
-                                pr.hitter_score = row['hitter_score']
-                                pr.game_power_score = row['game_power_score']
-                                pr.raw_power_score = row['raw_power_score']
-                                pr.approach_score = row['approach_score']
-                                pr.hitter_percentile = row['hitter_percentile']
-                                pr.game_power_percentile = row['game_power_percentile']
-                                pr.raw_power_percentile = row['raw_power_percentile']
-                                pr.approach_percentile = row['approach_percentile']
+                            pr.confidence = None
 
-                                pr.confidence = None
+                            if int(row['Pitches']) > 400:
+                                pr.confidence = 10
+                            elif int(row['Pitches']) > 250:
+                                pr.confidence = 5                                  
 
-                                if int(row['Pitches']) > 400:
-                                    pr.confidence = 10
-                                elif int(row['Pitches']) > 250:
-                                    pr.confidence = 5                                  
+                            if pr.confidence is None:
+                                pr.confidence = 0
 
-                                if pr.confidence is None:
-                                    pr.confidence = 0
-
-                                print(pr)
-                                pr.save()
+                            print(pr)
+                            pr.save()

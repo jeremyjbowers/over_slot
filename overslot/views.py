@@ -194,6 +194,8 @@ def players_detail(request, slug):
             'approach_percentile': latest_ranking.approach_percentile,
             'confidence': latest_ranking.confidence
         })
+        if latest_ranking.hitter_percentile is None or latest_ranking.game_power_percentile is None or latest_ranking.raw_power_percentile is None or latest_ranking.approach_percentile is None:
+            context['radar_chart_data'] = None
 
     # Show unpublished articles only to staff users
     if request.user.is_staff:
