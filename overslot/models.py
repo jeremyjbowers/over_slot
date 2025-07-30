@@ -279,6 +279,17 @@ class PlayerRanking(BaseModel):
     risk = models.CharField(max_length=25, blank=True, null=True)
     carrying_tools = models.ManyToManyField(PlayerRankingCarryingTool, blank=True)
 
+    # Trackman data
+    hitter_percentile = models.FloatField(blank=True, null=True)
+    game_power_percentile = models.FloatField(blank=True, null=True)
+    raw_power_percentile = models.FloatField(blank=True, null=True)
+    approach_percentile = models.FloatField(blank=True, null=True)
+    hitter_score = models.FloatField(blank=True, null=True)
+    game_power_score = models.FloatField(blank=True, null=True)
+    raw_power_score = models.FloatField(blank=True, null=True)
+    approach_score = models.FloatField(blank=True, null=True)
+    confidence = models.IntegerField(blank=True, null=True)
+
     scouting_report = ProseEditorField(
         extensions={
             # Core text formatting

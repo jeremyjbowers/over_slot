@@ -11,6 +11,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from decimal import *
 from django.utils.timezone import template_localtime
+import json
 
 from overslot import models, utils
 from overslot.decorators import subscription_required
@@ -182,6 +183,18 @@ def players_detail(request, slug):
     context = {}
     context['player'] = get_object_or_404(models.Player, slug=slug, active=True)
     context['rankings'] = models.PlayerRanking.objects.filter(player=context['player'])
+    
+    latest_ranking = context['rankings'].order_by('-ranking__year', '-created').first()
+    
+    if latest_ranking:
+        context['radar_chart_data'] = json.dumps({
+            'hitter_percentile': latest_ranking.hitter_percentile,
+            'game_power_percentile': latest_ranking.game_power_percentile,
+            'raw_power_percentile': latest_ranking.raw_power_percentile,
+            'approach_percentile': latest_ranking.approach_percentile,
+            'confidence': latest_ranking.confidence
+        })
+
     # Show unpublished articles only to staff users
     if request.user.is_staff:
         context['articles'] = models.Article.objects.filter(players=context['player'])
