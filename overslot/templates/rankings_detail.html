@@ -8,6 +8,10 @@
 
 {% block og_description %}{% if ranking.blurb %}{{ ranking.blurb }}{% elif ranking.subhead %}{{ ranking.subhead %}{% else %}{% if ranking.headline %}{{ ranking.headline }}{% else %}{{ ranking }}{% endif %} - Comprehensive baseball prospect rankings and analysis.{% endif %}{% endblock %}
 
+{% block twitter_title %}{% if ranking.headline %}{{ ranking.headline }}{% else %}{{ ranking }}{% endif %}{% endblock %}
+
+{% block twitter_description %}{% if ranking.blurb %}{{ ranking.blurb }}{% elif ranking.subhead %}{{ ranking.subhead }}{% else %}{% if ranking.headline %}{{ ranking.headline }}{% else %}{{ ranking }}{% endif %} - Comprehensive baseball prospect rankings and analysis.{% endif %}{% endblock %}
+
 {% block og_type %}article{% endblock %}
 
 {% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
@@ -15,6 +19,8 @@
 {% block og_image %}{% if ranking.featured_image %}{{ request.scheme }}://{{ request.get_host }}{{ ranking.featured_image.url }}{% else %}{{ request.scheme }}://{{ request.get_host }}/static/images/og-default.png{% endif %}{% endblock %}
 
 {% block twitter_card %}summary_large_image{% endblock %}
+
+{% block twitter_image %}{% if ranking.featured_image %}{{ request.scheme }}://{{ request.get_host }}{{ ranking.featured_image.url }}{% else %}{{ request.scheme }}://{{ request.get_host }}/static/images/og-default.png{% endif %}{% endblock %}
 
 {% block twitter_image_alt %}{% if ranking.featured_image %}{% if ranking.headline %}{{ ranking.headline }}{% else %}{{ ranking }}{% endif %}{% else %}Over Slot - Baseball prospect rankings{% endif %}{% endblock %}
 
