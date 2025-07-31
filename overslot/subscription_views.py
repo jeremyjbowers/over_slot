@@ -61,6 +61,7 @@ def create_checkout_session(request):
                     'quantity': 1,
                 }],
                 mode='subscription',
+                allow_promotion_codes=True,
                 success_url=request.build_absolute_uri(reverse('subscription_success')),
                 cancel_url=request.build_absolute_uri(reverse('subscription_dashboard')),
                 metadata={'user_id': request.user.id}
