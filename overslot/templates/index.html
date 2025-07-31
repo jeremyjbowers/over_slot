@@ -743,7 +743,7 @@
 
 <!-- Hero Carousel -->
 <div class="content-section">
-    {% if latest_articles or latest_ranking %}
+    {% if latest_articles or latest_rankings %}
     <div class="hero-carousel">
         <div class="carousel-container">
             <div class="carousel-track" id="carouselTrack">
@@ -814,38 +814,38 @@
                 </div>
                 {% endfor %}
 
-                <!-- Latest Ranking Slide -->
-                {% if latest_ranking %}
+                <!-- Latest Rankings Slides -->
+                {% for ranking in latest_rankings %}
                 <div class="carousel-slide">
                     <div class="hero-slide">
                         <div class="hero-content">
-                            <div class="hero-badge">Latest Ranking</div>
-                            <h2 class="hero-slide-title">{{ latest_ranking }}</h2>
-                            {% if latest_ranking.subhead %}
-                            <p class="hero-slide-subtitle">{{ latest_ranking.subhead }}</p>
+                            <div class="hero-badge">{% if forloop.first %}Latest Ranking{% else %}Recent Ranking{% endif %}</div>
+                            <h2 class="hero-slide-title">{{ ranking }}</h2>
+                            {% if ranking.subhead %}
+                            <p class="hero-slide-subtitle">{{ ranking.subhead }}</p>
                             {% endif %}
-                            {% if latest_ranking.blurb %}
-                            <p class="hero-slide-description">{{ latest_ranking.blurb }}</p>
+                            {% if ranking.blurb %}
+                            <p class="hero-slide-description">{{ ranking.blurb }}</p>
                             {% endif %}
                             <div class="hero-slide-meta">
                                 <div class="meta-item">
-                                    <span>{{ latest_ranking.created|date:"F j, Y" }}</span>
+                                    <span>{{ ranking.created|date:"F j, Y" }}</span>
                                 </div>
-                                {% if latest_ranking.ranking_type %}
+                                {% if ranking.ranking_type %}
                                 <div class="meta-item">
-                                    <span>{{ latest_ranking.ranking_type }}</span>
+                                    <span>{{ ranking.ranking_type }}</span>
                                 </div>
                                 {% endif %}
                             </div>
-                            <a href="/rankings/{{ latest_ranking.slug }}/" class="welcome-btn welcome-btn-secondary">
+                            <a href="/rankings/{{ ranking.slug }}/" class="welcome-btn welcome-btn-secondary">
                                 <span>Rankings</span>
                                 <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
-                        {% if latest_ranking.get_initial_players %}
+                        {% if ranking.get_initial_players %}
                         <div class="hero-visual">
                             <div class="hero-players-preview">
-                                {% for pr in latest_ranking.get_initial_players|slice:":6" %}
+                                {% for pr in ranking.get_initial_players|slice:":6" %}
                                 <a href="/players/{{ pr.player.slug }}/" class="hero-player-card">
                                     <div style="position: relative;">
                                         <img src="{{ pr.player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
@@ -863,7 +863,7 @@
                         {% endif %}
                     </div>
                 </div>
-                {% endif %}
+                {% endfor %}
                 
             </div>
         </div>
@@ -883,9 +883,9 @@
             {% for article in latest_articles %}
             <button class="carousel-dot" data-slide="{{ forloop.counter }}"></button>
             {% endfor %}
-            {% if latest_ranking %}
-            <button class="carousel-dot" data-slide="{{ latest_articles|length|add:1 }}"></button>
-            {% endif %}
+            {% for ranking in latest_rankings %}
+            <button class="carousel-dot" data-slide="{{ latest_articles|length|add:forloop.counter }}"></button>
+            {% endfor %}
         </div>
     </div>
     {% endif %}
@@ -1062,14 +1062,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Auto-advance carousel if there are multiple slides (with delay to ensure initial setup)
-    if (slides.length > 1) {
-        setTimeout(() => {
-            setInterval(() => {
-                nextSlide();
-            }, 8000); // Auto-advance every 8 seconds
-        }, 1000); // Wait 1 second before starting auto-advance
-    }
+    // Auto-advance carousel removed - users control scrolling manually
     
     // Touch/swipe support for mobile
     let startX = 0;
