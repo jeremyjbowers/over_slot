@@ -239,26 +239,6 @@ def search(request):
         active=True
     )[:5]
 
-    def get_ranking_title(ranking):
-        parts = [str(ranking.year)]
-        
-        if ranking.is_mock_draft:
-            if ranking.ranking_type:
-                parts.append(ranking.ranking_type)
-            parts.append(f"Mock Draft v{ranking.mock_draft_version}" if ranking.mock_draft_version else "Mock Draft")
-        elif ranking.is_draft:
-            parts.append("Draft")
-            if ranking.ranking_length:
-                parts.append(f"Top {ranking.ranking_length}")
-            elif ranking.ranking_type:
-                parts.extend([ranking.ranking_type, "Draft Board"])
-        else:
-            if ranking.ranking_type:
-                parts.append(ranking.ranking_type)
-            parts.append("Rankings")
-        
-        return " ".join(parts)
-
     return JsonResponse({
         'articles': [{
             'headline': article.headline,
@@ -266,7 +246,7 @@ def search(request):
             'created': template_localtime(article.created).strftime('%b %d, %Y')
         } for article in articles],
         'rankings': [{
-            'headline': get_ranking_title(ranking),
+            'headline': str(ranking),  # Uses the ranking's __unicode__ method
             'slug': ranking.slug,
             'year': ranking.year,
             'preview': next(

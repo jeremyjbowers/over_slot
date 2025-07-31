@@ -1,64 +1,170 @@
 {% extends "base.html" %}
 
-{% block title %}Subscription Success - Over Slot{% endblock %}
+{% block title %}Welcome to Over-Slot Baseball Premium!{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-2xl mx-auto text-center">
-        <div class="bg-white shadow-lg rounded-lg p-8">
-            <div class="mb-6">
-                <svg class="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <h1 class="text-3xl font-bold text-green-900 mb-2">Welcome to Premium!</h1>
-                <p class="text-gray-600">Your subscription has been successfully activated.</p>
-            </div>
+<style>
+.welcome-container {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(var(--theme-primary-rgb), 0.05), transparent);
+}
+
+.welcome-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 1rem;
+    padding: 3rem;
+    max-width: 800px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 2rem;
+    background: var(--theme-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2rem;
+}
+
+.welcome-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--theme-primary);
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+}
+
+.welcome-subtitle {
+    font-size: 1.25rem;
+    color: var(--dark-text-secondary);
+    margin-bottom: 2rem;
+    font-weight: 600;
+}
+
+.welcome-message {
+    color: var(--dark-text);
+    font-size: 1.1rem;
+    line-height: 1.7;
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.welcome-message p {
+    margin-bottom: 1.5rem;
+}
+
+.welcome-closing {
+    color: var(--theme-primary);
+    font-weight: 600;
+    font-style: italic;
+    margin-top: 2rem;
+    font-size: 1.1rem;
+}
+
+.welcome-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 3rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.welcome-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    min-width: 200px;
+    justify-content: center;
+}
+
+.welcome-btn-primary {
+    background: var(--theme-primary);
+    color: white;
+}
+
+.welcome-btn-primary:hover {
+    background: var(--theme-primary-dark);
+    transform: translateY(-2px);
+    color: white;
+}
+
+.welcome-btn-secondary {
+    background: var(--dark-surface-hover);
+    color: var(--dark-text);
+    border: 1px solid var(--dark-border);
+}
+
+.welcome-btn-secondary:hover {
+    background: var(--dark-border);
+    color: var(--dark-text);
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .welcome-card {
+        padding: 2rem;
+        margin: 1rem;
+    }
+    
+    .welcome-title {
+        font-size: 2rem;
+    }
+    
+    .welcome-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .welcome-btn {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+</style>
+
+<div class="welcome-container">
+    <div class="welcome-card">
+        <div class="welcome-icon">
+            <i class="fas fa-check"></i>
+        </div>
+        
+        <h1 class="welcome-title">Welcome to Over-Slot Baseball!</h1>
+        <p class="welcome-subtitle">Thank you for becoming a Premium member!</p>
+        
+        <div class="welcome-message">
+            <p>You now have access to a full suite of scouting reports, mock drafts, proprietary player modeling visuals, players/industry news and much more.</p>
             
-            <div class="bg-green-50 rounded-lg p-6 mb-6">
-                <h2 class="text-xl font-semibold text-green-900 mb-3">You Now Have Access To:</h2>
-                <ul class="text-left space-y-2 text-sm text-green-800">
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        All premium articles and in-depth analysis
-                    </li>
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenoevenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        Complete player rankings and scouting reports
-                    </li>
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        Individual player profiles with detailed statistics
-                    </li>
-                    <li class="flex items-start">
-                        <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        Early access to new content and analysis
-                    </li>
-                </ul>
-            </div>
+            <p>We don't take your subscription for granted. We value you as much as we hope you'll find value in Over-Slot. Please feel free to reach out with any questions, concerns or areas for improvement in the site going forward. We have so much more to show you on the way...</p>
+        </div>
+        
+        <p class="welcome-closing">Glad you're along for the ride.</p>
+        
+        <div class="welcome-actions">
+            <a href="{% url 'index' %}" class="welcome-btn welcome-btn-primary">
+                <i class="fas fa-home"></i>
+                Start Exploring
+            </a>
             
-            <div class="space-y-4">
-                <a href="{% url 'index' %}" 
-                   class="block w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 transition duration-200 font-medium">
-                    Start Exploring Premium Content
-                </a>
-                
-                <a href="{% url 'subscription_dashboard' %}" 
-                   class="block w-full bg-gray-200 text-gray-800 py-3 px-6 rounded-md hover:bg-gray-300 transition duration-200 font-medium">
-                    Manage Your Subscription
-                </a>
-            </div>
-            
-            <p class="text-sm text-gray-600 mt-6">
-                You can manage your subscription, update billing information, or cancel anytime from your subscription dashboard.
-            </p>
+            <a href="{% url 'subscription_dashboard' %}" class="welcome-btn welcome-btn-secondary">
+                <i class="fas fa-cog"></i>
+                Manage Subscription
+            </a>
         </div>
     </div>
 </div>
