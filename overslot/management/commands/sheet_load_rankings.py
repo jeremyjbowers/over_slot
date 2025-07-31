@@ -58,7 +58,7 @@ class Command(BaseCommand):
 
             return None
 
-        for year in ["2020", "2021", "2022", "2023", "2024", "2025", "2026", "2027"]:
+        for year in ["2026", "2027"]:
             levels = ["Overall", "High School", "College"]
             for level in levels:
                 try:
