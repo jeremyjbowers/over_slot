@@ -103,7 +103,7 @@ class Command(BaseCommand):
                         p.save()
 
                         # player_ranking object
-                        pr, pr_created = models.PlayerRanking.objects.get_or_create(ranking=r, player=p, rank=row['rank'], school=row['school'], position=row['position'])
+                        pr, pr_created = models.PlayerRanking.objects.get_or_create(ranking=r, player=p, school=row['school'], position=row['position'])
 
                         pr.level = transform_level(row.get('class', None))
                         pr.commitment = row.get('commitment', None)
