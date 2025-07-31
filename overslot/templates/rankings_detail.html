@@ -1,16 +1,64 @@
 {% extends "base.html" %}
 
-{% block title %}{% if ranking.headline %}{{ ranking.headline }}{% else %}{{ ranking }}{% endif %} - Over Slot{% endblock %}
+{% block title %}
+{% if ranking.headline %}
+    {{ ranking.headline }} - Over Slot
+{% else %}
+    {{ ranking }} - Over Slot
+{% endif %}
+{% endblock %}
 
-{% block meta_description %}{% if ranking.blurb %}{{ ranking.blurb }}{% elif ranking.subhead %}{{ ranking.subhead }}{% else %}{% if ranking.headline %}{{ ranking.headline }}{% else %}{{ ranking }}{% endif %} - Comprehensive baseball prospect rankings and analysis.{% endif %}{% endblock %}
+{% block meta_description %}
+{% if ranking.blurb %}
+    {{ ranking.blurb }}
+{% elif ranking.subhead %}
+    {{ ranking.subhead }}
+{% elif ranking.headline %}
+    {{ ranking.headline }} - Comprehensive baseball prospect rankings and analysis.
+{% else %}
+    {{ ranking }} - Comprehensive baseball prospect rankings and analysis.
+{% endif %}
+{% endblock %}
 
-{% block og_title %}{% if ranking.headline %}{{ ranking.headline }}{% else %}{{ ranking }}{% endif %}{% endblock %}
+{% block og_title %}
+{% if ranking.headline %}
+    {{ ranking.headline }}
+{% else %}
+    {{ ranking }}
+{% endif %}
+{% endblock %}
 
-{% block og_description %}{% if ranking.blurb %}{{ ranking.blurb }}{% elif ranking.subhead %}{{ ranking.subhead %}{% else %}{% if ranking.headline %}{{ ranking.headline }}{% else %}{{ ranking }}{% endif %} - Comprehensive baseball prospect rankings and analysis.{% endif %}{% endblock %}
+{% block og_description %}
+{% if ranking.blurb %}
+    {{ ranking.blurb }}
+{% elif ranking.subhead %}
+    {{ ranking.subhead }}
+{% elif ranking.headline %}
+    {{ ranking.headline }} - Comprehensive baseball prospect rankings and analysis.
+{% else %}
+    {{ ranking }} - Comprehensive baseball prospect rankings and analysis.
+{% endif %}
+{% endblock %}
 
-{% block twitter_title %}{% if ranking.headline %}{{ ranking.headline }}{% else %}{{ ranking }}{% endif %}{% endblock %}
+{% block twitter_title %}
+{% if ranking.headline %}
+    {{ ranking.headline }}
+{% else %}
+    {{ ranking }}
+{% endif %}
+{% endblock %}
 
-{% block twitter_description %}{% if ranking.blurb %}{{ ranking.blurb }}{% elif ranking.subhead %}{{ ranking.subhead }}{% else %}{% if ranking.headline %}{{ ranking.headline }}{% else %}{{ ranking }}{% endif %} - Comprehensive baseball prospect rankings and analysis.{% endif %}{% endblock %}
+{% block twitter_description %}
+{% if ranking.blurb %}
+    {{ ranking.blurb }}
+{% elif ranking.subhead %}
+    {{ ranking.subhead }}
+{% elif ranking.headline %}
+    {{ ranking.headline }} - Comprehensive baseball prospect rankings and analysis.
+{% else %}
+    {{ ranking }} - Comprehensive baseball prospect rankings and analysis.
+{% endif %}
+{% endblock %}
 
 {% block og_type %}article{% endblock %}
 
