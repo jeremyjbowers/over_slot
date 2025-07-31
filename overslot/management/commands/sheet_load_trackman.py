@@ -124,24 +124,24 @@ class Command(BaseCommand):
         then taking a weighted average of those percentiles.
 
         Hitter Percentile
-            40% Contact % (column I)
-            25% Contact% IZ (column O)
-            15% Contact% Out-of-Zone (Column P)
-            10% SliderMiss% (Column N)
-            10% Elevated FB Contact% (Column M)
+            40% Contact % (column I) POSITIVE
+            25% Contact% IZ (column O) POSITIVE
+            15% Contact% Out-of-Zone (Column P) POSITIVE
+            10% SliderMiss% (Column N) NEGATIVE
+            10% Elevated FB Contact% (Column M) POSITIVE
 
         Game Power Percentile
-            33% 90th Percentile EV (Column R)
-            33% EV 95+ % (Column K)
-            33% Pull AIR% (Column X)
+            33% 90th Percentile EV (Column R) POSITIVE
+            33% EV 95+ % (Column K) POSITIVE
+            33% Pull AIR% (Column X) POSITIVE
 
         Raw Power Percentile
-            50% Average EV (Column Q)
-            50% 90th Percentile EV (Column R)
+            50% Average EV (Column Q) POSITIVE
+            50% 90th Percentile EV (Column R) POSITIVE
 
         Approach Percentile
-            50% Chase% (Column J)
-            50% Walk% (Column AA)
+            50% Chase% (Column J) NEGATIVE
+            50% Walk% (Column AA) POSITIVE
         """
 
         def _parse_value(val):
@@ -161,8 +161,11 @@ class Command(BaseCommand):
                     return None
             return None
 
-        def _calculate_individual_percentiles(rows, column_name):
-            """Calculate percentiles for a single column across all rows"""
+        def _calculate_percentile_distribution(rows, column_name):
+            """Calculate the percentile distribution for a column
+            
+            Returns the percentile thresholds that can be used to rank any value
+            """
             values = []
             for row in rows:
                 value = _parse_value(row.get(column_name))
@@ -170,27 +173,35 @@ class Command(BaseCommand):
                     values.append(value)
             
             if not values:
-                return [None] * len(rows)
+                return None
             
-            # Calculate percentiles for this column
+            # Calculate percentiles for this column (0th to 100th percentile)
             percentiles = np.percentile(values, np.arange(101))
+            return percentiles
+        
+        def _get_percentile_rank(value, percentile_distribution, invert=False):
+            """Get the percentile rank for a single value based on a percentile distribution"""
+            if value is None or percentile_distribution is None:
+                return None
             
-            results = []
-            for row in rows:
-                value = _parse_value(row.get(column_name))
-                if value is None:
-                    results.append(None)
-                else:
-                    percentile_rank = np.interp(value, percentiles, np.arange(101))
-                    results.append(percentile_rank / 100.0)
+            percentile_rank = np.interp(value, percentile_distribution, np.arange(101))
+            percentile_value = percentile_rank / 100.0
             
-            return results
+            # Invert percentile for negative metrics (lower values = better performance)
+            if invert:
+                percentile_value = 1.0 - percentile_value
+            
+            return percentile_value
 
         def _calculate_weighted_percentile_score(row_percentiles, weights_info):
             """Calculate weighted average of percentiles"""
             score = 0
             total_weight = 0
-            for col_name, weight in weights_info:
+            for weight_tuple in weights_info:
+                # Handle both old format (col_name, weight) and new format (col_name, weight, invert)
+                col_name = weight_tuple[0]
+                weight = weight_tuple[1]
+                
                 percentile = row_percentiles.get(col_name)
                 if percentile is not None:
                     score += percentile * weight
@@ -217,60 +228,73 @@ class Command(BaseCommand):
                     print(f"No sheet found for {tab}")
                     continue
 
-                rows = [self.fix_blanks(row) for row in sheet]
+                rows = [self.fix_blanks(row) for row in sheet if int(row.get('Pitches', 0)) >= 250]
 
                 # Define metric weights for each composite score
+                # Format: (metric_name, weight, invert_percentile)
+                # invert_percentile=True for negative metrics where lower values are better
                 hitter_weights = [
-                    ('Contact %', 0.40),
-                    ('Contact% IZ', 0.25),
-                    ('Contact% Out-of-Zone', 0.15),
-                    ('SliderMiss%', 0.10),
-                    ('Elevated FB Contact%', 0.10),
+                    ('Contact %', 0.40, False),           # POSITIVE
+                    ('Contact% IZ', 0.25, False),         # POSITIVE
+                    ('Contact% Out-Of-Zone', 0.15, False), # POSITIVE
+                    ('SliderMiss%', 0.10, True),          # NEGATIVE (lower is better)
+                    ('Elevated FB Contact%', 0.10, False), # POSITIVE
                 ]
                 
                 game_power_weights = [
-                    ('90th Percentile EV', 0.33),
-                    ('EV 95+ %', 0.33),
-                    ('Pull AIR%', 0.33),
+                    ('90th Percentile EV', 0.33, False),  # POSITIVE
+                    ('EV 95+ %', 0.33, False),            # POSITIVE
+                    ('Pull AIR%', 0.33, False),           # POSITIVE
                 ]
                 
                 raw_power_weights = [
-                    ('Average EV', 0.50),
-                    ('90th Percentile EV', 0.50),
+                    ('Average EV', 0.50, False),          # POSITIVE
+                    ('90th Percentile EV', 0.50, False),  # POSITIVE
                 ]
                 
                 approach_weights = [
-                    ('Chase%', 0.50),
-                    ('Walk%', 0.50),
+                    ('Chase%', 0.50, True),               # NEGATIVE (lower is better)
+                    ('BB%', 0.50, False),               # POSITIVE
                 ]
-
-                # Calculate individual percentiles for each metric
-                all_metrics = set()
-                for weights in [hitter_weights, game_power_weights, raw_power_weights, approach_weights]:
-                    for metric, _ in weights:
-                        all_metrics.add(metric)
                 
-                metric_percentiles = {}
-                for metric in all_metrics:
-                    metric_percentiles[metric] = _calculate_individual_percentiles(rows, metric)
+                # Calculate individual percentiles for each metric using only high-volume players
+                all_metrics = {}  # metric_name -> invert_flag
+                for weights in [hitter_weights, game_power_weights, raw_power_weights, approach_weights]:
+                    for metric, _, invert in weights:
+                        all_metrics[metric] = invert
+                
+                # Calculate percentile distributions using only high-volume players (250+ pitches)
+                metric_distributions = {}
+                for metric, should_invert in all_metrics.items():
+                    distribution = _calculate_percentile_distribution(rows, metric)
+                    metric_distributions[metric] = {
+                        'distribution': distribution,
+                        'invert': should_invert
+                    }
 
                 # Process each row and calculate composite scores
-                filtered_rows = [r for r in rows if int(r['Pitches']) > 74]
-                
+                total_rows = len(rows)
                 for original_index, row in enumerate(rows):
-                    if int(row['Pitches']) <= 74:
-                        continue
                     
-                    # Get percentiles for this row
+                    # Calculate percentiles for this row using the high-volume distributions
                     row_percentiles = {}
                     for metric in all_metrics:
-                        row_percentiles[metric] = metric_percentiles[metric][original_index]
+                        raw_value = _parse_value(row.get(metric))
+                        distribution = metric_distributions[metric]['distribution']
+                        should_invert = metric_distributions[metric]['invert']
+                        percentile_result = _get_percentile_rank(raw_value, distribution, invert=should_invert)
+                        row_percentiles[metric] = percentile_result
                     
                     # Calculate weighted composite scores
                     row['hitter_percentile'] = _calculate_weighted_percentile_score(row_percentiles, hitter_weights)
                     row['game_power_percentile'] = _calculate_weighted_percentile_score(row_percentiles, game_power_weights)
                     row['raw_power_percentile'] = _calculate_weighted_percentile_score(row_percentiles, raw_power_weights)
                     row['approach_percentile'] = _calculate_weighted_percentile_score(row_percentiles, approach_weights)
+                    
+                    # Show progress
+                    if (original_index + 1) % 10 == 0 or original_index == total_rows - 1:
+                        progress = ((original_index + 1) / total_rows) * 100
+                        print(f"Processing players: {progress:.1f}% complete ({original_index + 1}/{total_rows})")
                     
                     # For backward compatibility, also set the "score" fields (these are now the same as percentiles)
                     row['hitter_score'] = row['hitter_percentile']
@@ -293,10 +317,7 @@ class Command(BaseCommand):
                             pr.raw_power_percentile = row['raw_power_percentile']
                             pr.approach_percentile = row['approach_percentile']
 
-                            pr.confidence = None
-
-                            if int(row['Pitches']) > 400:
-                                pr.confidence = 10
-
-                            print(pr)
+                            pr.confidence = 10
                             pr.save()
+                
+                print(f"Completed processing {total_rows} players for {tab}")
