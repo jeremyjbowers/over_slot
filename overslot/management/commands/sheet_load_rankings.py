@@ -104,7 +104,7 @@ class Command(BaseCommand):
 
                         # player_ranking object
                         pr, pr_created = models.PlayerRanking.objects.get_or_create(ranking=r, player=p, school=row['school'], position=row['position'])
-
+                        pr.rank = row.get('rank', None)
                         pr.level = transform_level(row.get('class', None))
                         pr.commitment = row.get('commitment', None)
                         pr.raw_carrying_tools = row.get('carrying_tool', None)
