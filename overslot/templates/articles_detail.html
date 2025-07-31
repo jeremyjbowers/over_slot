@@ -1,5 +1,23 @@
 {% extends "base.html" %}
 
+{% block title %}{{ article.headline }} - Over Slot{% endblock %}
+
+{% block meta_description %}{% if article.blurb %}{{ article.blurb }}{% elif article.subhead %}{{ article.subhead }}{% else %}{{ article.headline }} - In-depth baseball prospect analysis and coverage.{% endif %}{% endblock %}
+
+{% block og_title %}{{ article.headline }}{% endblock %}
+
+{% block og_description %}{% if article.blurb %}{{ article.blurb }}{% elif article.subhead %}{{ article.subhead }}{% else %}{{ article.headline }} - In-depth baseball prospect analysis and coverage.{% endif %}{% endblock %}
+
+{% block og_type %}article{% endblock %}
+
+{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
+
+{% block og_image %}{% if article.featured_image %}{{ request.scheme }}://{{ request.get_host }}{{ article.featured_image.url }}{% else %}{{ request.scheme }}://{{ request.get_host }}/static/images/og-default.png{% endif %}{% endblock %}
+
+{% block twitter_card %}summary_large_image{% endblock %}
+
+{% block twitter_image_alt %}{% if article.featured_image %}{{ article.headline }}{% else %}Over Slot - Baseball prospect coverage{% endif %}{% endblock %}
+
 {% block content %}
 <style>
 .hero {
