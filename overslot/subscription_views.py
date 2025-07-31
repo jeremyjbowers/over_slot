@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.urls import reverse
 
 from overslot.models import Subscription
+from overslot.cache_utils import clear_user_subscription_cache
 
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -210,6 +211,10 @@ def handle_subscription_created(subscription_data):
             subscription_obj.plan_name = price_data.get('nickname', 'Premium Plan')
         
         subscription_obj.save()
+        
+        # Clear cached subscription status
+        clear_user_subscription_cache(subscription_obj.user.id)
+        
     except Subscription.DoesNotExist:
         pass
 
@@ -225,6 +230,10 @@ def handle_subscription_updated(subscription_data):
         subscription_obj.current_period_start = stripe_timestamp_to_datetime(subscription_data.get('current_period_start'))
         subscription_obj.current_period_end = stripe_timestamp_to_datetime(subscription_data.get('current_period_end'))
         subscription_obj.save()
+        
+        # Clear cached subscription status
+        clear_user_subscription_cache(subscription_obj.user.id)
+        
     except Subscription.DoesNotExist:
         pass
 
@@ -237,6 +246,10 @@ def handle_subscription_deleted(subscription_data):
         )
         subscription_obj.status = 'canceled'
         subscription_obj.save()
+        
+        # Clear cached subscription status
+        clear_user_subscription_cache(subscription_obj.user.id)
+        
     except Subscription.DoesNotExist:
         pass
 
@@ -251,6 +264,10 @@ def handle_payment_succeeded(invoice):
             )
             subscription_obj.status = 'active'
             subscription_obj.save()
+            
+            # Clear cached subscription status
+            clear_user_subscription_cache(subscription_obj.user.id)
+            
     except Subscription.DoesNotExist:
         pass
 
@@ -266,6 +283,10 @@ def handle_payment_failed(invoice):
             # Don't immediately cancel, Stripe will handle retry logic
             subscription_obj.status = 'past_due'
             subscription_obj.save()
+            
+            # Clear cached subscription status
+            clear_user_subscription_cache(subscription_obj.user.id)
+            
     except Subscription.DoesNotExist:
         pass
 

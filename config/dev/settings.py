@@ -101,6 +101,23 @@ DATABASES = {
     }
 }
 
+# Valkey/Redis Cache Configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': env('VALKEY_URL', default='redis://127.0.0.1:6379/0'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+            }
+        },
+        'KEY_PREFIX': 'overslot_dev',
+        'TIMEOUT': 3600,  # 1 hour default
+    }
+}
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",

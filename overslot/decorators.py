@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.urls import reverse
 
 from overslot.models import Subscription, Article, Ranking, Player, PlayerRanking
+from overslot.cache_utils import get_cached_subscription_status, has_active_subscription
 
 
 def subscription_required(view_func):
@@ -19,19 +20,16 @@ def subscription_required(view_func):
         if request.user.is_staff:
             return view_func(request, *args, **kwargs)
         
-        # Check if user has an active subscription
+        # Check if user has an active subscription using cached status
         user_has_subscription = False
         if request.user.is_authenticated:
-            try:
-                subscription = request.user.subscription
-                if subscription.can_access_premium_content():
-                    user_has_subscription = True
-                else:
-                    # User has subscription but it's not active
-                    messages.warning(request, 'Your subscription is not active. Please update your billing information.')
-                    return redirect('subscription_dashboard')
-            except Subscription.DoesNotExist:
-                pass
+            subscription_status = get_cached_subscription_status(request.user)
+            if subscription_status['is_active']:
+                user_has_subscription = True
+            elif request.user.subscription and not subscription_status['is_active']:
+                # User has subscription but it's not active
+                messages.warning(request, 'Your subscription is not active. Please update your billing information.')
+                return redirect('subscription_dashboard')
         
         # If user has subscription, show full content
         if user_has_subscription:
@@ -104,39 +102,16 @@ def subscription_required_json(view_func):
         if request.user.is_staff:
             return view_func(request, *args, **kwargs)
         
-        try:
-            subscription = request.user.subscription
-            if subscription.can_access_premium_content():
-                return view_func(request, *args, **kwargs)
-            else:
-                return JsonResponse({
-                    'error': 'Subscription required',
-                    'message': 'This content requires an active subscription.'
-                }, status=403)
-        except Subscription.DoesNotExist:
+        subscription_status = get_cached_subscription_status(request.user)
+        if subscription_status['is_active']:
+            return view_func(request, *args, **kwargs)
+        else:
             return JsonResponse({
                 'error': 'Subscription required',
-                'message': 'This content requires a subscription.'
+                'message': 'This content requires an active subscription.'
             }, status=403)
     
     return _wrapped_view
 
 
-def has_active_subscription(user):
-    """
-    Helper function to check if a user has an active subscription.
-    Staff users are considered to have access.
-    Can be used in templates and views.
-    """
-    if not user.is_authenticated:
-        return False
-    
-    # Staff users get full access
-    if user.is_staff:
-        return True
-    
-    try:
-        subscription = user.subscription
-        return subscription.can_access_premium_content()
-    except Subscription.DoesNotExist:
-        return False 
+# has_active_subscription moved to cache_utils.py to avoid circular imports 

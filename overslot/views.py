@@ -15,45 +15,19 @@ import json
 
 from overslot import models, utils
 from overslot.decorators import subscription_required
+from overslot.ranking_cache import get_ranking_filters_cached
+from overslot.homepage_cache import get_homepage_content_cached
 
 def index(request):
-    context = {}
-    # Carousel content - show unpublished articles only to staff users
-    if request.user.is_staff:
-        carousel_articles = models.Article.objects.filter(is_carousel=True)
-        latest_articles = models.Article.objects.filter(is_carousel=True).order_by('-created')
-    else:
-        carousel_articles = models.Article.objects.filter(publish=True, is_carousel=True)
-        latest_articles = models.Article.objects.filter(publish=True, is_carousel=True).order_by('-created')
+    # Get cached homepage content based on user state
+    cached_content = get_homepage_content_cached(request.user)
     
-    # Add active players to carousel articles
-    for article in carousel_articles:
-        article.active_players = article.players.filter(active=True)
-    
-    # Add active players to latest articles
-    for article in latest_articles:
-        article.active_players = article.players.filter(active=True)
-    context['latest_articles'] = latest_articles
-    
-    # Carousel rankings - show unpublished rankings only to staff users
-    if request.user.is_staff:
-        latest_rankings = models.Ranking.objects.filter(is_mock_draft=False, is_carousel=True).order_by('-created')
-    else:
-        latest_rankings = models.Ranking.objects.filter(is_mock_draft=False, publish=True, is_carousel=True).order_by('-created')
-    
-    context['latest_rankings'] = latest_rankings
-    
-    # Content lists below carousel - last 10 regardless of carousel flag
-    if request.user.is_staff:
-        context['articles'] = models.Article.objects.all().order_by('-created')[:10]
-        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False).order_by('-created')[:10]
-    else:
-        context['articles'] = models.Article.objects.filter(publish=True).order_by('-created')[:10]
-        context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False, publish=True).order_by('-created')[:10]
-    
-    # Add active players to content articles
-    for article in context['articles']:
-        article.active_players = article.players.filter(active=True)
+    context = {
+        'latest_articles': cached_content['latest_articles'],
+        'latest_rankings': cached_content['latest_rankings'],
+        'articles': cached_content['articles'],
+        'rankings': cached_content['rankings']
+    }
 
     return render(request, "index.html", context)
 
@@ -126,48 +100,13 @@ def rankings_detail(request, slug):
         ranking = get_object_or_404(models.Ranking, slug=slug, publish=True)
     context['ranking'] = ranking
     
-    # Get all player rankings for this ranking
-    player_rankings = ranking.get_playerrankings()
+    # Get cached filter data and player rankings
+    cached_data = get_ranking_filters_cached(ranking.id)
     
-    # Get unique values for filters (sorted alphabetically)
-    schools = sorted([pr.school for pr in player_rankings if pr.school])
-    commitments = sorted([pr.commitment for pr in player_rankings if pr.commitment])
-    states = sorted([pr.player.state for pr in player_rankings if pr.player.state])
-    
-    # Remove duplicates while preserving order
-    schools = list(dict.fromkeys(schools))
-    commitments = list(dict.fromkeys(commitments))
-    states = list(dict.fromkeys(states))
-    
-    # Create simplified position categories in baseball positional order
-    position_mapping = [
-        ('P', ['P', 'RHP', 'LHP']),
-        ('C', ['C']),
-        ('1B', ['1B']),
-        ('2B', ['2B']),
-        ('3B', ['3B']),
-        ('SS', ['SS']),
-        ('OF', ['OF', 'LF', 'CF', 'RF']),
-        ('INF', ['INF']),
-        ('UTL', ['UTL', 'UTIL'])
-    ]
-    
-    # Find which simplified positions are actually present in the data
-    all_positions = [pr.position for pr in player_rankings if pr.position]
-    positions = []
-    
-    for simple_pos, variants in position_mapping:
-        # Check if any player has a position that contains any of the variants
-        for player_pos in all_positions:
-            if any(variant in player_pos.upper() for variant in variants):
-                if simple_pos not in positions:
-                    positions.append(simple_pos)
-                break
-    
-    context['filter_positions'] = positions
-    context['filter_schools'] = schools
-    context['filter_commitments'] = commitments
-    context['filter_states'] = states
+    context['filter_positions'] = cached_data['filter_positions']
+    context['filter_schools'] = cached_data['filter_schools']
+    context['filter_commitments'] = cached_data['filter_commitments']
+    context['filter_states'] = cached_data['filter_states']
     
     # Add recent articles for sidebar - show drafts to staff
     if request.user.is_staff:

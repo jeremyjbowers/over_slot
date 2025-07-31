@@ -188,7 +188,8 @@ class Ranking(BaseModel):
         ordering = ["-year", "is_final", "-ranking_length"]
 
     def get_playerrankings(self):
-        return PlayerRanking.objects.filter(ranking=self).order_by("rank")
+        """Get player rankings with optimized query."""
+        return PlayerRanking.objects.filter(ranking=self).select_related('player').order_by("rank")
 
     def get_initial_players(self):
         return PlayerRanking.objects.filter(ranking=self, rank__lte=10).order_by("rank")
@@ -203,6 +204,28 @@ class Ranking(BaseModel):
             self.regenerate_slug = False
 
         super().save(*args, **kwargs)
+        
+        # Invalidate related caches
+        self._invalidate_ranking_caches()
+    
+    def _invalidate_ranking_caches(self):
+        """Invalidate caches related to ranking changes."""
+        # Import here to avoid circular imports
+        from overslot.cache_utils import make_cache_key
+        from overslot.homepage_cache import invalidate_homepage_content_cache
+        from overslot.ranking_cache import invalidate_ranking_filters_cache
+        
+        # Invalidate homepage content cache
+        invalidate_homepage_content_cache()
+        
+        # Invalidate ranking filters cache
+        invalidate_ranking_filters_cache(self.id)
+        
+        # Invalidate recent rankings sidebar cache
+        user_states = ['anonymous', 'authenticated', 'subscriber', 'staff']
+        for user_state in user_states:
+            cache_key = make_cache_key('recent_rankings_sidebar', user_state, 5)
+            cache.delete(cache_key)
 
     def __unicode__(self):
         payload = f"{self.year} {self.draft_level}"
@@ -328,6 +351,14 @@ class PlayerRanking(BaseModel):
     class Meta:
         ordering = ['ranking', 'rank']
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        
+        # Invalidate ranking filters cache when player rankings change
+        if self.ranking_id:
+            from overslot.ranking_cache import invalidate_ranking_filters_cache
+            invalidate_ranking_filters_cache(self.ranking_id)
+
     def __unicode__(self):
         return f"({self.rank}) {self.player} in {self.ranking}"
 
@@ -385,6 +416,24 @@ class Article(BaseModel):
             self.regenerate_slug = False
 
         super().save(*args, **kwargs)
+        
+        # Invalidate related caches
+        self._invalidate_article_caches()
+    
+    def _invalidate_article_caches(self):
+        """Invalidate caches related to article changes."""
+        # Import here to avoid circular imports
+        from overslot.cache_utils import make_cache_key
+        from overslot.homepage_cache import invalidate_homepage_content_cache
+        
+        # Invalidate homepage content cache
+        invalidate_homepage_content_cache()
+        
+        # Invalidate recent articles sidebar cache
+        user_states = ['anonymous', 'authenticated', 'subscriber', 'staff']
+        for user_state in user_states:
+            cache_key = make_cache_key('recent_articles_sidebar', user_state, 5)
+            cache.delete(cache_key)
 
     def __unicode__(self):
         return self.headline

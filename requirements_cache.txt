@@ -1,0 +1,4 @@
+# Additional requirements for Valkey caching implementation
+# Add these to your main requirements.txt file
+
+django-redis>=5.4.0

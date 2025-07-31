@@ -85,12 +85,35 @@ CSRF_TRUSTED_ORIGINS = [
     "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
 ]
 
-# Cache configuration - use database for simplicity in multi-pod setup
-# For better performance, consider Redis or Memcached in the future
+# Valkey/Redis Cache Configuration for Production
+VALKEY_HOST = os.environ.get('VALKEY_HOST', '127.0.0.1')
+VALKEY_PORT = os.environ.get('VALKEY_PORT', '6379')
+VALKEY_USER = os.environ.get('VALKEY_USER', '')
+VALKEY_PASSWORD = os.environ.get('VALKEY_PASSWORD', '')
+
+# Build Valkey connection URL
+if VALKEY_USER and VALKEY_PASSWORD:
+    VALKEY_URL = f"redis://{VALKEY_USER}:{VALKEY_PASSWORD}@{VALKEY_HOST}:{VALKEY_PORT}/0"
+elif VALKEY_PASSWORD:
+    VALKEY_URL = f"redis://:{VALKEY_PASSWORD}@{VALKEY_HOST}:{VALKEY_PORT}/0"
+else:
+    VALKEY_URL = f"redis://{VALKEY_HOST}:{VALKEY_PORT}/0"
+
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'cache_table',
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': VALKEY_URL,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+                'socket_connect_timeout': 5,
+                'socket_timeout': 5,
+            }
+        },
+        'KEY_PREFIX': 'overslot_prod',
+        'TIMEOUT': 3600,  # 1 hour default
     }
 }
 
