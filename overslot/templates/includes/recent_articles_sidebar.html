@@ -8,12 +8,14 @@
     <div class="sidebar-content">
         {% if recent_articles %}
             {% for article in recent_articles %}
-                <article class="sidebar-article">
-                    <a href="{% url 'articles_detail' article.slug %}" class="sidebar-article-link">
+                <article class="sidebar-article{% if article.featured_image %} has-featured-image{% endif %}">
+                    <a href="{% url 'articles_detail' article.slug %}" class="sidebar-article-link"{% if article.featured_image %} style="background-image: url('{{ article.featured_image.url }}')"{% endif %}>
+                        {% if article.featured_image %}
+                            <div class="sidebar-article-overlay"></div>
+                        {% endif %}
                         <div class="sidebar-article-content">
                             <h4 class="sidebar-article-title{% if not article.publish and user.is_staff %} has-draft{% endif %}">
                                 {{ article.headline }}
-                                {% include "includes/premium_badge.html" with badge_class="icon-only" %}
                                 {% if not article.publish and user.is_staff %}
                                 <span class="draft-badge-small">DRAFT</span>
                                 {% endif %}
@@ -94,18 +96,66 @@
     padding: 1.25rem;
     color: inherit;
     text-decoration: none;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    min-height: 120px;
 }
 
-.sidebar-article-link:hover {
-    background: var(--dark-surface-hover);
-    color: inherit;
+.sidebar-article.has-featured-image .sidebar-article-link {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.sidebar-article-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(0, 0, 0, 0.7) 0%,
+        rgba(0, 0, 0, 0.4) 50%,
+        rgba(0, 0, 0, 0.8) 100%
+    );
+    z-index: 1;
 }
 
 .sidebar-article-content {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    position: relative;
+    z-index: 2;
+}
+
+.sidebar-article-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-article:not(.has-featured-image) .sidebar-article-link:hover {
+    background: var(--dark-surface-hover);
+    transform: none;
+    box-shadow: none;
+}
+
+.sidebar-article.has-featured-image .sidebar-article-link:hover .sidebar-article-overlay {
+    background: linear-gradient(
+        135deg,
+        rgba(0, 0, 0, 0.8) 0%,
+        rgba(0, 0, 0, 0.5) 50%,
+        rgba(0, 0, 0, 0.9) 100%
+    );
+}
+
+.sidebar-article.has-featured-image .sidebar-article-title,
+.sidebar-article.has-featured-image .sidebar-article-subhead,
+.sidebar-article.has-featured-image .sidebar-article-meta {
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
 .sidebar-article-title {
@@ -191,6 +241,31 @@
     
     .recent-articles-sidebar.sticky {
         position: relative !important;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .sidebar-article-link {
+        padding: 1rem;
+        min-height: 100px;
+    }
+    
+    .sidebar-article-content {
+        gap: 0.375rem;
+    }
+    
+    .sidebar-article-title {
+        font-size: var(--text-sm);
+        -webkit-line-clamp: 3;
+    }
+    
+    .sidebar-article-subhead {
+        font-size: var(--text-xs);
+        -webkit-line-clamp: 1;
+    }
+    
+    .sidebar-article-meta {
+        font-size: 0.65rem;
     }
 }
 
