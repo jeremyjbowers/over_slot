@@ -300,23 +300,23 @@ class RankingAdmin(admin.ModelAdmin):
     # --- List / overview ----------------------------------------------------
     list_display = [
         "year",
+        "draft_level",
         "ranking_length",
         "is_mock_draft",
         "mock_draft_version",
         "is_final",
         "publish",
         "is_carousel",
-        "last_modified",
     ]
     list_editable = ["publish", "is_carousel"]
     list_filter = [
         "publish",
         "is_carousel",
         "year",
-        "ranking_length",
         "is_final",
         "is_draft",
         "is_mock_draft",
+        "draft_level",
     ]
     search_fields = [
         "headline",
@@ -334,6 +334,7 @@ class RankingAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     ("year", "ranking_type", "ranking_length"),
+                    "draft_level",
                     "is_final",
                     "is_draft",
                     ("is_mock_draft", "mock_draft_version"),

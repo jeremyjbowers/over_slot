@@ -129,6 +129,12 @@ class Ranking(BaseModel):
     """
     An instance of a ranking. Rankings are unique by date, by length, and if they are "final."
     """
+    LEVEL_CHOICES = (
+        ("Overall", "Overall"),
+        ("High School", "High School"),
+        ("College", "College"),
+    )
+
     # ranking model data fields
     year = models.CharField(max_length=255)
     ranking_type = models.CharField(max_length=255, choices=LEVEL_CHOICES, blank=True, null=True)
@@ -137,6 +143,7 @@ class Ranking(BaseModel):
     is_draft = models.BooleanField(default=False)
     is_mock_draft = models.BooleanField(default=False)
     mock_draft_version = models.CharField(max_length=255, blank=True, null=True)
+    draft_level = models.CharField(max_length=255, choices=LEVEL_CHOICES, blank=True, null=True)
 
     # publishing fields
     headline = models.CharField(max_length=255, blank=True, null=True)
@@ -180,7 +187,6 @@ class Ranking(BaseModel):
     class Meta:
         ordering = ["-year", "is_final", "-ranking_length"]
 
-
     def get_playerrankings(self):
         return PlayerRanking.objects.filter(ranking=self).order_by("rank")
 
@@ -199,7 +205,7 @@ class Ranking(BaseModel):
         super().save(*args, **kwargs)
 
     def __unicode__(self):
-        payload = f"{self.year}"
+        payload = f"{self.year} {self.draft_level}"
 
         if self.is_draft:
             payload += " Draft"
