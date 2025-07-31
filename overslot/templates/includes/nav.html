@@ -363,6 +363,39 @@
     }
 }
 
+/* Premium Badge Styles for Search */
+.premium-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #1f2937;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    margin-left: 0.5rem;
+}
+
+.premium-badge.icon-only {
+    padding: 0.125rem;
+    font-size: 0.5rem;
+    border-radius: 50%;
+    width: 1.25rem;
+    height: 1.25rem;
+    justify-content: center;
+    margin-left: 0.5rem;
+}
+
+.premium-badge.icon-only .fa-crown {
+    font-size: 0.5rem;
+    color: #92400e;
+}
+
 /* User Dropdown Styles */
 .navbar-item.has-dropdown .navbar-link {
     color: var(--dark-text);
@@ -448,7 +481,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.articles.forEach(article => {
                         articleResults.innerHTML += `
                             <a href="/articles/${article.slug}/" class="search-item">
-                                <div class="search-item-title">${article.headline}</div>
+                                <div class="search-item-title">
+                                    ${article.headline}
+                                    <a href="${window.subscriptionUrl}" class="premium-badge icon-only" title="Subscribe for Premium Content" onclick="event.stopPropagation();">
+                                        <i class="fas fa-crown"></i>
+                                    </a>
+                                </div>
                                 <div class="search-item-meta">${article.created}</div>
                             </a>
                         `;
@@ -458,7 +496,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.rankings.forEach(ranking => {
                         rankingResults.innerHTML += `
                             <a href="/rankings/${ranking.slug}/" class="search-item">
-                                <div class="search-item-title">${ranking.headline}</div>
+                                <div class="search-item-title">
+                                    ${ranking.headline}
+                                    <a href="${window.subscriptionUrl}" class="premium-badge icon-only" title="Subscribe for Premium Content" onclick="event.stopPropagation();">
+                                        <i class="fas fa-crown"></i>
+                                    </a>
+                                </div>
                                 <div class="search-item-meta">
                                     ${ranking.year}
                                     ${ranking.preview ? `<span class="search-item-preview">• Contains ${ranking.preview}</span>` : ''}
@@ -471,7 +514,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.players.forEach(player => {
                         playerResults.innerHTML += `
                             <a href="/players/${player.slug}/" class="search-item">
-                                <div class="search-item-title">${player.name}</div>
+                                <div class="search-item-title">
+                                    ${player.name}
+                                    <a href="${window.subscriptionUrl}" class="premium-badge icon-only" title="Subscribe for Premium Content" onclick="event.stopPropagation();">
+                                        <i class="fas fa-crown"></i>
+                                    </a>
+                                </div>
                                 <div class="search-item-meta">${player.position} | ${player.school}</div>
                             </a>
                         `;
@@ -493,5 +541,9 @@ document.addEventListener('DOMContentLoaded', () => {
     searchResults.addEventListener('click', (e) => {
         e.stopPropagation();
     });
-});
+    });
+</script>
+
+<script>
+window.subscriptionUrl = "{% url 'subscription_dashboard' %}";
 </script>

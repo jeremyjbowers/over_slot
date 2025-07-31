@@ -13,6 +13,7 @@
                         <div class="sidebar-article-content">
                             <h4 class="sidebar-article-title{% if not article.publish and user.is_staff %} has-draft{% endif %}">
                                 {{ article.headline }}
+                                {% include "includes/premium_badge.html" with badge_class="icon-only" %}
                                 {% if not article.publish and user.is_staff %}
                                 <span class="draft-badge-small">DRAFT</span>
                                 {% endif %}

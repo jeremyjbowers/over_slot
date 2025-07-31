@@ -150,7 +150,7 @@
     }
     
     .sidebar-area {
-        order: -1; /* Put sidebar above content on mobile */
+        order: 1; /* Put sidebar below content on mobile */
     }
 }
 
@@ -204,6 +204,7 @@
         <a href="/articles/{{ article.slug }}/" class="has-text-white">
             <h2 class="article-headline{% if not article.publish and user.is_staff %} has-draft{% endif %}">
                 {{ article.headline }}
+                {% include "includes/premium_badge.html" with badge_class="compact" %}
                 {% if not article.publish and user.is_staff %}
                 <span class="draft-badge">DRAFT</span>
                 {% endif %}
@@ -220,6 +221,7 @@
             {% for player in article.active_players %}
             <a href="/players/{{ player.slug }}/" class="player-tag">
                 {{ player.name }}
+                {% include "includes/premium_badge.html" with badge_class="icon-only" %}
             </a>
             {% endfor %}
         </div>

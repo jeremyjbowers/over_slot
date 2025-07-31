@@ -655,7 +655,7 @@ body {
 </div>
 
 <div class="player-info-section">
-    <div class="player-info-grid {% if radar_chart_data %}with-chart{% endif %}">
+    <div class="player-info-grid {% if radar_chart_data and not preview_mode %}with-chart{% endif %}">
         <!-- Photo column -->
         <div class="player-photo-card">
             <div class="player-photo-wrapper">
@@ -792,7 +792,7 @@ body {
             {% endif %}
         </div>
 
-        {% if radar_chart_data %}
+        {% if radar_chart_data and not preview_mode %}
         <div id="lollipop-chart-container">
             <div class="info-section">
                  <div class="info-section-header">
@@ -1036,7 +1036,7 @@ function toggleReport(button) {
     buttonText.textContent = isExpanded ? 'Show more' : 'Show less';
 }
 
-{% if radar_chart_data %}
+{% if radar_chart_data and not preview_mode %}
 const lollipopData = {{ radar_chart_data|safe }};
 const container = d3.select("#lollipop-chart-container");
 const containerWidth = container.node().getBoundingClientRect().width;
