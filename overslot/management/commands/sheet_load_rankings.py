@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
+from django.db.models import Q
 
 from overslot import models, utils
 
@@ -18,7 +19,6 @@ class Command(BaseCommand):
         # Only delete if explicitly requested
         if options['clear']:
             self.stdout.write(self.style.WARNING('DESTRUCTIVE MODE: Clearing all existing data...'))
-            models.Player.objects.all().delete()
             models.PlayerRanking.objects.all().delete()
             models.Ranking.objects.all().delete()
             self.stdout.write(self.style.SUCCESS('Cleared existing data'))
@@ -37,7 +37,7 @@ class Command(BaseCommand):
                     decision='merged',
                     primary_player__isnull=False
                 ).filter(
-                    models.Q(player1=player) | models.Q(player2=player)
+                    Q(player1=player) | Q(player2=player)
                 ).exclude(
                     primary_player=player  # Don't match if this player was the primary
                 ).first()
@@ -147,5 +147,5 @@ class Command(BaseCommand):
 
                         pr.save()
                 except Exception as e:
-                    print(f"Error processing {year} {level}: {e}")
+                    # print(f"Error processing {year} {level}: {e}")
                     continue
