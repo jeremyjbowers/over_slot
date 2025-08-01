@@ -59,15 +59,15 @@ def subscription_required(view_func):
             # by calling the view logic directly
             context = {}
             if view_name == 'articles_detail':
-                context['article'] = get_object_or_404(Article, slug=kwargs.get('slug'))
+                context['article'] = get_object_or_404(Article, slug=kwargs.get('slug'), publish=True)
             elif view_name == 'rankings_detail':
-                context['ranking'] = get_object_or_404(Ranking, slug=kwargs.get('slug'))
+                context['ranking'] = get_object_or_404(Ranking, slug=kwargs.get('slug'), publish=True)
                 context['recent_articles'] = Article.objects.filter(publish=True).order_by('-created')[:5]
             elif view_name == 'players_detail':
                 player = get_object_or_404(Player, slug=kwargs.get('slug'))
                 context['player'] = player
-                context['rankings'] = PlayerRanking.objects.filter(player=player)
-                context['articles'] = Article.objects.filter(players=player)
+                context['rankings'] = PlayerRanking.objects.filter(player=player, ranking__publish=True)
+                context['articles'] = Article.objects.filter(players=player, publish=True)
         
         # Add preview mode flags
         context['preview_mode'] = True
