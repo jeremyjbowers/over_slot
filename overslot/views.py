@@ -182,7 +182,12 @@ def rankings_detail(request, slug):
 def players_detail(request, slug):
     context = {}
     context['player'] = get_object_or_404(models.Player, slug=slug, active=True)
-    context['rankings'] = models.PlayerRanking.objects.filter(player=context['player'])
+    
+    # Show unpublished rankings only to staff users
+    if request.user.is_staff:
+        context['rankings'] = models.PlayerRanking.objects.filter(player=context['player'])
+    else:
+        context['rankings'] = models.PlayerRanking.objects.filter(player=context['player'], ranking__publish=True)
     
     latest_ranking = context['rankings'].order_by('-ranking__year', '-created').first()
     
