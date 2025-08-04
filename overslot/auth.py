@@ -93,64 +93,20 @@ def send_magic_link(request, email, is_signup=False, first_name=None, last_name=
     except Exception as e:
         messages.error(
             request,
-            "Sorry, we couldn't send the magic link. Please try again or use password authentication."
+            "Sorry, we couldn't send the magic link. Please try again."
         )
 
     return redirect('account_login')
 
-def login_view(request):
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        
-        # Import here to avoid circular imports
-        from overslot.models import UserEmail
-        
-        user = UserEmail.find_user_by_email(email)
-        if not user:
-            messages.error(request, "No account found with this email address.")
-            return render(request, 'auth/login.html')
-        
-        authenticated_user = authenticate(username=user.username, password=password)
-        if authenticated_user is not None:
-            login(request, authenticated_user)
-            return redirect('index')
-        else:
-            messages.error(request, "Invalid password.")
-            return render(request, 'auth/login.html')
-    
-    return render(request, 'auth/login.html')
 
-def signup_view(request):
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        password1 = request.POST.get('password1')
-        password2 = request.POST.get('password2')
 
-        if User.objects.filter(email=email).exists():
-            messages.error(request, "An account with this email already exists.")
-            return render(request, 'auth/signup.html')
 
-        if password1 != password2:
-            messages.error(request, "Passwords don't match.")
-            return render(request, 'auth/signup.html')
-
-        user = User.objects.create_user(
-            username=email,
-            email=email,
-            password=password1
-        )
-        login(request, user)
-        messages.success(request, "Account created successfully!")
-        return redirect('index')
-
-    return render(request, 'auth/signup.html')
 
 def magic_link_view(request):
     if request.method == 'POST':
         email = request.POST.get('email')
         return send_magic_link(request, email)
-    return redirect('account_login')
+    return render(request, 'account/login.html')
 
 def magic_link_signup_view(request):
     if request.method == 'POST':
@@ -164,7 +120,7 @@ def magic_link_signup_view(request):
             return render(request, 'account/signup.html')
         
         return send_magic_link(request, email, is_signup=True, first_name=first_name, last_name=last_name)
-    return redirect('account_signup')
+    return render(request, 'account/signup.html')
 
 def magic_link_verify_view(request, token):
     from sesame.utils import get_user

@@ -101,20 +101,7 @@ DATABASES = {
     }
 }
 
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
+# Password validators removed - using magic link authentication only
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
@@ -138,15 +125,12 @@ ACCOUNT_SIGNUP_FIELDS = ['email*', 'first_name*', 'last_name*']
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # Disable allauth email verification since we handle it via magic links
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_PASSWORD_MIN_LENGTH = 8  # Keep for admin users, but not used in signup
+# Password settings removed - using magic link authentication only
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Auto-login users when they verify email
 ACCOUNT_LOGOUT_ON_GET = False  # Require POST for logout
 ACCOUNT_SESSION_REMEMBER = None  # Don't auto-remember sessions
 
-# Enable login by code (magic link alternative through allauth)
-ACCOUNT_LOGIN_BY_CODE_ENABLED = True
-ACCOUNT_LOGIN_BY_CODE_TIMEOUT = 300  # 5 minutes
-ACCOUNT_LOGIN_BY_CODE_MAX_ATTEMPTS = 3
+# Login by code disabled - using sesame magic links instead
 
 # Django Sesame settings for magic link authentication
 SESAME_MAX_AGE = 24 * 60 * 60  # 24 hours - restore production value

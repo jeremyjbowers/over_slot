@@ -44,8 +44,9 @@ urlpatterns = [
     path('webhooks/stripe/', subscription_views.stripe_webhook, name='stripe_webhook'),
 
     # Authentication URLs
-    # Override allauth's login with our custom view that supports secondary emails
-    path('accounts/login/', auth.login_view, name='account_login'),
+    # Use magic link authentication only
+    path('accounts/login/', auth.magic_link_view, name='account_login'),
+    path('accounts/signup/', auth.magic_link_signup_view, name='account_signup'),
     path('accounts/', include('allauth.urls')),  # This includes all django-allauth URLs
     path('magic-link/', auth.magic_link_view, name='magic_link'),
     path('magic-link/signup/', auth.magic_link_signup_view, name='magic_link_signup'),
