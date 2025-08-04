@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>{% block email_title %}Over Slot{% endblock %}</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style type="text/css">
+        /* Email Style Guide for Over Slot
+           - Text-first approach for compatibility
+           - Consistent branding and buttons
+           - Works in Gmail, Outlook, Apple Mail, etc.
+        */
+        
+        /* Reset and base styles */
+        body, table, td, p, a, li, blockquote {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+        
+        table, td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+        
+        img {
+            -ms-interpolation-mode: bicubic;
+            border: 0;
+            outline: none;
+            text-decoration: none;
+        }
+        
+        /* Main styles */
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #f8fafc !important;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+            font-size: 16px !important;
+            line-height: 1.6 !important;
+            color: #374151 !important;
+        }
+        
+        /* Container */
+        .email-container {
+            max-width: 600px !important;
+            margin: 0 auto !important;
+            background-color: #ffffff !important;
+        }
+        
+        /* Header */
+        .email-header {
+            background-color: #1f2937 !important;
+            padding: 24px 32px !important;
+            text-align: center !important;
+        }
+        
+        .email-logo {
+            color: #ffffff !important;
+            font-size: 24px !important;
+            font-weight: 700 !important;
+            text-decoration: none !important;
+            margin: 0 !important;
+        }
+        
+        /* Content */
+        .email-content {
+            padding: 32px !important;
+        }
+        
+        .email-title {
+            color: #1f2937 !important;
+            font-size: 24px !important;
+            font-weight: 600 !important;
+            margin: 0 0 20px 0 !important;
+            line-height: 1.3 !important;
+        }
+        
+        .email-text {
+            color: #374151 !important;
+            font-size: 16px !important;
+            line-height: 1.6 !important;
+            margin: 0 0 20px 0 !important;
+        }
+        
+        /* Buttons */
+        .email-button-container {
+            text-align: center !important;
+            margin: 32px 0 !important;
+        }
+        
+        .email-button {
+            display: inline-block !important;
+            background-color: #1d4ed8 !important;
+            color: #ffffff !important;
+            text-decoration: none !important;
+            padding: 16px 32px !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+            font-size: 16px !important;
+            border: none !important;
+            text-align: center !important;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+        }
+        
+        .email-button:hover {
+            background-color: #1e40af !important;
+            color: #ffffff !important;
+            text-decoration: none !important;
+        }
+        
+        /* Info box */
+        .email-info-box {
+            background-color: #f0f9ff !important;
+            border: 1px solid #e0f2fe !important;
+            border-radius: 6px !important;
+            padding: 20px !important;
+            margin: 24px 0 !important;
+        }
+        
+        .email-info-box h3 {
+            color: #0f172a !important;
+            font-size: 16px !important;
+            font-weight: 600 !important;
+            margin: 0 0 12px 0 !important;
+        }
+        
+        .email-info-box ul {
+            margin: 0 !important;
+            padding-left: 20px !important;
+            color: #374151 !important;
+        }
+        
+        .email-info-box li {
+            margin-bottom: 8px !important;
+            line-height: 1.5 !important;
+        }
+        
+        /* Footer */
+        .email-footer {
+            background-color: #f9fafb !important;
+            padding: 24px 32px !important;
+            border-top: 1px solid #e5e7eb !important;
+        }
+        
+        .email-footer-text {
+            color: #6b7280 !important;
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+            margin: 0 0 12px 0 !important;
+        }
+        
+        /* Fallback link styling */
+        .email-fallback-link {
+            color: #1d4ed8 !important;
+            word-break: break-all !important;
+            font-size: 14px !important;
+            background-color: #f3f4f6 !important;
+            padding: 12px !important;
+            border-radius: 4px !important;
+            margin: 16px 0 !important;
+            display: block !important;
+        }
+        
+        /* Mobile responsiveness */
+        @media only screen and (max-width: 640px) {
+            .email-container {
+                width: 100% !important;
+                margin: 0 !important;
+            }
+            
+            .email-header,
+            .email-content,
+            .email-footer {
+                padding: 20px !important;
+            }
+            
+            .email-title {
+                font-size: 20px !important;
+            }
+            
+            .email-button {
+                padding: 14px 24px !important;
+                font-size: 15px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+        <tr>
+            <td style="padding: 20px 0;">
+                <div class="email-container">
+                    <!-- Header -->
+                    <div class="email-header">
+                        <h1 class="email-logo">Over Slot</h1>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="email-content">
+                        {% block email_content %}{% endblock %}
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="email-footer">
+                        {% block email_footer %}
+                        <p class="email-footer-text">
+                            <strong>Need help?</strong> If you have any questions or need assistance, 
+                            feel free to contact our support team.
+                        </p>
+                        <p class="email-footer-text">
+                            Best regards,<br>
+                            The Over Slot Team
+                        </p>
+                        {% endblock %}
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

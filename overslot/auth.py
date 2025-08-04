@@ -27,24 +27,29 @@ class MailgunEmailer:
         )
 
 def send_magic_link(request, email, is_signup=False, first_name=None, last_name=None):
-    try:
-        user = User.objects.get(email=email)
+    # Import here to avoid circular imports
+    from overslot.models import UserEmail
+    
+    user = UserEmail.find_user_by_email(email)
+    
+    if user:
         if is_signup:
             messages.error(request, "An account with this email already exists. Please sign in instead.")
             return redirect('account_login')
-    except User.DoesNotExist:
+    else:
         if not is_signup:
             messages.error(request, "No account found with this email address. Please sign up first.")
             return redirect('account_signup')
         
-        # Create user using allauth-compatible method
-        user = User.objects.create_user(
-            username=email,  # Use email as username
-            email=email,
-            password=get_random_string(32),  # Random password since we're using magic links
-            first_name=first_name or '',
-            last_name=last_name or ''
-        )
+        # Create user using allauth-compatible method (only when user doesn't exist)
+        if not user:
+            user = User.objects.create_user(
+                username=email,  # Use email as username
+                email=email,
+                password=get_random_string(32),  # Random password since we're using magic links
+                first_name=first_name or '',
+                last_name=last_name or ''
+            )
         
         # Ensure user is saved to database
         user.save()
@@ -98,15 +103,17 @@ def login_view(request):
         email = request.POST.get('email')
         password = request.POST.get('password')
         
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
+        # Import here to avoid circular imports
+        from overslot.models import UserEmail
+        
+        user = UserEmail.find_user_by_email(email)
+        if not user:
             messages.error(request, "No account found with this email address.")
             return render(request, 'auth/login.html')
         
-        user = authenticate(username=user.username, password=password)
-        if user is not None:
-            login(request, user)
+        authenticated_user = authenticate(username=user.username, password=password)
+        if authenticated_user is not None:
+            login(request, authenticated_user)
             return redirect('index')
         else:
             messages.error(request, "Invalid password.")

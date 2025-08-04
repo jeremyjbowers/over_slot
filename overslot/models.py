@@ -11,6 +11,7 @@ from django.dispatch import receiver
 from django.conf import settings
 from django_prose_editor.fields import ProseEditorField
 from django.utils.text import slugify
+from django.utils.crypto import get_random_string
 
 from overslot import utils
 
@@ -28,6 +29,51 @@ class BaseModel(models.Model):
 
     def __str__(self):
         return self.__unicode__()
+
+
+class UserEmail(BaseModel):
+    """
+    Model to store additional email addresses for user accounts.
+    Users can have multiple verified email addresses for login.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='additional_emails')
+    email = models.EmailField(unique=True, help_text="Additional email address for this user")
+    is_verified = models.BooleanField(default=False, help_text="Whether this email has been verified")
+    verification_token = models.CharField(max_length=64, blank=True, null=True, help_text="Token for email verification")
+    
+    class Meta:
+        ordering = ['email']
+        verbose_name = "User Email"
+        verbose_name_plural = "User Emails"
+    
+    def __unicode__(self):
+        verified_status = "✓" if self.is_verified else "✗"
+        return f"{self.user.username} - {self.email} {verified_status}"
+    
+    def generate_verification_token(self):
+        """Generate a unique verification token for this email"""
+        self.verification_token = get_random_string(64)
+        self.save()
+        return self.verification_token
+    
+    @classmethod
+    def find_user_by_email(cls, email):
+        """
+        Find a user by email address, checking both primary and secondary emails.
+        Returns the User object if found, None otherwise.
+        """
+        # First check primary email
+        try:
+            return User.objects.get(email=email)
+        except User.DoesNotExist:
+            pass
+        
+        # Then check secondary emails (only verified ones for login)
+        try:
+            user_email = cls.objects.get(email=email, is_verified=True)
+            return user_email.user
+        except cls.DoesNotExist:
+            return None
 
 
 class Subscription(BaseModel):

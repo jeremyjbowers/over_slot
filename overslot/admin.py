@@ -132,7 +132,8 @@ from overslot.models import (
     PlayerRanking,
     PlayerRankingCarryingTool,
     Subscription,
-    DuplicateDecision
+    DuplicateDecision,
+    UserEmail
 )
 
 
@@ -474,3 +475,28 @@ class CustomUserAdmin(DjangoUserAdmin):
 @admin.register(Group, site=admin_site)
 class CustomGroupAdmin(DjangoGroupAdmin):
     pass
+
+
+@admin.register(UserEmail, site=admin_site)
+class UserEmailAdmin(admin.ModelAdmin):
+    list_display = ['user', 'email', 'is_verified', 'created']
+    list_filter = ['is_verified', 'created']
+    search_fields = ['email', 'user__email', 'user__username', 'user__first_name', 'user__last_name']
+    readonly_fields = ['verification_token', 'created', 'last_modified']
+    
+    fieldsets = (
+        (None, {
+            'fields': ('user', 'email', 'is_verified')
+        }),
+        ('Verification', {
+            'fields': ('verification_token',),
+            'classes': ('collapse',)
+        }),
+        ('Timestamps', {
+            'fields': ('created', 'last_modified'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')

@@ -1,76 +1,54 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign in to Over Slot</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.5;
-            color: #1a1a1a;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #3298dc;
-            text-decoration: none;
-        }
-        .button {
-            display: inline-block;
-            background-color: #3298dc;
-            color: white;
-            text-decoration: none;
-            padding: 1rem 2rem;
-            border-radius: 6px;
-            font-weight: 600;
-            margin: 1rem 0;
-        }
-        .footer {
-            margin-top: 2rem;
-            font-size: 0.875rem;
-            color: #64748b;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <span class="logo">Over Slot</span>
-        </div>
+{% extends "email_base.html" %}
 
-        {% if is_signup %}
-        <h1>Welcome to Over Slot{% if first_name %}, {{ first_name }}{% endif %}!</h1>
-        <p>Click the button below to verify your email address and create your account:</p>
-        {% else %}
-        <h1>{% if first_name %}Hi {{ first_name }}! {% endif %}Sign in to Over Slot</h1>
-        <p>Click the button below to sign in to your account:</p>
-        {% endif %}
+{% block email_title %}
+    {% if is_signup %}Welcome to Over Slot{% else %}Sign in to Over Slot{% endif %}
+{% endblock %}
 
-        <div style="text-align: center;">
-            <a href="{{ magic_link }}" class="button">
-                {% if is_signup %}Create account{% else %}Sign in{% endif %}
-            </a>
-        </div>
+{% block email_content %}
+    {% if is_signup %}
+        <h1 class="email-title">Welcome to Over Slot{% if first_name %}, {{ first_name }}{% endif %}!</h1>
+        <p class="email-text">
+            Thank you for joining Over Slot! Click the button below to verify your email address and create your account:
+        </p>
+    {% else %}
+        <h1 class="email-title">{% if first_name %}Hi {{ first_name }}! {% endif %}Sign in to Over Slot</h1>
+        <p class="email-text">
+            We received a request to sign in to your Over Slot account. Click the button below to continue:
+        </p>
+    {% endif %}
 
-        <p>Or copy and paste this URL into your browser:</p>
-        <p style="word-break: break-all;">{{ magic_link }}</p>
-
-        <div class="footer">
-            <p>If you didn't request this email, you can safely ignore it.</p>
-            <p>This link will expire in 24 hours.</p>
-        </div>
+    <div class="email-button-container">
+        <a href="{{ magic_link }}" class="email-button" style="display: inline-block !important; background-color: #1d4ed8 !important; color: #ffffff !important; text-decoration: none !important; padding: 16px 32px !important; border-radius: 6px !important; font-weight: 600 !important; font-size: 16px !important; text-align: center !important;">
+            {% if is_signup %}Create Account{% else %}Sign In{% endif %}
+        </a>
     </div>
-</body>
-</html> 
+
+    <p class="email-text">
+        <strong>Button not working?</strong> Copy and paste this link into your browser:
+    </p>
+    <div class="email-fallback-link">{{ magic_link }}</div>
+
+    {% if is_signup %}
+        <div class="email-info-box">
+            <h3>What's next?</h3>
+            <ul>
+                <li>Complete your account setup</li>
+                <li>Access premium baseball scouting reports</li>
+                <li>Explore our comprehensive player rankings</li>
+            </ul>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block email_footer %}
+    <p class="email-footer-text">
+        <strong>Security notice:</strong> This magic link will expire in 24 hours for your security.
+    </p>
+    <p class="email-footer-text">
+        If you didn't request this email, you can safely ignore it. No changes will be made to your account.
+    </p>
+    <p class="email-footer-text">
+        Best regards,<br>
+        The Over Slot Team
+    </p>
+{% endblock %} 

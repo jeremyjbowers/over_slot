@@ -1,0 +1,54 @@
+{% extends "email_base.html" %}
+
+{% block email_title %}Verify your email address - Over Slot{% endblock %}
+
+{% block email_content %}
+    <h1 class="email-title">Verify your secondary email address</h1>
+    
+    <p class="email-text">Hi {{ user.first_name|default:user.username }},</p>
+    
+    <p class="email-text">
+        You've added <strong>{{ email }}</strong> as a secondary email address for your Over Slot account. 
+        To complete the setup and enable login with this email address, please verify it by clicking the button below:
+    </p>
+    
+    <div class="email-button-container">
+        <a href="{{ verification_link }}" class="email-button" style="display: inline-block !important; background-color: #1d4ed8 !important; color: #ffffff !important; text-decoration: none !important; padding: 16px 32px !important; border-radius: 6px !important; font-weight: 600 !important; font-size: 16px !important; text-align: center !important;">
+            Verify Email Address
+        </a>
+    </div>
+    
+    <p class="email-text">
+        <strong>Button not working?</strong> Copy and paste this link into your browser:
+    </p>
+    <div class="email-fallback-link">{{ verification_link }}</div>
+    
+    <div class="email-info-box">
+        <h3>What happens after verification?</h3>
+        <ul>
+            <li>You can use {{ email }} to sign in to your account</li>
+            <li>You can request magic links to this email address</li>
+            <li>This email will be added to your account dashboard</li>
+            <li>All the same account features will be available</li>
+        </ul>
+    </div>
+    
+    <p class="email-text">
+        If you didn't add this email address to your account, you can safely ignore this message. 
+        No changes will be made to your account.
+    </p>
+{% endblock %}
+
+{% block email_footer %}
+    <p class="email-footer-text">
+        <strong>Security notice:</strong> This verification link will expire in 24 hours for your security.
+    </p>
+    <p class="email-footer-text">
+        If you have any questions about secondary email addresses or need help with your account, 
+        please don't hesitate to contact our support team.
+    </p>
+    <p class="email-footer-text">
+        Best regards,<br>
+        The Over Slot Team
+    </p>
+{% endblock %}

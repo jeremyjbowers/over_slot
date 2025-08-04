@@ -4,7 +4,7 @@ from django.contrib.auth.views import LogoutView
 from django.conf import settings
 from django.conf.urls.static import static
 
-from overslot import views, subscription_views, duplicate_views
+from overslot import views, subscription_views, duplicate_views, account_views
 from overslot.admin import admin_site
 from . import auth
 
@@ -48,6 +48,13 @@ urlpatterns = [
     path('magic-link/', auth.magic_link_view, name='magic_link'),
     path('magic-link/signup/', auth.magic_link_signup_view, name='magic_link_signup'),
     path('magic-link/verify/<str:token>/', auth.magic_link_verify_view, name='magic_link_verify'),
+
+    # Account Management URLs
+    path('account/', account_views.account_dashboard, name='account_dashboard'),
+    path('account/email/add/', account_views.add_secondary_email, name='add_secondary_email'),
+    path('account/email/<int:email_id>/remove/', account_views.remove_secondary_email, name='remove_secondary_email'),
+    path('account/email/<int:email_id>/resend/', account_views.resend_verification_email, name='resend_verification_email'),
+    path('account/email/verify/<str:token>/', account_views.verify_secondary_email, name='verify_secondary_email'),
 
 ]
 
