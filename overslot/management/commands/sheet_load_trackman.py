@@ -114,6 +114,48 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """
+        FOR PITCHERS:
+
+        Building a composite score for each pitch type.
+        Under each tab there are the scores that should be used to calculate the composite score.
+        The composite score is a weighted average of the following metrics:
+        - Strike%
+        - Chase%
+        - Whiff%
+        - Contact% (for curveballs) Note that this is inverse, so lower values are better.
+
+        Tab: "2025 Fourseam"
+        15% Strike% (Column F)
+        35% Chase% (Column H)
+        50% Whiff% (Column G)
+
+        Tab: "2025 Sinkers"
+        15% Strike% (Column F)
+        35% Chase% (Column H)
+        50% Whiff% (Column G)
+
+        Tab: "2025 Sliders"
+        15% Strike% (Column F)
+        35% Chase% (Column H)
+        50% Whiff% (Column G)
+
+        Tab: "2025 Sweepers"
+        15% Strike% (Column F)
+        35% Chase% (Column H)
+        50% Whiff% (Column G)
+
+        Tab: "2025 Curveballs"
+        15% Strike% (Column F)
+        35% Chase% (Column H)
+        50% Contact% (Column G) (this will be inverse)
+
+        Tab: "2025 Changeups/Splitters"
+        15% Strike% (Column F)
+        35% Chase% (Column H)
+        50% Whiff% (Column G)
+
+        FOR HITTERS:
+        Right now, only focused on 2025 college hitters, e.g., the "2025 Hitters" tab.
         Four scores are calculated:
         Hitter Percentile
         Game Power Percentile
@@ -211,7 +253,7 @@ class Command(BaseCommand):
             return score / total_weight
 
         years = ['2025']
-        tab_types = ["Hitters"]
+        tab_types = ["Hitters", "Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeup/Splitters"]
 
         for year in years:
             for tab_type in tab_types:
@@ -228,96 +270,201 @@ class Command(BaseCommand):
                     print(f"No sheet found for {tab}")
                     continue
 
-                rows = [self.fix_blanks(row) for row in sheet if int(row.get('Pitches', 0)) >= 250]
+                # Different minimum pitches for hitters vs pitchers
+                min_pitches = 250 if tab_type == "Hitters" else 100
+                rows = [self.fix_blanks(row) for row in sheet if int(row.get('Pitches', 0)) >= min_pitches]
 
-                # Define metric weights for each composite score
-                # Format: (metric_name, weight, invert_percentile)
-                # invert_percentile=True for negative metrics where lower values are better
-                hitter_weights = [
-                    ('Contact %', 0.40, False),           # POSITIVE
-                    ('Contact% IZ', 0.25, False),         # POSITIVE
-                    ('Contact% Out-Of-Zone', 0.15, False), # POSITIVE
-                    ('SliderMiss%', 0.10, True),          # NEGATIVE (lower is better)
-                    ('Elevated FB Contact%', 0.10, False), # POSITIVE
-                ]
+                if tab_type == "Hitters":
+                    # Hitter processing logic
+                    # Define metric weights for each composite score
+                    # Format: (metric_name, weight, invert_percentile)
+                    # invert_percentile=True for negative metrics where lower values are better
+                    hitter_weights = [
+                        ('Contact %', 0.40, False),           # POSITIVE
+                        ('Contact% IZ', 0.25, False),         # POSITIVE
+                        ('Contact% Out-Of-Zone', 0.15, False), # POSITIVE
+                        ('SliderMiss%', 0.10, True),          # NEGATIVE (lower is better)
+                        ('Elevated FB Contact%', 0.10, False), # POSITIVE
+                    ]
+                    
+                    game_power_weights = [
+                        ('90th Percentile EV', 0.33, False),  # POSITIVE
+                        ('EV 95+ %', 0.33, False),            # POSITIVE
+                        ('Pull AIR%', 0.33, False),           # POSITIVE
+                    ]
+                    
+                    raw_power_weights = [
+                        ('Average EV', 0.50, False),          # POSITIVE
+                        ('90th Percentile EV', 0.50, False),  # POSITIVE
+                    ]
+                    
+                    approach_weights = [
+                        ('Chase%', 0.50, True),               # NEGATIVE (lower is better)
+                        ('BB%', 0.50, False),               # POSITIVE
+                    ]
+                    
+                    # Calculate individual percentiles for each metric using only high-volume players
+                    all_metrics = {}  # metric_name -> invert_flag
+                    for weights in [hitter_weights, game_power_weights, raw_power_weights, approach_weights]:
+                        for metric, _, invert in weights:
+                            all_metrics[metric] = invert
+                    
+                    # Calculate percentile distributions using only high-volume players
+                    metric_distributions = {}
+                    for metric, should_invert in all_metrics.items():
+                        distribution = _calculate_percentile_distribution(rows, metric)
+                        metric_distributions[metric] = {
+                            'distribution': distribution,
+                            'invert': should_invert
+                        }
+
+                    # Process each row and calculate composite scores
+                    total_rows = len(rows)
+                    for original_index, row in enumerate(rows):
+                        
+                        # Calculate percentiles for this row using the high-volume distributions
+                        row_percentiles = {}
+                        for metric in all_metrics:
+                            raw_value = _parse_value(row.get(metric))
+                            distribution = metric_distributions[metric]['distribution']
+                            should_invert = metric_distributions[metric]['invert']
+                            percentile_result = _get_percentile_rank(raw_value, distribution, invert=should_invert)
+                            row_percentiles[metric] = percentile_result
+                        
+                        # Calculate weighted composite scores
+                        row['hitter_percentile'] = _calculate_weighted_percentile_score(row_percentiles, hitter_weights)
+                        row['game_power_percentile'] = _calculate_weighted_percentile_score(row_percentiles, game_power_weights)
+                        row['raw_power_percentile'] = _calculate_weighted_percentile_score(row_percentiles, raw_power_weights)
+                        row['approach_percentile'] = _calculate_weighted_percentile_score(row_percentiles, approach_weights)
+                        
+                        # Show progress
+                        if (original_index + 1) % 10 == 0 or original_index == total_rows - 1:
+                            progress = ((original_index + 1) / total_rows) * 100
+                            print(f"Processing hitters: {progress:.1f}% complete ({original_index + 1}/{total_rows})")
+                        
+                        # For backward compatibility, also set the "score" fields (these are now the same as percentiles)
+                        row['hitter_score'] = row['hitter_percentile']
+                        row['game_power_score'] = row['game_power_percentile']
+                        row['raw_power_score'] = row['raw_power_percentile']
+                        row['approach_score'] = row['approach_percentile']
+
+                        if row.get('Name'):
+                            obj = self._fuzzy_find_player(row['Name'])
+
+                        if obj:
+                            prs = models.PlayerRanking.objects.filter(player=obj)
+                            for pr in prs:
+                                pr.hitter_score = row['hitter_score']
+                                pr.game_power_score = row['game_power_score']
+                                pr.raw_power_score = row['raw_power_score']
+                                pr.approach_score = row['approach_score']
+                                pr.hitter_percentile = row['hitter_percentile']
+                                pr.game_power_percentile = row['game_power_percentile']
+                                pr.raw_power_percentile = row['raw_power_percentile']
+                                pr.approach_percentile = row['approach_percentile']
+
+                                pr.confidence = 10
+                                pr.save()
                 
-                game_power_weights = [
-                    ('90th Percentile EV', 0.33, False),  # POSITIVE
-                    ('EV 95+ %', 0.33, False),            # POSITIVE
-                    ('Pull AIR%', 0.33, False),           # POSITIVE
-                ]
-                
-                raw_power_weights = [
-                    ('Average EV', 0.50, False),          # POSITIVE
-                    ('90th Percentile EV', 0.50, False),  # POSITIVE
-                ]
-                
-                approach_weights = [
-                    ('Chase%', 0.50, True),               # NEGATIVE (lower is better)
-                    ('BB%', 0.50, False),               # POSITIVE
-                ]
-                
-                # Calculate individual percentiles for each metric using only high-volume players
-                all_metrics = {}  # metric_name -> invert_flag
-                for weights in [hitter_weights, game_power_weights, raw_power_weights, approach_weights]:
-                    for metric, _, invert in weights:
+                else:
+                    # Pitcher processing logic
+                    # Define weights for each pitch type based on documentation
+                    if tab_type == "Curveballs":
+                        # Special case: Curveballs use Contact% (inverse) instead of Whiff%
+                        pitch_weights = [
+                            ('Strike%', 0.15, False),     # POSITIVE 
+                            ('Chase%', 0.35, False),      # POSITIVE
+                            ('Contact%', 0.50, True),     # NEGATIVE (inverse - lower is better)
+                        ]
+                    else:
+                        # All other pitch types use the same weights
+                        pitch_weights = [
+                            ('Strike%', 0.15, False),     # POSITIVE
+                            ('Chase%', 0.35, False),      # POSITIVE
+                            ('Whiff%', 0.50, False),      # POSITIVE
+                        ]
+                    
+                    # Calculate individual percentiles for pitch metrics
+                    all_metrics = {}  # metric_name -> invert_flag
+                    for metric, _, invert in pitch_weights:
                         all_metrics[metric] = invert
-                
-                # Calculate percentile distributions using only high-volume players (250+ pitches)
-                metric_distributions = {}
-                for metric, should_invert in all_metrics.items():
-                    distribution = _calculate_percentile_distribution(rows, metric)
-                    metric_distributions[metric] = {
-                        'distribution': distribution,
-                        'invert': should_invert
-                    }
-
-                # Process each row and calculate composite scores
-                total_rows = len(rows)
-                for original_index, row in enumerate(rows):
                     
-                    # Calculate percentiles for this row using the high-volume distributions
-                    row_percentiles = {}
-                    for metric in all_metrics:
-                        raw_value = _parse_value(row.get(metric))
-                        distribution = metric_distributions[metric]['distribution']
-                        should_invert = metric_distributions[metric]['invert']
-                        percentile_result = _get_percentile_rank(raw_value, distribution, invert=should_invert)
-                        row_percentiles[metric] = percentile_result
-                    
-                    # Calculate weighted composite scores
-                    row['hitter_percentile'] = _calculate_weighted_percentile_score(row_percentiles, hitter_weights)
-                    row['game_power_percentile'] = _calculate_weighted_percentile_score(row_percentiles, game_power_weights)
-                    row['raw_power_percentile'] = _calculate_weighted_percentile_score(row_percentiles, raw_power_weights)
-                    row['approach_percentile'] = _calculate_weighted_percentile_score(row_percentiles, approach_weights)
-                    
-                    # Show progress
-                    if (original_index + 1) % 10 == 0 or original_index == total_rows - 1:
-                        progress = ((original_index + 1) / total_rows) * 100
-                        print(f"Processing players: {progress:.1f}% complete ({original_index + 1}/{total_rows})")
-                    
-                    # For backward compatibility, also set the "score" fields (these are now the same as percentiles)
-                    row['hitter_score'] = row['hitter_percentile']
-                    row['game_power_score'] = row['game_power_percentile']
-                    row['raw_power_score'] = row['raw_power_percentile']
-                    row['approach_score'] = row['approach_percentile']
+                    # Calculate percentile distributions using only high-volume players (100+ pitches)
+                    metric_distributions = {}
+                    for metric, should_invert in all_metrics.items():
+                        distribution = _calculate_percentile_distribution(rows, metric)
+                        metric_distributions[metric] = {
+                            'distribution': distribution,
+                            'invert': should_invert
+                        }
 
-                    if row.get('Name'):
-                        obj = self._fuzzy_find_player(row['Name'])
+                    # Process each row and calculate composite scores
+                    total_rows = len(rows)
+                    for original_index, row in enumerate(rows):
+                        
+                        # Calculate percentiles for this row using the high-volume distributions
+                        row_percentiles = {}
+                        for metric in all_metrics:
+                            raw_value = _parse_value(row.get(metric))
+                            distribution = metric_distributions[metric]['distribution']
+                            should_invert = metric_distributions[metric]['invert']
+                            percentile_result = _get_percentile_rank(raw_value, distribution, invert=should_invert)
+                            row_percentiles[metric] = percentile_result
+                        
+                        # Calculate weighted composite score for this pitch type
+                        pitch_percentile = _calculate_weighted_percentile_score(row_percentiles, pitch_weights)
+                        
+                        # Show progress
+                        if (original_index + 1) % 10 == 0 or original_index == total_rows - 1:
+                            progress = ((original_index + 1) / total_rows) * 100
+                            print(f"Processing {tab_type.lower()}: {progress:.1f}% complete ({original_index + 1}/{total_rows})")
+                        
+                        # Store the composite score for this pitch type
+                        if tab_type == "Fourseam":
+                            row['fourseam_percentile'] = pitch_percentile
+                            row['fourseam_score'] = pitch_percentile
+                        elif tab_type == "Sinkers":
+                            row['sinker_percentile'] = pitch_percentile
+                            row['sinker_score'] = pitch_percentile
+                        elif tab_type == "Sliders":
+                            row['slider_percentile'] = pitch_percentile
+                            row['slider_score'] = pitch_percentile
+                        elif tab_type == "Sweepers":
+                            row['sweeper_percentile'] = pitch_percentile
+                            row['sweeper_score'] = pitch_percentile
+                        elif tab_type == "Curveballs":
+                            row['curveball_percentile'] = pitch_percentile
+                            row['curveball_score'] = pitch_percentile
+                        elif tab_type == "Changeups/Splitters":
+                            row['changeup_percentile'] = pitch_percentile
+                            row['changeup_score'] = pitch_percentile
 
-                    if obj:
-                        prs = models.PlayerRanking.objects.filter(player=obj)
-                        for pr in prs:
-                            pr.hitter_score = row['hitter_score']
-                            pr.game_power_score = row['game_power_score']
-                            pr.raw_power_score = row['raw_power_score']
-                            pr.approach_score = row['approach_score']
-                            pr.hitter_percentile = row['hitter_percentile']
-                            pr.game_power_percentile = row['game_power_percentile']
-                            pr.raw_power_percentile = row['raw_power_percentile']
-                            pr.approach_percentile = row['approach_percentile']
+                        if row.get('Name'):
+                            obj = self._fuzzy_find_player(row['Name'])
 
-                            pr.confidence = 10
-                            pr.save()
+                        if obj:
+                            prs = models.PlayerRanking.objects.filter(player=obj)
+                            for pr in prs:
+                                if tab_type == "Fourseam":
+                                    pr.fourseam_percentile = row['fourseam_percentile']
+                                    pr.fourseam_score = row['fourseam_score']
+                                elif tab_type == "Sinkers":
+                                    pr.sinker_percentile = row['sinker_percentile']
+                                    pr.sinker_score = row['sinker_score']
+                                elif tab_type == "Sliders":
+                                    pr.slider_percentile = row['slider_percentile']
+                                    pr.slider_score = row['slider_score']
+                                elif tab_type == "Sweepers":
+                                    pr.sweeper_percentile = row['sweeper_percentile']
+                                    pr.sweeper_score = row['sweeper_score']
+                                elif tab_type == "Curveballs":
+                                    pr.curveball_percentile = row['curveball_percentile']
+                                    pr.curveball_score = row['curveball_score']
+                                elif tab_type == "Changeups/Splitters":
+                                    pr.changeup_percentile = row['changeup_percentile']
+                                    pr.changeup_score = row['changeup_score']
+
+                                pr.confidence = 10
+                                pr.save()
                 
                 print(f"Completed processing {total_rows} players for {tab}")

@@ -331,7 +331,7 @@ class PlayerRanking(BaseModel):
     risk = models.CharField(max_length=25, blank=True, null=True)
     carrying_tools = models.ManyToManyField(PlayerRankingCarryingTool, blank=True)
 
-    # Trackman data
+    # Trackman data - Hitters
     hitter_percentile = models.FloatField(blank=True, null=True)
     game_power_percentile = models.FloatField(blank=True, null=True)
     raw_power_percentile = models.FloatField(blank=True, null=True)
@@ -340,6 +340,21 @@ class PlayerRanking(BaseModel):
     game_power_score = models.FloatField(blank=True, null=True)
     raw_power_score = models.FloatField(blank=True, null=True)
     approach_score = models.FloatField(blank=True, null=True)
+    
+    # Trackman data - Pitchers
+    fourseam_percentile = models.FloatField(blank=True, null=True)
+    sinker_percentile = models.FloatField(blank=True, null=True)
+    slider_percentile = models.FloatField(blank=True, null=True)
+    sweeper_percentile = models.FloatField(blank=True, null=True)
+    curveball_percentile = models.FloatField(blank=True, null=True)
+    changeup_percentile = models.FloatField(blank=True, null=True)
+    fourseam_score = models.FloatField(blank=True, null=True)
+    sinker_score = models.FloatField(blank=True, null=True)
+    slider_score = models.FloatField(blank=True, null=True)
+    sweeper_score = models.FloatField(blank=True, null=True)
+    curveball_score = models.FloatField(blank=True, null=True)
+    changeup_score = models.FloatField(blank=True, null=True)
+    
     confidence = models.IntegerField(blank=True, null=True)
 
     scouting_report = ProseEditorField(
