@@ -149,7 +149,7 @@ class Command(BaseCommand):
         35% Chase% (Column H)
         50% Contact% (Column G) (this will be inverse)
 
-        Tab: "2025 Changeups/Splitters"
+        Tab: "2025 Changeup/Splitters"
         15% Strike% (Column F)
         35% Chase% (Column H)
         50% Whiff% (Column G)
@@ -435,7 +435,7 @@ class Command(BaseCommand):
                         elif tab_type == "Curveballs":
                             row['curveball_percentile'] = pitch_percentile
                             row['curveball_score'] = pitch_percentile
-                        elif tab_type == "Changeups/Splitters":
+                        elif tab_type == "Changeup/Splitters":
                             row['changeup_percentile'] = pitch_percentile
                             row['changeup_score'] = pitch_percentile
 
@@ -460,7 +460,7 @@ class Command(BaseCommand):
                                 elif tab_type == "Curveballs":
                                     pr.curveball_percentile = row['curveball_percentile']
                                     pr.curveball_score = row['curveball_score']
-                                elif tab_type == "Changeups/Splitters":
+                                elif tab_type == "Changeup/Splitters":
                                     pr.changeup_percentile = row['changeup_percentile']
                                     pr.changeup_score = row['changeup_score']
 
