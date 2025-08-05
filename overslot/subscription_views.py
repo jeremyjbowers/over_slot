@@ -39,8 +39,7 @@ def create_checkout_session(request):
         try:
             # Get or create subscription record
             subscription, created = Subscription.objects.get_or_create(
-                user=request.user,
-                defaults={'stripe_customer_id': ''}
+                user=request.user
             )
             
             # Create or get Stripe customer
@@ -181,14 +180,24 @@ def handle_checkout_session_completed(session):
         user_id = session.get('metadata', {}).get('user_id')
         if user_id:
             user = User.objects.get(id=user_id)
-            subscription, created = Subscription.objects.get_or_create(
-                user=user,
-                defaults={'stripe_customer_id': session.get('customer', '')}
-            )
+            # Try to get existing subscription first
+            try:
+                subscription = Subscription.objects.get(user=user)
+                # Update customer ID if not already set
+                if not subscription.stripe_customer_id and session.get('customer'):
+                    subscription.stripe_customer_id = session.get('customer')
+            except Subscription.DoesNotExist:
+                # Create new subscription if none exists
+                subscription = Subscription.objects.create(
+                    user=user,
+                    stripe_customer_id=session.get('customer', '')
+                )
             
+            # Update subscription ID if provided
             if session.get('subscription'):
                 subscription.stripe_subscription_id = session['subscription']
-                subscription.save()
+            
+            subscription.save()
     except User.DoesNotExist:
         pass
 

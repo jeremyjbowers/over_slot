@@ -81,7 +81,7 @@ class Subscription(BaseModel):
     Model to track user subscriptions linked to Stripe.
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription')
-    stripe_customer_id = models.CharField(max_length=255, unique=True)
+    stripe_customer_id = models.CharField(max_length=255, unique=True, blank=True, null=True)
     stripe_subscription_id = models.CharField(max_length=255, blank=True, null=True)
     
     # Subscription status from Stripe
