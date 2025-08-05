@@ -245,22 +245,7 @@
     font-size: 0.8rem;
 }
 
-.draft-badge {
-    display: inline-block;
-    background: #ff6b35;
-    color: white;
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 0.25rem 0.5rem;
-    margin-left: 0.5rem;
-    vertical-align: middle;
-}
 
-.item-title.has-draft {
-    background: rgba(255, 107, 53, 0.15);
-    padding: 0.5rem 1rem;
-    border-left: 4px solid #ff6b35;
-}
 
 @media screen and (max-width: 1024px) {
     .top-players-grid {
@@ -1003,12 +988,9 @@
                         </span>
                     </div>
                     <a href="/rankings/{{ ranking.slug }}/">
-                        <h3 class="item-title{% if not ranking.publish and user.is_staff %} has-draft{% endif %}">
+                        <h3 class="item-title">
                             {{ ranking }}
                             {% include "includes/premium_badge.html" with badge_class="compact" %}
-                            {% if not ranking.publish and user.is_staff %}
-                            <span class="draft-badge">DRAFT</span>
-                            {% endif %}
                         </h3>
                     </a>
                     {% if ranking.subhead %}
@@ -1064,12 +1046,9 @@
                         </span>
                     </div>
                     <a href="/articles/{{ article.slug }}/">
-                        <h3 class="item-title{% if not article.publish and user.is_staff %} has-draft{% endif %}">
+                        <h3 class="item-title">
                             {{ article.headline }}
                             {% include "includes/premium_badge.html" with badge_class="compact" %}
-                            {% if not article.publish and user.is_staff %}
-                            <span class="draft-badge">DRAFT</span>
-                            {% endif %}
                         </h3>
                     </a>
                     {% if article.subhead %}

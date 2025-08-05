@@ -108,11 +108,14 @@
     border: 1px solid var(--dark-border);
     border-radius: 1rem;
     overflow: hidden;
+    width: 100%; /* Ensure the card takes full width of its grid column */
 }
 
 .player-photo-wrapper {
     position: relative;
-    padding-top: 100%;
+    width: 100%;
+    padding-top: 100%; /* Creates a square aspect ratio */
+    height: 0; /* Required for padding-top technique */
 }
 
 .player-photo-wrapper img {

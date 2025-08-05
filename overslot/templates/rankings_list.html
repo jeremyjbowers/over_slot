@@ -183,24 +183,7 @@
     grid-template-columns: repeat(2, 1fr);
 }
 
-.draft-badge {
-    display: inline-block;
-    background: #ff6b35;
-    color: white;
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 0.25rem 0.5rem;
-    margin-left: 0.5rem;
-    vertical-align: middle;
-}
 
-.ranking-title.has-draft {
-    background: rgba(255, 107, 53, 0.15);
-    padding: 0.75rem 1rem;
-    border-left: 4px solid #ff6b35;
-    margin-left: -1rem;
-    margin-right: -1rem;
-}
 }
 </style>
 
@@ -211,12 +194,9 @@
         <div class="ranking-card-overlay"></div>
         {% endif %}
         <div class="ranking-card-content">
-            <h2 class="ranking-title{% if not ranking.publish and user.is_staff %} has-draft{% endif %}">
+            <h2 class="ranking-title">
                 <a href="/rankings/{{ ranking.slug }}/" class="has-text-white">
                     {{ ranking }}
-                    {% if not ranking.publish and user.is_staff %}
-                    <span class="draft-badge">DRAFT</span>
-                    {% endif %}
                 </a>
             </h2>
             

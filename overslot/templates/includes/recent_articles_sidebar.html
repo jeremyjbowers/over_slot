@@ -14,11 +14,8 @@
                             <div class="sidebar-article-overlay"></div>
                         {% endif %}
                         <div class="sidebar-article-content">
-                            <h4 class="sidebar-article-title{% if not article.publish and user.is_staff %} has-draft{% endif %}">
+                            <h4 class="sidebar-article-title">
                                 {{ article.headline }}
-                                {% if not article.publish and user.is_staff %}
-                                <span class="draft-badge-small">DRAFT</span>
-                                {% endif %}
                             </h4>
                             {% if article.subhead %}
                                 <p class="sidebar-article-subhead">{{ article.subhead }}</p>
@@ -286,24 +283,7 @@
     background: var(--dark-text-muted);
 }
 
-.draft-badge-small {
-    display: inline-block;
-    background: #ff6b35;
-    color: white;
-    font-size: 0.6rem;
-    font-weight: 600;
-    padding: 0.15rem 0.4rem;
-    margin-left: 0.4rem;
-    vertical-align: middle;
-}
 
-.sidebar-article-title.has-draft {
-    background: rgba(255, 107, 53, 0.15);
-    padding: 0.4rem 0.6rem;
-    border-left: 3px solid #ff6b35;
-    margin-left: -0.6rem;
-    margin-right: -0.6rem;
-}
 </style>
 
 <script>
