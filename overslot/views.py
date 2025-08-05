@@ -167,6 +167,27 @@ def players_detail(request, slug):
         if latest_ranking.hitter_percentile is None or latest_ranking.game_power_percentile is None or latest_ranking.raw_power_percentile is None or latest_ranking.approach_percentile is None:
             context['radar_chart_data'] = None
 
+        # Pitcher chart data - only include pitches where data exists
+        pitcher_data = {}
+        if latest_ranking.fourseam_percentile is not None:
+            pitcher_data['fourseam_percentile'] = latest_ranking.fourseam_percentile
+        if latest_ranking.sinker_percentile is not None:
+            pitcher_data['sinker_percentile'] = latest_ranking.sinker_percentile
+        if latest_ranking.slider_percentile is not None:
+            pitcher_data['slider_percentile'] = latest_ranking.slider_percentile
+        if latest_ranking.sweeper_percentile is not None:
+            pitcher_data['sweeper_percentile'] = latest_ranking.sweeper_percentile
+        if latest_ranking.curveball_percentile is not None:
+            pitcher_data['curveball_percentile'] = latest_ranking.curveball_percentile
+        if latest_ranking.changeup_percentile is not None:
+            pitcher_data['changeup_percentile'] = latest_ranking.changeup_percentile
+        
+        if pitcher_data:
+            pitcher_data['confidence'] = latest_ranking.confidence
+            context['pitcher_chart_data'] = json.dumps(pitcher_data)
+        else:
+            context['pitcher_chart_data'] = None
+
     # Only show published articles
     context['articles'] = models.Article.objects.filter(players=context['player'], publish=True)
 
