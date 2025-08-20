@@ -9,8 +9,8 @@
         rgba(var(--theme-primary-rgb), 0.1),
         var(--dark-bg)
     );
-    padding: 4rem 0;
-    margin-bottom: 3rem;
+    padding: 1.5rem 0;
+    margin-bottom: 1.5rem;
     border-bottom: 1px solid var(--dark-border);
 }
 
@@ -22,35 +22,27 @@
 
 .hero-title {
     font-family: var(--font-sans);
-    font-size: var(--text-5xl);
+    font-size: var(--text-4xl);
     font-weight: 800;
     line-height: var(--leading-tight);
     color: var(--dark-text);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     letter-spacing: -0.02em;
     max-width: 700px;
 }
 
 .hero-subtitle {
     font-family: var(--font-sans);
-    font-size: var(--text-2xl);
+    font-size: var(--text-lg);
     line-height: var(--leading-snug);
     color: var(--dark-text-secondary);
-    margin-bottom: 1rem;
-    font-weight: 400;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
     max-width: 700px;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
 }
 
-.hero-meta {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    font-size: var(--text-base);
-    color: var(--dark-text-muted);
-}
+/* Remove dense meta row in favor of simpler subtitle */
+.hero-meta { display: none; }
 
 .hero-meta-item {
     display: flex;
@@ -73,10 +65,7 @@
         font-size: 3rem;
     }
     
-    .hero-subtitle {
-        font-size: 1.25rem;
-        justify-content: center;
-    }
+    .hero-subtitle { font-size: 1rem; }
 
     .hero-meta {
         flex-direction: column;
@@ -93,13 +82,13 @@
 
 .player-info-grid {
     display: grid;
-    grid-template-columns: 300px 1fr;
+    grid-template-columns: 300px;
     gap: 2rem;
     margin-bottom: 3rem;
 }
 
 .player-info-grid.with-chart {
-    grid-template-columns: 300px 1fr 1.2fr;
+    grid-template-columns: 300px 1fr;
 }
 
 
@@ -140,6 +129,34 @@
 .player-video-link:hover {
     background: var(--dark-surface-hover);
     color: var(--theme-primary);
+}
+
+/* Compact bio list under photo */
+.player-bio {
+    border-top: 1px solid var(--dark-border);
+    padding: 0.75rem 1rem;
+}
+
+.bio-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem 1rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.bio-item {
+    font-size: var(--text-sm);
+    color: var(--dark-text);
+}
+
+.bio-label {
+    color: var(--dark-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: var(--text-xs);
+    margin-right: 0.25rem;
 }
 
 /* Video link label styling */
@@ -616,43 +633,7 @@ body {
     <div class="container">
         <h1 class="hero-title">{{ player.name }}</h1>
         <div class="hero-subtitle">
-            <span>{{ player.position }}</span>
-            {% if rankings.0.role %}
-            <span class="hero-meta-item">
-                <span class="icon">
-                    <i class="fas fa-star"></i>
-                </span>
-                <span class="hero-meta-label">FV:</span>
-                {{ rankings.0.role }}
-            </span>
-            {% endif %}
-        </div>
-        <div class="hero-meta">
-            {% if player.school %}
-            <div class="hero-meta-item">
-                <span class="icon">
-                    <i class="fas fa-graduation-cap"></i>
-                </span>
-                {{ player.school }}
-            </div>
-            {% endif %}
-            {% if player.hometown or player.state %}
-            <div class="hero-meta-item">
-                <span class="icon">
-                    <i class="fas fa-map-marker-alt"></i>
-                </span>
-                {% if player.hometown %}{{ player.hometown }}{% endif %}
-                {% if player.state %}, {{ player.state }}{% endif %}
-            </div>
-            {% endif %}
-            {% if player.bats and player.throws %}
-            <div class="hero-meta-item">
-                <span class="icon">
-                    <i class="fas fa-baseball-ball"></i>
-                </span>
-                B/T: {{ player.bats }}/{{ player.throws }}
-            </div>
-            {% endif %}
+            {{ player.position }}{% if player.school %} • {{ player.school }}{% endif %}
         </div>
     </div>
 </div>
@@ -664,6 +645,34 @@ body {
             <div class="player-photo-wrapper">
                 <img src="{{ player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}" 
                      alt="{{ player.name }}">
+            </div>
+            <div class="player-bio">
+                <ul class="bio-list">
+                    {% if player.bats or player.throws %}
+                    <li class="bio-item"><span class="bio-label">B/T</span>{% if player.bats %}{{ player.bats }}{% endif %}{% if player.bats and player.throws %}/{% endif %}{% if player.throws %}{{ player.throws }}{% endif %}</li>
+                    {% endif %}
+                    {% if player.height %}
+                    <li class="bio-item"><span class="bio-label">Height</span>{{ player.height }}</li>
+                    {% endif %}
+                    {% if player.weight %}
+                    <li class="bio-item"><span class="bio-label">Weight</span>{{ player.weight }} lbs</li>
+                    {% endif %}
+                    {% if player.hometown or player.state or player.country %}
+                    <li class="bio-item"><span class="bio-label">Hometown</span>{% if player.hometown %}{{ player.hometown }}{% endif %}{% if player.state %}{% if player.hometown %}, {% endif %}{{ player.state }}{% endif %}{% if player.country and player.country != "United States" %}{% if player.hometown or player.state %}, {% endif %}{{ player.country }}{% endif %}</li>
+                    {% endif %}
+                    {% if rankings.0.commitment %}
+                    <li class="bio-item"><span class="bio-label">Commit</span>{{ rankings.0.commitment }}</li>
+                    {% endif %}
+                    {% if rankings.0.level %}
+                    <li class="bio-item"><span class="bio-label">Level</span>{{ rankings.0.level }}</li>
+                    {% endif %}
+                    {% if rankings.0.role %}
+                    <li class="bio-item"><span class="bio-label">FV</span>{{ rankings.0.role }}</li>
+                    {% endif %}
+                    {% if rankings.0.risk %}
+                    <li class="bio-item"><span class="bio-label">Risk</span>{{ rankings.0.risk }}</li>
+                    {% endif %}
+                </ul>
             </div>
             {% if player.video_url %}
             <a href="{{ player.video_url }}" class="player-video-link">
@@ -678,122 +687,6 @@ body {
             {% endif %}
         </div>
 
-        <!-- Info column -->
-        <div class="player-info-card">
-            <!-- Physical Tools Section -->
-            <div class="info-section">
-                <div class="info-section-header">
-                    <span class="icon">
-                        <i class="fas fa-baseball-ball"></i>
-                    </span>
-                    <h3 class="info-section-title">Physical Tools</h3>
-                </div>
-                <div class="info-grid">
-                    {% if player.height %}
-                    <div class="info-item">
-                        <div class="info-label">Height</div>
-                        <div class="info-value">{{ player.height }}</div>
-                    </div>
-                    {% endif %}
-                    {% if player.weight %}
-                    <div class="info-item">
-                        <div class="info-label">Weight</div>
-                        <div class="info-value">{{ player.weight }} lbs</div>
-                    </div>
-                    {% endif %}
-                    {% if player.bats %}
-                    <div class="info-item">
-                        <div class="info-label">Bats</div>
-                        <div class="info-value">{{ player.bats }}</div>
-                    </div>
-                    {% endif %}
-                    {% if player.throws %}
-                    <div class="info-item">
-                        <div class="info-label">Throws</div>
-                        <div class="info-value">{{ player.throws }}</div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Background Section -->
-            <div class="info-section">
-                <div class="info-section-header">
-                    <span class="icon">
-                        <i class="fas fa-graduation-cap"></i>
-                    </span>
-                    <h3 class="info-section-title">Background</h3>
-                </div>
-                <div class="info-grid">
-                    {% if player.school %}
-                    <div class="info-item">
-                        <div class="info-label">School</div>
-                        <div class="info-value">{{ player.school }}</div>
-                    </div>
-                    {% endif %}
-                    {% if rankings.0.commitment %}
-                    <div class="info-item">
-                        <div class="info-label">Commitment</div>
-                        <div class="info-value">{{ rankings.0.commitment }}</div>
-                    </div>
-                    {% endif %}
-                    {% if rankings.0.level %}
-                    <div class="info-item">
-                        <div class="info-label">Level</div>
-                        <div class="info-value">{{ rankings.0.level }}</div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Location Section -->
-            {% if player.hometown or player.state or player.country %}
-            <div class="info-section">
-                <div class="info-section-header">
-                    <span class="icon">
-                        <i class="fas fa-map-marker-alt"></i>
-                    </span>
-                    <h3 class="info-section-title">Location</h3>
-                </div>
-                <div class="location-section">
-                    <span class="icon">
-                        <i class="fas fa-home"></i>
-                    </span>
-                    <span>
-                        {% if player.hometown %}{{ player.hometown }}{% endif %}
-                        {% if player.state %}, {{ player.state }}{% endif %}
-                        {% if player.country and player.country != "United States" %}, {{ player.country }}{% endif %}
-                    </span>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Latest Evaluation Section -->
-            {% if rankings.0.role or rankings.0.risk %}
-            <div class="info-section">
-                <div class="info-section-header">
-                    <span class="icon">
-                        <i class="fas fa-chart-bar"></i>
-                    </span>
-                    <h3 class="info-section-title">Latest Evaluation</h3>
-                </div>
-                <div class="info-grid">
-                    {% if rankings.0.role %}
-                    <div class="info-item">
-                        <div class="info-label">Future Value</div>
-                        <div class="info-value">{{ rankings.0.role }}</div>
-                    </div>
-                    {% endif %}
-                    {% if rankings.0.risk %}
-                    <div class="info-item">
-                        <div class="info-label">Risk</div>
-                        <div class="info-value">{{ rankings.0.risk }}</div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-        </div>
 
         {% if radar_chart_data and not preview_mode %}
         <div id="lollipop-chart-container">
