@@ -1069,17 +1069,17 @@ const lollipopData = {{ radar_chart_data|safe }};
 const container = d3.select("#lollipop-chart-container");
 const containerWidth = container.node().getBoundingClientRect().width;
 
-const margin = {top: 20, right: 40, bottom: 20, left: 80};
+const margin = {top: 20, right: 80, bottom: 20, left: 120};
 const chartWidth = containerWidth;
-const chartHeight = 200;
+const chartHeight = 220;
 const width = chartWidth - margin.left - margin.right;
 const height = chartHeight - margin.top - margin.bottom;
 
 const data = [
-    {axis:"Hit", value: lollipopData.hitter_percentile || 0},
-    {axis:"Game power", value: lollipopData.game_power_percentile || 0},
-    {axis:"Raw power", value: lollipopData.raw_power_percentile || 0},
-    {axis:"Approach", value: lollipopData.approach_percentile || 0},
+    {axis:"Hit", value: lollipopData.hitter_percentile || 0, score: lollipopData.hitter_score},
+    {axis:"Game power", value: lollipopData.game_power_percentile || 0, score: lollipopData.game_power_score},
+    {axis:"Raw power", value: lollipopData.raw_power_percentile || 0, score: lollipopData.raw_power_score},
+    {axis:"Approach", value: lollipopData.approach_percentile || 0, score: lollipopData.approach_score},
 ];
 
 const svg = d3.select("#lollipop-chart")
@@ -1092,7 +1092,7 @@ const svg = d3.select("#lollipop-chart")
 const y = d3.scaleBand()
   .range([ 0, height ])
   .domain(data.map(d => d.axis))
-  .padding(1);
+  .padding(0.6);
 
 const x = d3.scaleLinear()
   .domain([0, 1])
@@ -1139,52 +1139,111 @@ let confidenceFactor = 0.1;
 if(lollipopData.confidence === 5) confidenceFactor = 0.05;
 if(lollipopData.confidence === 10) confidenceFactor = 0;
 
+// Styling constants to match MLB look
+const trackColor = "#DFE8EB"; // light track
+const dashColor = "#63B3BD";  // teal dashed lines
+const barHeight = Math.max(14, y.bandwidth() * 0.45);
+
+// Row dashed guides
+svg.selectAll('.row-dash')
+  .data(data)
+  .enter()
+  .append('line')
+    .attr('x1', x(0))
+    .attr('x2', width)
+    .attr('y1', d => y(d.axis) + y.bandwidth()/2)
+    .attr('y2', d => y(d.axis) + y.bandwidth()/2)
+    .style('stroke', dashColor)
+    .style('stroke-opacity', 0.6)
+    .style('stroke-width', 1.5)
+    .style('stroke-dasharray', '6,6');
+
+// Background track
+svg.selectAll('.track')
+  .data(data)
+  .enter()
+  .append('rect')
+    .attr('x', x(0))
+    .attr('y', d => y(d.axis) + y.bandwidth()/2 - barHeight/2)
+    .attr('width', width)
+    .attr('height', barHeight)
+    .attr('rx', barHeight/2)
+    .attr('ry', barHeight/2)
+    .style('fill', trackColor);
+
 // Confidence Intervals
 svg.selectAll(".conf-interval")
   .data(data)
   .enter()
   .append("rect")
-    .attr("y", d => y(d.axis) - 2)
+    .attr("y", d => y(d.axis) + y.bandwidth()/2 - 2)
     .attr("x", d => x(Math.max(0, d.value - confidenceFactor)))
     .attr("height", 4)
     .attr("width", d => x(Math.min(1, d.value + confidenceFactor)) - x(Math.max(0, d.value - confidenceFactor)))
     .style("fill", "rgba(128, 128, 128, 0.3)");
 
-// Lollipop Lines
-svg.selectAll(".lollipop-line")
+// Thicker Bars (value fill)
+svg.selectAll(".bar")
   .data(data)
   .enter()
-  .append("line")
-    .attr("y1", d => y(d.axis))
-    .attr("y2", d => y(d.axis))
-    .attr("x1", x(0))
-    .attr("x2", d => x(d.value))
-    .attr("stroke", d => colorScale(d.value))
-    .style("stroke-width", "3px");
+  .append("rect")
+    .attr("y", d => y(d.axis) + y.bandwidth()/2 - barHeight/2)
+    .attr("x", x(0))
+    .attr("height", barHeight)
+    .attr("width", d => x(d.value))
+    .attr('rx', barHeight/2)
+    .attr('ry', barHeight/2)
+    .style("fill", d => colorScale(d.value));
 
-// Lollipop Circles
-svg.selectAll(".lollipop-circle")
+// In-bar tick markers at 25/50/75
+svg.selectAll('.bar-tick')
+  .data([0.25, 0.5, 0.75])
+  .enter()
+  .append('line')
+    .attr('x1', d => x(d))
+    .attr('x2', d => x(d))
+    .attr('y1', y(data[0].axis) + y.bandwidth()/2 - barHeight/2)
+    .attr('y2', y(data[data.length-1].axis) + y.bandwidth()/2 + barHeight/2)
+    .style('stroke', '#cbd5e1')
+    .style('stroke-width', 1);
+
+// Percentile end-circles
+svg.selectAll(".end-circle")
   .data(data)
   .enter()
   .append("circle")
-    .attr("cy", d => y(d.axis))
+    .attr("cy", d => y(d.axis) + y.bandwidth()/2)
     .attr("cx", d => x(d.value))
-    .attr("r", "4")
+    .attr("r", 14)
     .style("fill", d => colorScale(d.value))
-    .attr("stroke", d => colorScale(d.value));
+    .attr("stroke", "#FFFFFF")
+    .attr("stroke-width", 2.5);
 
-// Score Labels
+// Percentile text inside circle
+svg.selectAll(".end-text")
+  .data(data)
+  .enter()
+  .append("text")
+    .attr("y", d => y(d.axis) + y.bandwidth()/2 + 4)
+    .attr("x", d => x(d.value))
+    .text(d => Math.round(d.value * 100))
+    .attr("text-anchor", "middle")
+    .style("fill", d => (d.value >= 0.35 && d.value <= 0.65) ? "#111827" : "#F9FAFB")
+    .style("font-size", "12px")
+    .style("font-weight", "700");
+
+// Raw score labels on far right
 svg.selectAll(".score-label")
   .data(data)
   .enter()
   .append("text")
-    .attr("y", d => y(d.axis) +15)
-    .attr("x", d => x(d.value)-10)
-    .text(d => (d.value * 100).toFixed(0))
+    .attr("y", d => y(d.axis) + y.bandwidth()/2)
+    .attr("x", width + 12)
+    .text(d => d.score != null ? d.score.toFixed(1) : "")
+    .attr("alignment-baseline", "middle")
     .style("fill", "#E2E8F0")
     .style("font-size", "12px")
-    .style('font-weight', 'bold')
-    .attr("alignment-baseline", "middle");
+    .style('font-weight', '600');
 
 {% endif %}
 
@@ -1205,10 +1264,13 @@ const pitchDisplayNames = {
 // Build data array only for pitches that have data
 const pitcherData = [];
 for (const [key, value] of Object.entries(pitcherLollipopData)) {
-    if (key !== 'confidence' && value !== null && value !== undefined) {
+    if (key.endsWith('_percentile') && value !== null && value !== undefined) {
+        const base = key.replace('_percentile', '');
+        const scoreKey = base + '_score';
         pitcherData.push({
             axis: pitchDisplayNames[key],
-            value: value
+            value: value,
+            score: pitcherLollipopData[scoreKey]
         });
     }
 }
@@ -1216,9 +1278,9 @@ for (const [key, value] of Object.entries(pitcherLollipopData)) {
 const pitcherContainer = d3.select("#lollipop-chart-container");
 const pitcherContainerWidth = pitcherContainer.node().getBoundingClientRect().width;
 
-const pitcherMargin = {top: 20, right: 40, bottom: 20, left: 80};
+const pitcherMargin = {top: 20, right: 80, bottom: 20, left: 120};
 const pitcherChartWidth = pitcherContainerWidth;
-const pitcherChartHeight = 200; // Fixed height like hitter chart
+const pitcherChartHeight = 220; // Fixed height like hitter chart
 const pitcherWidth = pitcherChartWidth - pitcherMargin.left - pitcherMargin.right;
 const pitcherHeight = pitcherChartHeight - pitcherMargin.top - pitcherMargin.bottom;
 
@@ -1232,7 +1294,7 @@ const pitcherSvg = d3.select("#pitcher-lollipop-chart")
 const pitcherY = d3.scaleBand()
   .range([ 0, pitcherHeight ])
   .domain(pitcherData.map(d => d.axis))
-  .padding(1);
+  .padding(0.6);
 
 const pitcherX = d3.scaleLinear()
   .domain([0, 1])
@@ -1278,52 +1340,111 @@ let pitcherConfidenceFactor = 0.1;
 if(pitcherLollipopData.confidence === 5) pitcherConfidenceFactor = 0.05;
 if(pitcherLollipopData.confidence === 10) pitcherConfidenceFactor = 0;
 
+// Styling constants shared with hitter chart
+const pTrackColor = "#DFE8EB";
+const pDashColor = "#63B3BD";
+const pBarHeight = Math.max(14, pitcherY.bandwidth() * 0.45);
+
+// Row dashed guides
+pitcherSvg.selectAll('.row-dash')
+  .data(pitcherData)
+  .enter()
+  .append('line')
+    .attr('x1', pitcherX(0))
+    .attr('x2', pitcherWidth)
+    .attr('y1', d => pitcherY(d.axis) + pitcherY.bandwidth()/2)
+    .attr('y2', d => pitcherY(d.axis) + pitcherY.bandwidth()/2)
+    .style('stroke', pDashColor)
+    .style('stroke-opacity', 0.6)
+    .style('stroke-width', 1.5)
+    .style('stroke-dasharray', '6,6');
+
+// Background track
+pitcherSvg.selectAll('.track')
+  .data(pitcherData)
+  .enter()
+  .append('rect')
+    .attr('x', pitcherX(0))
+    .attr('y', d => pitcherY(d.axis) + pitcherY.bandwidth()/2 - pBarHeight/2)
+    .attr('width', pitcherWidth)
+    .attr('height', pBarHeight)
+    .attr('rx', pBarHeight/2)
+    .attr('ry', pBarHeight/2)
+    .style('fill', pTrackColor);
+
 // Confidence Intervals
 pitcherSvg.selectAll(".conf-interval")
   .data(pitcherData)
   .enter()
   .append("rect")
-    .attr("y", d => pitcherY(d.axis) - 2)
+    .attr("y", d => pitcherY(d.axis) + pitcherY.bandwidth()/2 - 2)
     .attr("x", d => pitcherX(Math.max(0, d.value - pitcherConfidenceFactor)))
     .attr("height", 4)
     .attr("width", d => pitcherX(Math.min(1, d.value + pitcherConfidenceFactor)) - pitcherX(Math.max(0, d.value - pitcherConfidenceFactor)))
     .style("fill", "rgba(128, 128, 128, 0.3)");
 
-// Lollipop Lines
-pitcherSvg.selectAll(".lollipop-line")
+// Thicker Bars (value fill)
+pitcherSvg.selectAll(".bar")
   .data(pitcherData)
   .enter()
-  .append("line")
-    .attr("y1", d => pitcherY(d.axis))
-    .attr("y2", d => pitcherY(d.axis))
-    .attr("x1", pitcherX(0))
-    .attr("x2", d => pitcherX(d.value))
-    .attr("stroke", d => pitcherColorScale(d.value))
-    .style("stroke-width", "3px");
+  .append("rect")
+    .attr("y", d => pitcherY(d.axis) + pitcherY.bandwidth()/2 - pBarHeight/2)
+    .attr("x", pitcherX(0))
+    .attr("height", pBarHeight)
+    .attr("width", d => pitcherX(d.value))
+    .attr('rx', pBarHeight/2)
+    .attr('ry', pBarHeight/2)
+    .style("fill", d => pitcherColorScale(d.value));
 
-// Lollipop Circles
-pitcherSvg.selectAll(".lollipop-circle")
+// In-bar tick markers at 25/50/75
+pitcherSvg.selectAll('.bar-tick')
+  .data([0.25, 0.5, 0.75])
+  .enter()
+  .append('line')
+    .attr('x1', d => pitcherX(d))
+    .attr('x2', d => pitcherX(d))
+    .attr('y1', pitcherY(pitcherData[0].axis) + pitcherY.bandwidth()/2 - pBarHeight/2)
+    .attr('y2', pitcherY(pitcherData[pitcherData.length-1].axis) + pitcherY.bandwidth()/2 + pBarHeight/2)
+    .style('stroke', '#cbd5e1')
+    .style('stroke-width', 1);
+
+// Percentile end-circles
+pitcherSvg.selectAll(".end-circle")
   .data(pitcherData)
   .enter()
   .append("circle")
-    .attr("cy", d => pitcherY(d.axis))
+    .attr("cy", d => pitcherY(d.axis) + pitcherY.bandwidth()/2)
     .attr("cx", d => pitcherX(d.value))
-    .attr("r", "4")
+    .attr("r", 14)
     .style("fill", d => pitcherColorScale(d.value))
-    .attr("stroke", d => pitcherColorScale(d.value));
+    .attr("stroke", "#FFFFFF")
+    .attr("stroke-width", 2.5);
 
-// Score Labels
+// Percentile text inside circle
+pitcherSvg.selectAll(".end-text")
+  .data(pitcherData)
+  .enter()
+  .append("text")
+    .attr("y", d => pitcherY(d.axis) + pitcherY.bandwidth()/2 + 4)
+    .attr("x", d => pitcherX(d.value))
+    .text(d => Math.round(d.value * 100))
+    .attr("text-anchor", "middle")
+    .style("fill", d => (d.value >= 0.35 && d.value <= 0.65) ? "#111827" : "#F9FAFB")
+    .style("font-size", "12px")
+    .style("font-weight", "700");
+
+// Raw score labels on far right
 pitcherSvg.selectAll(".score-label")
   .data(pitcherData)
   .enter()
   .append("text")
-    .attr("y", d => pitcherY(d.axis) +15)
-    .attr("x", d => pitcherX(d.value)-10)
-    .text(d => (d.value * 100).toFixed(0))
+    .attr("y", d => pitcherY(d.axis) + pitcherY.bandwidth()/2)
+    .attr("x", pitcherWidth + 12)
+    .text(d => d.score != null ? d.score.toFixed(1) : "")
+    .attr("alignment-baseline", "middle")
     .style("fill", "#E2E8F0")
     .style("font-size", "12px")
-    .style('font-weight', 'bold')
-    .attr("alignment-baseline", "middle");
+    .style('font-weight', '600');
 
 {% endif %}
 </script>

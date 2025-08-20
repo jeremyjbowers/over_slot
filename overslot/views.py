@@ -162,6 +162,11 @@ def players_detail(request, slug):
             'game_power_percentile': latest_ranking.game_power_percentile,
             'raw_power_percentile': latest_ranking.raw_power_percentile,
             'approach_percentile': latest_ranking.approach_percentile,
+            # include model scores so we can show them on the chart
+            'hitter_score': latest_ranking.hitter_score,
+            'game_power_score': latest_ranking.game_power_score,
+            'raw_power_score': latest_ranking.raw_power_score,
+            'approach_score': latest_ranking.approach_score,
             'confidence': latest_ranking.confidence
         })
         if latest_ranking.hitter_percentile is None or latest_ranking.game_power_percentile is None or latest_ranking.raw_power_percentile is None or latest_ranking.approach_percentile is None:
@@ -171,16 +176,22 @@ def players_detail(request, slug):
         pitcher_data = {}
         if latest_ranking.fourseam_percentile is not None:
             pitcher_data['fourseam_percentile'] = latest_ranking.fourseam_percentile
+            pitcher_data['fourseam_score'] = latest_ranking.fourseam_score
         if latest_ranking.sinker_percentile is not None:
             pitcher_data['sinker_percentile'] = latest_ranking.sinker_percentile
+            pitcher_data['sinker_score'] = latest_ranking.sinker_score
         if latest_ranking.slider_percentile is not None:
             pitcher_data['slider_percentile'] = latest_ranking.slider_percentile
+            pitcher_data['slider_score'] = latest_ranking.slider_score
         if latest_ranking.sweeper_percentile is not None:
             pitcher_data['sweeper_percentile'] = latest_ranking.sweeper_percentile
+            pitcher_data['sweeper_score'] = latest_ranking.sweeper_score
         if latest_ranking.curveball_percentile is not None:
             pitcher_data['curveball_percentile'] = latest_ranking.curveball_percentile
+            pitcher_data['curveball_score'] = latest_ranking.curveball_score
         if latest_ranking.changeup_percentile is not None:
             pitcher_data['changeup_percentile'] = latest_ranking.changeup_percentile
+            pitcher_data['changeup_score'] = latest_ranking.changeup_score
         
         if pitcher_data:
             pitcher_data['confidence'] = latest_ranking.confidence
