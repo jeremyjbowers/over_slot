@@ -154,7 +154,8 @@ class ViewsTestCase(TestCase):
             ranking_type="College",
             ranking_length="100",
             headline="Test Ranking",
-            slug="test-ranking-2024"
+            slug="test-ranking-2024",
+            publish=True
         )
         
         self.player_ranking = PlayerRanking.objects.create(
@@ -182,7 +183,7 @@ class ViewsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Over Slot")
         self.assertContains(response, self.article.headline)
-        self.assertContains(response, self.ranking.headline)
+        self.assertContains(response, str(self.ranking))
     
     def test_articles_list_view_renders(self):
         """Articles list page should render successfully"""
@@ -214,7 +215,7 @@ class ViewsTestCase(TestCase):
         """Rankings list page should render successfully"""
         response = self.client.get(reverse('rankings_list'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, self.ranking.headline)
+        self.assertContains(response, str(self.ranking))
     
     def test_rankings_detail_view_requires_subscription(self):
         """Ranking detail should require subscription for non-staff users"""
@@ -279,7 +280,8 @@ class SearchTestCase(TestCase):
             ranking_type="College",
             ranking_length="100",
             headline="Top Prospects",
-            slug="top-prospects-2024"
+            slug="top-prospects-2024",
+            publish=True
         )
         
         PlayerRanking.objects.create(
@@ -398,7 +400,8 @@ class TemplateRenderingTestCase(TestCase):
             year="2024",
             ranking_type="College",
             headline="Test Ranking",
-            slug="test-ranking"
+            slug="test-ranking",
+            publish=True
         )
         
         self.article = Article.objects.create(
