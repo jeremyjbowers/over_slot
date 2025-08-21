@@ -139,16 +139,17 @@
 
 .bio-list {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem 1rem;
+    grid-template-columns: 1fr; /* stack in one column */
+    gap: 0.75rem;
     list-style: none;
     margin: 0;
     padding: 0;
 }
 
 .bio-item {
-    font-size: var(--text-sm);
-    color: var(--dark-text);
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
 }
 
 .bio-label {
@@ -156,7 +157,12 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
     font-size: var(--text-xs);
-    margin-right: 0.25rem;
+}
+
+.bio-value {
+    font-size: var(--text-sm);
+    color: var(--dark-text);
+    font-weight: 500;
 }
 
 /* Video link label styling */
@@ -639,7 +645,7 @@ body {
 </div>
 
 <div class="player-info-section">
-    <div class="player-info-grid {% if radar_chart_data and not preview_mode or pitcher_chart_data and not preview_mode %}with-chart{% endif %}">
+    <div class="player-info-grid {% if hitter_metric_chart_data and not preview_mode or pitcher_chart_data and not preview_mode %}with-chart{% endif %}">
         <!-- Photo column -->
         <div class="player-photo-card">
             <div class="player-photo-wrapper">
@@ -649,28 +655,52 @@ body {
             <div class="player-bio">
                 <ul class="bio-list">
                     {% if player.bats or player.throws %}
-                    <li class="bio-item"><span class="bio-label">B/T</span>{% if player.bats %}{{ player.bats }}{% endif %}{% if player.bats and player.throws %}/{% endif %}{% if player.throws %}{{ player.throws }}{% endif %}</li>
+                    <li class="bio-item">
+                        <span class="bio-label">B/T</span>
+                        <span class="bio-value">{% if player.bats %}{{ player.bats }}{% endif %}{% if player.bats and player.throws %}/{% endif %}{% if player.throws %}{{ player.throws }}{% endif %}</span>
+                    </li>
                     {% endif %}
                     {% if player.height %}
-                    <li class="bio-item"><span class="bio-label">Height</span>{{ player.height }}</li>
+                    <li class="bio-item">
+                        <span class="bio-label">Height</span>
+                        <span class="bio-value">{{ player.height }}</span>
+                    </li>
                     {% endif %}
                     {% if player.weight %}
-                    <li class="bio-item"><span class="bio-label">Weight</span>{{ player.weight }} lbs</li>
+                    <li class="bio-item">
+                        <span class="bio-label">Weight</span>
+                        <span class="bio-value">{{ player.weight }} lbs</span>
+                    </li>
                     {% endif %}
                     {% if player.hometown or player.state or player.country %}
-                    <li class="bio-item"><span class="bio-label">Hometown</span>{% if player.hometown %}{{ player.hometown }}{% endif %}{% if player.state %}{% if player.hometown %}, {% endif %}{{ player.state }}{% endif %}{% if player.country and player.country != "United States" %}{% if player.hometown or player.state %}, {% endif %}{{ player.country }}{% endif %}</li>
+                    <li class="bio-item">
+                        <span class="bio-label">Hometown</span>
+                        <span class="bio-value">{% if player.hometown %}{{ player.hometown }}{% endif %}{% if player.state %}{% if player.hometown %}, {% endif %}{{ player.state }}{% endif %}{% if player.country and player.country != "United States" %}{% if player.hometown or player.state %}, {% endif %}{{ player.country }}{% endif %}</span>
+                    </li>
                     {% endif %}
                     {% if rankings.0.commitment %}
-                    <li class="bio-item"><span class="bio-label">Commit</span>{{ rankings.0.commitment }}</li>
+                    <li class="bio-item">
+                        <span class="bio-label">Commit</span>
+                        <span class="bio-value">{{ rankings.0.commitment }}</span>
+                    </li>
                     {% endif %}
                     {% if rankings.0.level %}
-                    <li class="bio-item"><span class="bio-label">Level</span>{{ rankings.0.level }}</li>
+                    <li class="bio-item">
+                        <span class="bio-label">Level</span>
+                        <span class="bio-value">{{ rankings.0.level }}</span>
+                    </li>
                     {% endif %}
                     {% if rankings.0.role %}
-                    <li class="bio-item"><span class="bio-label">FV</span>{{ rankings.0.role }}</li>
+                    <li class="bio-item">
+                        <span class="bio-label">FV</span>
+                        <span class="bio-value">{{ rankings.0.role }}</span>
+                    </li>
                     {% endif %}
                     {% if rankings.0.risk %}
-                    <li class="bio-item"><span class="bio-label">Risk</span>{{ rankings.0.risk }}</li>
+                    <li class="bio-item">
+                        <span class="bio-label">Risk</span>
+                        <span class="bio-value">{{ rankings.0.risk }}</span>
+                    </li>
                     {% endif %}
                 </ul>
             </div>
@@ -688,7 +718,7 @@ body {
         </div>
 
 
-        {% if radar_chart_data and not preview_mode %}
+        {% if hitter_metric_chart_data and not preview_mode %}
         <div id="lollipop-chart-container">
             <div class="info-section">
                  <div class="info-section-header">
@@ -698,17 +728,9 @@ body {
                     <h3 class="info-section-title">2025 Hitter Performance</h3>
                 </div>
                 <div class="info-section-content">
-                    <span class="info-section-subtitle">Percentile ranks based on modeled batted-ball performance. Players with fewer than 75 batted ball events in 2025 are not included.</span>
+                    <span class="info-section-subtitle">Percentile ranks and raw values based on Trackman hitter metrics.</span>
                 </div>
                 <div id="lollipop-chart"></div>
-                <div class="info-section-content">
-                    <span class="info-section-subtitle"><ul>
-                        <li style="font-size: 12px; color: #eee;"><strong style="color: #fff;">Hit:</strong> A weighted model including contact percentage, zone contact rate, out-of-zone contact rate, slider miss rate and elevated fastball contact rate.</li>
-                        <li style="font-size: 12px; color: #eee;"><strong style="color: #fff;">Game power:</strong> A weighted model including 90th percentile of exit velocity, 95+ mph exit velocity rate, and pulled fly ball rate.</li>
-                        <li style="font-size: 12px; color: #eee;"><strong style="color: #fff;">Raw power:</strong> A weighted model including average exit velocity and 90th percentile exit velocity.</li>
-                        <li style="font-size: 12px; color: #eee;"><strong style="color: #fff;">Approach:</strong> A weighted model including chase rate and walk rate.</li>
-                    </ul></span>
-                </div>
             </div>
         </div>
         {% elif pitcher_chart_data and not preview_mode %}
@@ -957,23 +979,21 @@ function toggleReport(button) {
     buttonText.textContent = isExpanded ? 'Show more' : 'Show less';
 }
 
-{% if radar_chart_data and not preview_mode %}
-const lollipopData = {{ radar_chart_data|safe }};
+{% if hitter_metric_chart_data and not preview_mode %}
+const hitterChartPayload = {{ hitter_metric_chart_data|safe }};
+const data = hitterChartPayload.items || [];
+
 const container = d3.select("#lollipop-chart-container");
 const containerWidth = container.node().getBoundingClientRect().width;
 
 const margin = {top: 20, right: 80, bottom: 20, left: 120};
 const chartWidth = containerWidth;
-const chartHeight = 220;
+// Increase overall vertical space based on number of metrics to add spacing between bars
+const rowHeight = 44; // pixels per row for comfortable spacing
+const baseHeight = 40; // top/bottom headroom
+const chartHeight = Math.max(260, baseHeight + (data.length * rowHeight));
 const width = chartWidth - margin.left - margin.right;
 const height = chartHeight - margin.top - margin.bottom;
-
-const data = [
-    {axis:"Hit", value: lollipopData.hitter_percentile || 0, score: lollipopData.hitter_score},
-    {axis:"Game power", value: lollipopData.game_power_percentile || 0, score: lollipopData.game_power_score},
-    {axis:"Raw power", value: lollipopData.raw_power_percentile || 0, score: lollipopData.raw_power_score},
-    {axis:"Approach", value: lollipopData.approach_percentile || 0, score: lollipopData.approach_score},
-];
 
 const svg = d3.select("#lollipop-chart")
     .append("svg")
@@ -985,7 +1005,7 @@ const svg = d3.select("#lollipop-chart")
 const y = d3.scaleBand()
   .range([ 0, height ])
   .domain(data.map(d => d.axis))
-  .padding(0.6);
+  .padding(0.65);
 
 const x = d3.scaleLinear()
   .domain([0, 1])
@@ -1029,8 +1049,8 @@ svg.select(".grid .domain").remove();
 
 
 let confidenceFactor = 0.1;
-if(lollipopData.confidence === 5) confidenceFactor = 0.05;
-if(lollipopData.confidence === 10) confidenceFactor = 0;
+if(hitterChartPayload.confidence === 5) confidenceFactor = 0.05;
+if(hitterChartPayload.confidence === 10) confidenceFactor = 0;
 
 // Styling constants to match MLB look
 const trackColor = "#DFE8EB"; // light track
@@ -1051,14 +1071,17 @@ svg.selectAll('.row-dash')
     .style('stroke-width', 1.5)
     .style('stroke-dasharray', '6,6');
 
+// Left padding to create a small gap between axis and bars
+const leftPad = 5; // pixels
+
 // Background track
 svg.selectAll('.track')
   .data(data)
   .enter()
   .append('rect')
-    .attr('x', x(0))
+    .attr('x', x(0) + leftPad)
     .attr('y', d => y(d.axis) + y.bandwidth()/2 - barHeight/2)
-    .attr('width', width)
+    .attr('width', width - leftPad)
     .attr('height', barHeight)
     .attr('rx', barHeight/2)
     .attr('ry', barHeight/2)
@@ -1070,7 +1093,7 @@ svg.selectAll(".conf-interval")
   .enter()
   .append("rect")
     .attr("y", d => y(d.axis) + y.bandwidth()/2 - 2)
-    .attr("x", d => x(Math.max(0, d.value - confidenceFactor)))
+    .attr("x", d => x(Math.max(0, d.value - confidenceFactor)) + leftPad)
     .attr("height", 4)
     .attr("width", d => x(Math.min(1, d.value + confidenceFactor)) - x(Math.max(0, d.value - confidenceFactor)))
     .style("fill", "rgba(128, 128, 128, 0.3)");
@@ -1081,7 +1104,7 @@ svg.selectAll(".bar")
   .enter()
   .append("rect")
     .attr("y", d => y(d.axis) + y.bandwidth()/2 - barHeight/2)
-    .attr("x", x(0))
+    .attr("x", x(0) + leftPad)
     .attr("height", barHeight)
     .attr("width", d => x(d.value))
     .attr('rx', barHeight/2)
@@ -1093,8 +1116,8 @@ svg.selectAll('.bar-tick')
   .data([0.25, 0.5, 0.75])
   .enter()
   .append('line')
-    .attr('x1', d => x(d))
-    .attr('x2', d => x(d))
+    .attr('x1', d => x(d) + leftPad)
+    .attr('x2', d => x(d) + leftPad)
     .attr('y1', y(data[0].axis) + y.bandwidth()/2 - barHeight/2)
     .attr('y2', y(data[data.length-1].axis) + y.bandwidth()/2 + barHeight/2)
     .style('stroke', '#cbd5e1')
@@ -1106,7 +1129,7 @@ svg.selectAll(".end-circle")
   .enter()
   .append("circle")
     .attr("cy", d => y(d.axis) + y.bandwidth()/2)
-    .attr("cx", d => x(d.value))
+    .attr("cx", d => x(d.value) + leftPad)
     .attr("r", 14)
     .style("fill", d => colorScale(d.value))
     .attr("stroke", "#FFFFFF")
@@ -1118,7 +1141,7 @@ svg.selectAll(".end-text")
   .enter()
   .append("text")
     .attr("y", d => y(d.axis) + y.bandwidth()/2 + 4)
-    .attr("x", d => x(d.value))
+    .attr("x", d => x(d.value) + leftPad)
     .text(d => Math.round(d.value * 100))
     .attr("text-anchor", "middle")
     .style("fill", d => (d.value >= 0.35 && d.value <= 0.65) ? "#111827" : "#F9FAFB")
@@ -1131,8 +1154,20 @@ svg.selectAll(".score-label")
   .enter()
   .append("text")
     .attr("y", d => y(d.axis) + y.bandwidth()/2)
-    .attr("x", width + 12)
-    .text(d => d.score != null ? d.score.toFixed(1) : "")
+    .attr("x", width + 18)
+    .text(d => {
+      if (d.score == null) return "";
+      const val = Number(d.score);
+      if (isNaN(val)) return "";
+      // Hide proprietary EV raw values
+      if (d.axis === "Avg Exit Velocity" || d.axis === "90th % Exit Velocity") {
+        return "";
+      }
+      if (d.axis === "xWOBA") {
+        return val.toFixed(3).replace(/^0/, ""); // .400 style
+      }
+      return val.toFixed(1);
+    })
     .attr("alignment-baseline", "middle")
     .style("fill", "#E2E8F0")
     .style("font-size", "12px")

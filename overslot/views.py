@@ -157,20 +157,38 @@ def players_detail(request, slug):
     latest_ranking = context['rankings'].order_by('-ranking__year', '-created').first()
     
     if latest_ranking:
-        context['radar_chart_data'] = json.dumps({
-            'hitter_percentile': latest_ranking.hitter_percentile,
-            'game_power_percentile': latest_ranking.game_power_percentile,
-            'raw_power_percentile': latest_ranking.raw_power_percentile,
-            'approach_percentile': latest_ranking.approach_percentile,
-            # include model scores so we can show them on the chart
-            'hitter_score': latest_ranking.hitter_score,
-            'game_power_score': latest_ranking.game_power_score,
-            'raw_power_score': latest_ranking.raw_power_score,
-            'approach_score': latest_ranking.approach_score,
-            'confidence': latest_ranking.confidence
-        })
-        if latest_ranking.hitter_percentile is None or latest_ranking.game_power_percentile is None or latest_ranking.raw_power_percentile is None or latest_ranking.approach_percentile is None:
-            context['radar_chart_data'] = None
+        # Build hitter metric chart data from new fields (percentiles drive bars; raw values shown on right)
+        hitter_items = []
+        metric_specs = [
+            ("Whiff %", latest_ranking.whiff_pct, latest_ranking.whiff_pct_percentile),
+            ("In-Zone Whiff %", latest_ranking.iz_whiff_pct, latest_ranking.iz_whiff_pct_percentile),
+            ("Out-of-Zone Whiff %", latest_ranking.ooz_whiff_pct, latest_ranking.ooz_whiff_pct_percentile),
+            ("Chase %", latest_ranking.chase_pct, latest_ranking.chase_pct_percentile),
+            ("K %", latest_ranking.k_pct, latest_ranking.k_pct_percentile),
+            ("BB %", latest_ranking.bb_pct, latest_ranking.bb_pct_percentile),
+            ("Avg Exit Velocity", latest_ranking.avg_exit_velocity, latest_ranking.avg_exit_velocity_percentile),
+            ("90th % Exit Velocity", latest_ranking.ev_90th, latest_ranking.ev_90th_percentile),
+            ("Barrel %", latest_ranking.barrel_pct, latest_ranking.barrel_pct_percentile),
+            ("Pull AIR %", latest_ranking.pull_air_pct, latest_ranking.pull_air_pct_percentile),
+            ("xWOBA", latest_ranking.xwoba, latest_ranking.xwoba_percentile),
+        ]
+        for axis, raw_value, percentile_value in metric_specs:
+            if percentile_value is not None and raw_value is not None:
+                # Percentiles were stored as 0-100; normalize to 0-1 for charting
+                normalized = max(0.0, min(1.0, float(percentile_value) / 100.0))
+                try:
+                    score_value = float(raw_value)
+                except Exception:
+                    score_value = None
+                hitter_items.append({
+                    'axis': axis,
+                    'value': normalized,
+                    'score': score_value,
+                })
+        context['hitter_metric_chart_data'] = json.dumps({
+            'items': hitter_items,
+            'confidence': latest_ranking.confidence,
+        }) if hitter_items else None
 
         # Pitcher chart data - only include pitches where data exists
         pitcher_data = {}

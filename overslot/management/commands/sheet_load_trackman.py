@@ -10,6 +10,14 @@ from overslot import models, utils
 class Command(BaseCommand):
     help = 'Load Trackman data from Google Sheets'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--group',
+            choices=['all', 'hitters', 'pitchers'],
+            default='all',
+            help='Choose which group to load: hitters, pitchers, or all (default)'
+        )
+
     def fix_blanks(self, row):
         for k,v in row.items():
             if v == "":
@@ -114,76 +122,20 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """
-        FOR PITCHERS:
-
-        Building a composite score for each pitch type.
-        Under each tab there are the scores that should be used to calculate the composite score.
-        The composite score is a weighted average of the following metrics:
-        - Strike%
-        - Chase%
-        - Whiff%
-        - Contact% (for curveballs) Note that this is inverse, so lower values are better.
-
-        Tab: "2025 Fourseam"
-        15% Strike% (Column F)
-        35% Chase% (Column H)
-        50% Whiff% (Column G)
-
-        Tab: "2025 Sinkers"
-        15% Strike% (Column F)
-        35% Chase% (Column H)
-        50% Whiff% (Column G)
-
-        Tab: "2025 Sliders"
-        15% Strike% (Column F)
-        35% Chase% (Column H)
-        50% Whiff% (Column G)
-
-        Tab: "2025 Sweepers"
-        15% Strike% (Column F)
-        35% Chase% (Column H)
-        50% Whiff% (Column G)
-
-        Tab: "2025 Curveballs"
-        15% Strike% (Column F)
-        35% Chase% (Column H)
-        50% Contact% (Column G) (this will be inverse)
-
-        Tab: "2025 Changeup/Splitters"
-        15% Strike% (Column F)
-        35% Chase% (Column H)
-        50% Whiff% (Column G)
-
-        FOR HITTERS:
-        Right now, only focused on 2025 college hitters, e.g., the "2025 Hitters" tab.
-        Four scores are calculated:
-        Hitter Percentile
-        Game Power Percentile
-        Raw Power Percentile
-        Approach Percentile
-
-        Each score is calculated by first determining percentiles for individual metrics across all players, 
-        then taking a weighted average of those percentiles.
-
-        Hitter Percentile
-            40% Contact % (column I) POSITIVE
-            25% Contact% IZ (column O) POSITIVE
-            15% Contact% Out-of-Zone (Column P) POSITIVE
-            10% SliderMiss% (Column N) NEGATIVE
-            10% Elevated FB Contact% (Column M) POSITIVE
-
-        Game Power Percentile
-            33% 90th Percentile EV (Column R) POSITIVE
-            33% EV 95+ % (Column K) POSITIVE
-            33% Pull AIR% (Column X) POSITIVE
-
-        Raw Power Percentile
-            50% Average EV (Column Q) POSITIVE
-            50% 90th Percentile EV (Column R) POSITIVE
-
-        Approach Percentile
-            50% Chase% (Column J) NEGATIVE
-            50% Walk% (Column AA) POSITIVE
+        Here are the columns from the sheet for hitters.
+        Name	Position	Team	Draft Year	Bats	Throws	Pitches	Swing%	Contact %	Chase%	EV 95+ %	Contact%v92+	Elevated FB Contact%	SliderMiss%	Contact% IZ	Contact% Out-Of-Zone	Average EV	90th Percentile EV	Max EV	Barrel%	xWOBA	Ground%	Fly Ball%	Pull AIR%	FBLD%
+        What Joe wants:
+            "Whiff %" -- (inverse of column I)
+            "In-Zone Whiff %" -- (inverse of column O)
+            "Out-of-Zone Whiff %" -- (inverse of column P)
+            "Chase %" -- (Column J)
+            "K %" -- (Column AB)
+            "BB %" -- (Column AA)
+            "Avg Exit Velocity" -- (Column Q)
+            "90th % Exit Velocity" -- (Column R)
+            "Barrel %" -- (Column T)
+            "Pull AIR %" -- (Column X)
+            "xWOBA" -- (Column U)
         """
 
         def _parse_value(val):
@@ -253,7 +205,15 @@ class Command(BaseCommand):
             return score / total_weight
 
         years = ['2025']
-        tab_types = ["Hitters", "Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeup/Splitters"]
+        all_tab_types = ["Hitters", "Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeup/Splitters"]
+
+        group = options.get('group', 'all')
+        if group == 'hitters':
+            tab_types = ["Hitters"]
+        elif group == 'pitchers':
+            tab_types = ["Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeup/Splitters"]
+        else:
+            tab_types = all_tab_types
 
         for year in years:
             for tab_type in tab_types:
@@ -262,7 +222,8 @@ class Command(BaseCommand):
                 sheet = None
 
                 try:
-                    sheet = utils.get_sheet("1KJwXOxOKZvk50bP186klB_YXUdWVylJwEHvHUBorULA", f"{tab}!A:AA", value_cutoff=None)
+                    # Include AB to capture K % column as requested
+                    sheet = utils.get_sheet("1KJwXOxOKZvk50bP186klB_YXUdWVylJwEHvHUBorULA", f"{tab}!A:AB", value_cutoff=None)
                 except Exception as e:
                     print(e)
 
@@ -308,6 +269,10 @@ class Command(BaseCommand):
                     for weights in [hitter_weights, game_power_weights, raw_power_weights, approach_weights]:
                         for metric, _, invert in weights:
                             all_metrics[metric] = invert
+                    # Also include additional metrics we store
+                    all_metrics['K %'] = True
+                    all_metrics['Barrel%'] = False
+                    all_metrics['xWOBA'] = False
                     
                     # Calculate percentile distributions using only high-volume players
                     metric_distributions = {}
@@ -337,6 +302,77 @@ class Command(BaseCommand):
                         row['raw_power_percentile'] = _calculate_weighted_percentile_score(row_percentiles, raw_power_weights)
                         row['approach_percentile'] = _calculate_weighted_percentile_score(row_percentiles, approach_weights)
                         
+                        # Derive and store requested hitter metrics (raw and percentiles)
+                        # Helper for percent raw conversion (handles decimals vs percent values)
+                        def pct_to_raw(val):
+                            if val is None:
+                                return None
+                            return val * 100.0 if val <= 1.0 else val
+                        
+                        # Whiff % (inverse of Contact %) - percentile should reflect better = higher, so use Contact % percentile directly
+                        contact = _parse_value(row.get('Contact %'))
+                        row['whiff_pct'] = pct_to_raw(None if contact is None else (1.0 - contact))
+                        row['whiff_pct_percentile'] = None if row_percentiles.get('Contact %') is None else row_percentiles['Contact %'] * 100.0
+                        
+                        # In-Zone Whiff % (inverse of Contact% IZ) - percentile mirrors Contact% IZ percentile
+                        contact_iz = _parse_value(row.get('Contact% IZ'))
+                        row['iz_whiff_pct'] = pct_to_raw(None if contact_iz is None else (1.0 - contact_iz))
+                        row['iz_whiff_pct_percentile'] = None if row_percentiles.get('Contact% IZ') is None else row_percentiles['Contact% IZ'] * 100.0
+                        
+                        # Out-of-Zone Whiff % (inverse of Contact% Out-Of-Zone) - percentile mirrors Contact% Out-Of-Zone percentile
+                        contact_ooz = _parse_value(row.get('Contact% Out-Of-Zone'))
+                        row['ooz_whiff_pct'] = pct_to_raw(None if contact_ooz is None else (1.0 - contact_ooz))
+                        row['ooz_whiff_pct_percentile'] = None if row_percentiles.get('Contact% Out-Of-Zone') is None else row_percentiles['Contact% Out-Of-Zone'] * 100.0
+                        
+                        # Chase % (lower is better - we already inverted percentiles in row_percentiles)
+                        chase = _parse_value(row.get('Chase%'))
+                        row['chase_pct'] = pct_to_raw(chase)
+                        row['chase_pct_percentile'] = None if row_percentiles.get('Chase%') is None else row_percentiles['Chase%'] * 100.0
+                        
+                        # K % (lower is better) - handle header variants 'K %' and 'K%'
+                        k_col = 'K %' if any(r.get('K %') is not None for r in rows) else 'K%'
+                        k_rate = _parse_value(row.get(k_col))
+                        # Ensure distribution exists for whichever column is present
+                        if k_col not in metric_distributions:
+                            metric_distributions[k_col] = {
+                                'distribution': _calculate_percentile_distribution(rows, k_col),
+                                'invert': True
+                            }
+                        k_distribution = metric_distributions.get(k_col, {}).get('distribution')
+                        k_percentile = _get_percentile_rank(k_rate, k_distribution, invert=True) if k_distribution is not None else None
+                        row['k_pct'] = pct_to_raw(k_rate)
+                        row['k_pct_percentile'] = None if k_percentile is None else k_percentile * 100.0
+                        
+                        # BB % (higher is better)
+                        bb_rate = _parse_value(row.get('BB%'))
+                        row['bb_pct'] = pct_to_raw(bb_rate)
+                        row['bb_pct_percentile'] = None if row_percentiles.get('BB%') is None else row_percentiles['BB%'] * 100.0
+                        
+                        # Avg Exit Velocity (Q)
+                        avg_ev = _parse_value(row.get('Average EV'))
+                        row['avg_exit_velocity'] = avg_ev
+                        row['avg_exit_velocity_percentile'] = None if row_percentiles.get('Average EV') is None else row_percentiles['Average EV'] * 100.0
+                        
+                        # 90th % Exit Velocity (R)
+                        ev90 = _parse_value(row.get('90th Percentile EV'))
+                        row['ev_90th'] = ev90
+                        row['ev_90th_percentile'] = None if row_percentiles.get('90th Percentile EV') is None else row_percentiles['90th Percentile EV'] * 100.0
+                        
+                        # Barrel % (T)
+                        barrel = _parse_value(row.get('Barrel%'))
+                        row['barrel_pct'] = pct_to_raw(barrel)
+                        row['barrel_pct_percentile'] = None if row_percentiles.get('Barrel%') is None else row_percentiles['Barrel%'] * 100.0
+                        
+                        # Pull AIR % (X)
+                        pull_air = _parse_value(row.get('Pull AIR%'))
+                        row['pull_air_pct'] = pct_to_raw(pull_air)
+                        row['pull_air_pct_percentile'] = None if row_percentiles.get('Pull AIR%') is None else row_percentiles['Pull AIR%'] * 100.0
+                        
+                        # xWOBA (U)
+                        xwoba_val = _parse_value(row.get('xWOBA'))
+                        row['xwoba'] = xwoba_val
+                        row['xwoba_percentile'] = None if row_percentiles.get('xWOBA') is None else row_percentiles['xWOBA'] * 100.0
+                        
                         # Show progress
                         if (original_index + 1) % 10 == 0 or original_index == total_rows - 1:
                             progress = ((original_index + 1) / total_rows) * 100
@@ -362,6 +398,30 @@ class Command(BaseCommand):
                                 pr.game_power_percentile = row['game_power_percentile']
                                 pr.raw_power_percentile = row['raw_power_percentile']
                                 pr.approach_percentile = row['approach_percentile']
+
+                                # Save requested hitter metrics
+                                pr.whiff_pct = row.get('whiff_pct')
+                                pr.whiff_pct_percentile = row.get('whiff_pct_percentile')
+                                pr.iz_whiff_pct = row.get('iz_whiff_pct')
+                                pr.iz_whiff_pct_percentile = row.get('iz_whiff_pct_percentile')
+                                pr.ooz_whiff_pct = row.get('ooz_whiff_pct')
+                                pr.ooz_whiff_pct_percentile = row.get('ooz_whiff_pct_percentile')
+                                pr.chase_pct = row.get('chase_pct')
+                                pr.chase_pct_percentile = row.get('chase_pct_percentile')
+                                pr.k_pct = row.get('k_pct')
+                                pr.k_pct_percentile = row.get('k_pct_percentile')
+                                pr.bb_pct = row.get('bb_pct')
+                                pr.bb_pct_percentile = row.get('bb_pct_percentile')
+                                pr.avg_exit_velocity = row.get('avg_exit_velocity')
+                                pr.avg_exit_velocity_percentile = row.get('avg_exit_velocity_percentile')
+                                pr.ev_90th = row.get('ev_90th')
+                                pr.ev_90th_percentile = row.get('ev_90th_percentile')
+                                pr.barrel_pct = row.get('barrel_pct')
+                                pr.barrel_pct_percentile = row.get('barrel_pct_percentile')
+                                pr.pull_air_pct = row.get('pull_air_pct')
+                                pr.pull_air_pct_percentile = row.get('pull_air_pct_percentile')
+                                pr.xwoba = row.get('xwoba')
+                                pr.xwoba_percentile = row.get('xwoba_percentile')
 
                                 pr.confidence = 10
                                 pr.save()
