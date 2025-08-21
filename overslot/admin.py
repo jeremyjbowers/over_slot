@@ -154,15 +154,15 @@ class ArticleAdmin(admin.ModelAdmin):
         "headline",
         "subhead",
         "publish",
+        "article_type",
         "is_carousel",
-        "created",
         "last_modified",
     ]
-    list_editable = ["publish", "is_carousel"]
+    list_editable = ["publish", "is_carousel", "article_type"]
     list_filter = [
         "publish",
         "is_carousel",
-        "created",
+        "article_type",
         "authors",
     ]
     search_fields = [
