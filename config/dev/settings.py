@@ -235,3 +235,56 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 USE_TLS = env('USE_TLS', default=True)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = False  # Don't force redirect in development
+
+# Email blocklist to reduce spam signups/logins
+# Blocked top-level domains (TLDs)
+BLOCKED_EMAIL_TLDS = [
+    "ru",
+    "su",
+    "cn",
+]
+
+# Blocked disposable/bad email domains (match exact domain or any subdomain)
+BLOCKED_EMAIL_DOMAINS = [
+    "mailinator.com",
+    "10minutemail.com",
+    "guerrillamail.com",
+    "guerrillamail.de",
+    "guerrillamail.biz",
+    "guerrillamail.info",
+    "sharklasers.com",
+    "trashmail.com",
+    "trash-mail.com",
+    "temp-mail.org",
+    "tempmail.plus",
+    "tempmail.email",
+    "tempmailo.com",
+    "yopmail.com",
+    "dispostable.com",
+    "getnada.com",
+    "nada.ltd",
+    "dropmail.me",
+    "1secmail.com",
+    "mytemp.email",
+    "mintemail.com",
+    "maildrop.cc",
+    "fakeinbox.com",
+    "mailcatch.com",
+    "mailnesia.com",
+    "moakt.com",
+    "emailondeck.com",
+    "throwawaymail.com",
+    "mailpoof.com",
+    "getairmail.com",
+    "disposablemail.com",
+    "mail7.io",
+    "mailsac.com",
+    "linshi-email.com",
+    "mail-temp.com",
+    "mail.tm",
+    "inboxbear.com",
+    "mvrht.com",
+    "kurzepost.de",
+    "spamgourmet.com",
+    "generator.email",
+]

@@ -27,10 +27,33 @@ class MailgunEmailer:
         )
 
 def send_magic_link(request, email, is_signup=False, first_name=None, last_name=None):
+    # Basic domain block: ignore any .ru email domains
+    if not email:
+        messages.error(request, "Please provide a valid email address.")
+        return redirect('account_signup' if is_signup else 'account_login')
+
+    email_normalized = email.strip().lower()
+    if '@' not in email_normalized:
+        messages.error(request, "Please provide a valid email address.")
+        return redirect('account_signup' if is_signup else 'account_login')
+
+    domain = email_normalized.split('@')[-1]
+    # Enforce blocklist from settings
+    tld = domain.split('.')[-1] if '.' in domain else ''
+    if tld in getattr(settings, 'BLOCKED_EMAIL_TLDS', []):
+        messages.error(request, "We do not accept email addresses from this top-level domain.")
+        return redirect('account_signup' if is_signup else 'account_login')
+
+    blocked_domains = set(getattr(settings, 'BLOCKED_EMAIL_DOMAINS', []))
+    # Exact match or subdomain match
+    if domain in blocked_domains or any(domain.endswith(f".{bad}") for bad in blocked_domains):
+        messages.error(request, "We do not accept email addresses from this email provider.")
+        return redirect('account_signup' if is_signup else 'account_login')
+
     # Import here to avoid circular imports
     from overslot.models import UserEmail
     
-    user = UserEmail.find_user_by_email(email)
+    user = UserEmail.find_user_by_email(email_normalized)
     
     if user:
         if is_signup:
@@ -44,8 +67,8 @@ def send_magic_link(request, email, is_signup=False, first_name=None, last_name=
         # Create user using allauth-compatible method (only when user doesn't exist)
         if not user:
             user = User.objects.create_user(
-                username=email,  # Use email as username
-                email=email,
+                username=email_normalized,  # Use email as username
+                email=email_normalized,
                 password=get_random_string(32),  # Random password since we're using magic links
                 first_name=first_name or '',
                 last_name=last_name or ''
@@ -85,7 +108,7 @@ def send_magic_link(request, email, is_signup=False, first_name=None, last_name=
     })
     
     try:
-        MailgunEmailer.send_email(email, subject, html_content)
+        MailgunEmailer.send_email(email_normalized, subject, html_content)
         messages.success(
             request,
             "We've sent you a magic link! Check your email to continue."

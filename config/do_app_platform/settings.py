@@ -108,6 +108,57 @@ DEVELOPMENT_MODE = False
 MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY', None)
 MAILGUN_DOMAIN = os.environ.get('MAILGUN_DOMAIN', 'overslotbaseball.com')
 
+# Email blocklist to reduce spam signups/logins (override/extend dev defaults if needed)
+BLOCKED_EMAIL_TLDS = [
+    "ru",
+    "su",
+    "cn",
+]
+BLOCKED_EMAIL_DOMAINS = [
+    # Common disposable providers
+    "mailinator.com",
+    "10minutemail.com",
+    "guerrillamail.com",
+    "guerrillamail.de",
+    "guerrillamail.biz",
+    "guerrillamail.info",
+    "sharklasers.com",
+    "trashmail.com",
+    "trash-mail.com",
+    "temp-mail.org",
+    "tempmail.plus",
+    "tempmail.email",
+    "tempmailo.com",
+    "yopmail.com",
+    "dispostable.com",
+    "getnada.com",
+    "nada.ltd",
+    "dropmail.me",
+    "1secmail.com",
+    "mytemp.email",
+    "mintemail.com",
+    "maildrop.cc",
+    "fakeinbox.com",
+    "mailcatch.com",
+    "mailnesia.com",
+    "moakt.com",
+    "emailondeck.com",
+    "throwawaymail.com",
+    "mailpoof.com",
+    "getairmail.com",
+    "disposablemail.com",
+    "mail7.io",
+    "mailsac.com",
+    "linshi-email.com",
+    "mail-temp.com",
+    "mail.tm",
+    "inboxbear.com",
+    "mvrht.com",
+    "kurzepost.de",
+    "spamgourmet.com",
+    "generator.email",
+]
+
 # Email backend configuration for production
 if MAILGUN_API_KEY and MAILGUN_DOMAIN:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Use actual email in production

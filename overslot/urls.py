@@ -54,6 +54,7 @@ urlpatterns = [
     path('magic-link/signup/', auth.magic_link_signup_view, name='magic_link_signup'),
     path('magic-link/verify/<str:token>/', auth.magic_link_verify_view, name='magic_link_verify'),
 
+
     # Account Management URLs
     path('account/', account_views.account_dashboard, name='account_dashboard'),
     path('account/email/add/', account_views.add_secondary_email, name='add_secondary_email'),

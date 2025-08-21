@@ -224,6 +224,9 @@ class Ranking(BaseModel):
             "History": True,       # Enables undo/redo
             "HTML": True,          # Allows HTML view
             "Typographic": True,   # Enables typographic chars
+
+            # Media
+            "Image": True,         # Enable inline image upload
         },
         sanitize=True,
         null=True,
@@ -404,6 +407,9 @@ class PlayerRanking(BaseModel):
             "History": True,       # Enables undo/redo
             "HTML": True,          # Allows HTML view
             "Typographic": True,   # Enables typographic chars
+
+            # Media
+            "Image": True,
         },
         sanitize=True,
         null=True,
@@ -458,6 +464,9 @@ class Article(BaseModel):
             "History": True,       # Enables undo/redo
             "HTML": True,          # Allows HTML view
             "Typographic": True,   # Enables typographic chars
+
+            # Media
+            "Image": True,
         },
         sanitize=True,
         null=True,
