@@ -418,6 +418,13 @@ class PlayerRanking(BaseModel):
 
 
 class Article(BaseModel):
+    ARTICLE_TYPE_CHOICES = (
+        ("breaking news", "breaking news"),
+        ("scouting", "scouting"),
+        ("analysis", "analysis"),
+        ("opinion", "opinion"),
+    )
+
     headline = models.CharField(max_length=255, blank=True, null=True)
     subhead = models.CharField(max_length=255, blank=True, null=True)
     blurb = models.CharField(max_length=255, blank=True, null=True)
@@ -425,6 +432,8 @@ class Article(BaseModel):
 
     players = models.ManyToManyField(Player, blank=True)
     authors = models.ManyToManyField(Author, blank=True, related_name='articles')
+
+    article_type = models.CharField(max_length=255, choices=ARTICLE_TYPE_CHOICES, blank=True, null=True)
 
     body = ProseEditorField(
         extensions={
