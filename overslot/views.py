@@ -18,31 +18,51 @@ from overslot.decorators import subscription_required
 
 def index(request):
     context = {}
-    # Carousel content - only show published articles
-    carousel_articles = models.Article.objects.filter(publish=True, is_carousel=True)
-    latest_articles = models.Article.objects.filter(publish=True, is_carousel=True).order_by('-created')
-    
-    # Add active players to carousel articles
-    for article in carousel_articles:
-        article.active_players = article.players.filter(active=True)
-    
-    # Add active players to latest articles
+    # Smaller hero: show a few latest carousel items (articles + rankings)
+    latest_articles_qs = models.Article.objects.filter(
+        publish=True, is_carousel=True
+    ).prefetch_related('authors')
+    latest_articles = latest_articles_qs.order_by('-created')[:5]
     for article in latest_articles:
         article.active_players = article.players.filter(active=True)
     context['latest_articles'] = latest_articles
-    
-    # Carousel rankings - only show published rankings
-    latest_rankings = models.Ranking.objects.filter(is_mock_draft=False, publish=True, is_carousel=True).order_by('-created')
-    
+
+    latest_rankings = models.Ranking.objects.filter(
+        is_mock_draft=False, publish=True, is_carousel=True
+    ).order_by('-created')[:5]
     context['latest_rankings'] = latest_rankings
-    
-    # Content lists below carousel - last 10 published items regardless of carousel flag
-    context['articles'] = models.Article.objects.filter(publish=True).order_by('-created')[:10]
-    context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False, publish=True).order_by('-created')[:10]
-    
-    # Add active players to content articles
-    for article in context['articles']:
-        article.active_players = article.players.filter(active=True)
+
+    # Flanking lists: left = scouting articles; right = non-scouting
+    scouting_articles = models.Article.objects.filter(
+        publish=True, article_type='scouting'
+    ).prefetch_related('authors').order_by('-created')[:3]
+    for a in scouting_articles:
+        a.active_players = a.players.filter(active=True)
+    context['scouting_articles'] = scouting_articles
+
+    non_scouting_articles = models.Article.objects.filter(
+        publish=True
+    ).exclude(article_type='scouting').prefetch_related('authors').order_by('-created')[:3]
+    for a in non_scouting_articles:
+        a.active_players = a.players.filter(active=True)
+    context['non_scouting_articles'] = non_scouting_articles
+
+    # Rankings grid below: recent published non-mock rankings
+    context['recent_rankings'] = models.Ranking.objects.filter(
+        is_mock_draft=False, publish=True
+    ).order_by('-created')[:7]
+    context['rankings_count'] = models.Ranking.objects.filter(
+        is_mock_draft=False, publish=True
+    ).count()
+
+    # Player videos sidebar: active players with a video_url
+    videos_qs = models.Player.objects.filter(
+        active=True
+    ).exclude(video_url__isnull=True).exclude(video_url="")\
+     .exclude(photo_url__isnull=True).exclude(photo_url="")\
+     .order_by('-created')
+    context['player_videos'] = videos_qs[:9]
+    context['videos_count'] = videos_qs.count()
 
     return render(request, "index.html", context)
 
@@ -89,6 +109,27 @@ def mock_drafts_list(request):
 
     return render(request, "rankings_list.html", context)
 
+
+def videos_list(request):
+    context = {}
+    players = models.Player.objects.filter(
+        active=True
+    ).exclude(video_url__isnull=True).exclude(video_url="")\
+     .exclude(photo_url__isnull=True).exclude(photo_url="")
+
+    # Sort by last name, then first name using simple split fallback
+    def sort_key(p):
+        parts = (p.name or "").strip().split()
+        if not parts:
+            return ("", "")
+        if len(parts) == 1:
+            return (parts[0].lower(), "")
+        return (parts[-1].lower(), " ".join(parts[:-1]).lower())
+
+    players = sorted(players, key=sort_key)
+    context['players'] = players
+
+    return render(request, "videos_list.html", context)
 
 @subscription_required
 def rankings_detail(request, slug):

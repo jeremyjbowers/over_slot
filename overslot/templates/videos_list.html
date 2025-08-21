@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+.videos-grid { max-width: 1400px; margin: 0 auto; padding: 2.5rem 1.5rem; display: grid; gap: 1rem; grid-template-columns: repeat(4, 1fr); }
+.video-card { border: 1px solid var(--dark-border); background: var(--dark-surface); text-decoration: none; display: block; min-width: 0; }
+/* Ensure a visible, square thumbnail even if layout calculates zero height */
+.video-thumb { position: relative; display: block; width: 100%; background: var(--dark-bg); border-bottom: 1px solid var(--dark-border); aspect-ratio: 1 / 1; min-height: 140px; }
+.video-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.video-play { position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,0.65); color: #ef4444; padding: 4px 6px; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 4px; }
+.video-meta { padding: 0.6rem 0.75rem; }
+.video-name { color: var(--dark-text); font-weight: 700; }
+.video-sub { color: var(--dark-text-muted); font-size: 0.9rem; }
+/* Match global section header styling used on index page */
+.section-title { font-size: 2rem; color: var(--dark-text); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; }
+.section-title .icon { color: var(--theme-primary); font-size: 1.5rem; }
+.section-title .title-text { font-weight: 800; letter-spacing: -0.02em; }
+.section-title .count { font-size: 0.875rem; font-weight: 500; color: var(--dark-text-secondary); margin-left: auto; }
+@media (max-width: 1024px) { .videos-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 768px) { .videos-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .videos-grid { grid-template-columns: 1fr; } }
+</style>
+
+<div class="content-section" style="max-width:1400px; margin:0 auto; padding: 1rem 1.5rem 0;">
+  <h2 class="section-title"><span class="title-text">Player Videos</span></h2>
+</div>
+
+<div class="videos-grid">
+  {% for p in players %}
+  <a href="{{ p.video_url }}" target="_blank" rel="noopener" class="video-card">
+    <span class="video-thumb">
+      <img src="{{ p.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}" alt="{{ p.name }}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4='';">
+      <span class="video-play"><i class="fas fa-play"></i></span>
+    </span>
+    <span class="video-meta">
+      <span class="video-name">{{ p.name }}</span><br/>
+      <span class="video-sub">{% if p.position %}{{ p.position }}{% endif %}{% if p.position and p.school %} | {% endif %}{% if p.school %}{{ p.school }}{% endif %}</span>
+    </span>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}
+
+

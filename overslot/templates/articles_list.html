@@ -24,18 +24,12 @@
     height: fit-content;
 }
 
-.article-list {
-    padding: 0;
-}
-
-.article-card {
-    padding: 2rem 0;
-    border-bottom: 1px solid var(--dark-border);
-}
-
-.article-card:last-child {
-    border-bottom: none;
-}
+/* Articles grid */
+.article-list { padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+.article-card { display: flex; flex-direction: column; border: 1px solid var(--dark-border); background: var(--dark-surface); overflow: hidden; }
+.article-media { position: relative; width: 100%; padding-top: 56.25%; background: var(--dark-bg); }
+.article-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.article-body { padding: 0.4rem 0.6rem 0.5rem; display: flex; flex-direction: column; gap: 0.25rem; }
 
 .article-meta {
     display: flex;
@@ -43,7 +37,7 @@
     gap: 1rem;
     color: var(--dark-text-muted);
     font-size: 0.9rem;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.25rem;
 }
 
 .article-meta .icon-text {
@@ -53,7 +47,8 @@
 }
 
 .article-meta .has-text-info {
-    color: var(--theme-primary) !important;
+    /* Authors should look like normal text on cards (not links/red) */
+    color: var(--dark-text) !important;
 }
 
 .social-links {
@@ -78,48 +73,23 @@
     margin-bottom: 0.5rem;
 }
 
-.article-headline {
-    font-size: 2rem;
-    font-weight: bold;
-    margin-bottom: 1rem;
-    color: var(--dark-text);
-    line-height: 1.2;
-}
+.article-headline { font-size: 1.25rem; font-weight: 800; margin: 0; color: var(--dark-text); line-height: 1.15; }
+/* Slight emphasis for author names without relying on color */
+.article-meta .has-text-weight-medium { font-weight: 700; }
 
-.article-subhead {
-    font-size: 1.25rem;
-    color: var(--dark-text-secondary);
-    margin-bottom: 1rem;
-    line-height: 1.4;
-}
+/* Tighten default heading margins inherited from base for list cards */
+.article-body h2 { margin-top: 0.3em; margin-bottom: 0.3em; }
 
-.article-blurb {
-    color: var(--dark-text-secondary);
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
-}
+.article-subhead { display: none; }
 
-.player-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 1rem;
-}
+.article-blurb { display: none; }
 
-.player-tag {
-    background: var(--dark-surface);
-    border: 1px solid var(--dark-border);
-    color: var(--theme-primary);
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-}
-
-.player-tag:hover {
-    background: var(--dark-surface-hover);
-    border-color: var(--theme-primary);
-}
+/* Players line like rankings cards (text list) */
+.players-line { margin-top: 0.15rem; font-size: 0.95rem; color: var(--dark-text); }
+.players-line a { color: var(--theme-primary); text-decoration: none; }
+.players-line a:hover { color: var(--theme-primary-hover); text-decoration: none; }
+.players-line .pos { color: var(--dark-text-muted); font-weight: 700; margin-right: 0.25rem; }
+.players-line .sep { color: var(--dark-text-muted); }
 
 
 
@@ -140,6 +110,7 @@
         padding: 3rem 1rem 0;
         gap: 1.5rem;
     }
+    .article-list { grid-template-columns: 1fr; }
 }
 </style>
 
@@ -149,6 +120,12 @@
         <div class="article-list">
             {% for article in articles %}
     <article class="article-card">
+        {% if article.featured_image %}
+        <a href="/articles/{{ article.slug }}/" class="article-media">
+            <img src="{{ article.featured_image.url }}" alt="{{ article.headline }}">
+        </a>
+        {% endif %}
+        <div class="article-body">
         <div class="article-meta">
             {% if article.authors.all %}
             <span class="icon-text has-text-info">
@@ -183,10 +160,7 @@
             </span>
         </div>
         <a href="/articles/{{ article.slug }}/" class="has-text-white">
-            <h2 class="article-headline">
-                {{ article.headline }}
-                {% include "includes/premium_badge.html" with badge_class="compact" %}
-            </h2>
+            <h2 class="article-headline">{{ article.headline }}</h2>
         </a>
         {% if article.subhead %}
         <h3 class="article-subhead">{{ article.subhead }}</h3>
@@ -195,15 +169,13 @@
         <p class="article-blurb">{{ article.blurb }}</p>
         {% endif %}
         {% if article.active_players %}
-        <div class="player-tags">
+        <div class="players-line">
             {% for player in article.active_players %}
-            <a href="/players/{{ player.slug }}/" class="player-tag">
-                {{ player.name }}
-                {% include "includes/premium_badge.html" with badge_class="icon-only" %}
-            </a>
+                <a href="/players/{{ player.slug }}/">{% if player.position %}<span class="pos">{{ player.position }}</span>{% endif %}{{ player.name }}</a>{% if not forloop.last %}, {% endif %}
             {% endfor %}
         </div>
         {% endif %}
+        </div>
     </article>
     {% endfor %}
         </div>

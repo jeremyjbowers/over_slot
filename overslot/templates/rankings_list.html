@@ -2,229 +2,45 @@
 
 {% block content %}
 <style>
-.rankings-grid {
-    max-width: 1400px;
-    margin: 0 auto;
-    display: grid;
-    gap: 2rem;
-    padding: 3rem 1.5rem 3rem;
-}
-
-.ranking-card {
-    padding: 2rem;
-    border: 1px solid var(--dark-border);
-    background: var(--dark-surface);
-    transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.ranking-card:hover {
-    background: rgba(255, 255, 255, 0.08);
-    transform: translateY(-2px);
-}
-
-.ranking-card-with-image {
-    background-size: cover;
-    background-position: top left;
-    background-repeat: no-repeat;
-}
-
-.ranking-card-with-image:hover {
-    background-color: transparent;
-    background-size: cover;
-    background-position: top left;
-}
-
-.ranking-card-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(
-        rgba(0, 0, 0, 0.75),
-        rgba(0, 0, 0, 0.6)
-    );
-    z-index: 1;
-}
-
-.ranking-card-content {
-    position: relative;
-    z-index: 2;
-    flex: 1;
-}
-
-.ranking-title {
-    font-size: 1.75rem;
-    font-weight: bold;
-    color: var(--dark-text);
-    margin-bottom: 1rem;
-    line-height: 1.2;
-}
-
-.ranking-blurb {
-    font-size: 1.1rem;
-    color: var(--dark-text-secondary);
-    margin-bottom: 1rem;
-    line-height: 1.4;
-}
-
-.player-preview {
-    display: block;
-    transition: transform 0.2s ease;
-}
-
-.player-preview:hover {
-    transform: translateY(-2px);
-}
-
-.image-wrapper {
-    position: relative;
-    padding-top: 100%;
-    overflow: hidden;
-    background: var(--dark-surface);
-    border: 1px solid var(--dark-border);
-    margin-bottom: 0.75rem;
-}
-
-.image-wrapper img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.rank-badge {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    background: var(--theme-primary);
-    color: white;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border: none;
-}
-
-.player-name {
-    color: var(--dark-text);
-    font-weight: 500;
-    font-size: 0.9rem;
-    line-height: 1.2;
-    margin-bottom: 0.2rem;
-}
-
-.player-position {
-    color: var(--dark-text-muted);
-    font-size: 0.8rem;
-}
-
-.view-all-link {
-    display: block;
-    text-align: center;
-    padding: 1rem;
-    color: var(--theme-primary);
-    border-top: 1px solid var(--dark-border);
-    transition: all 0.2s ease;
-    position: relative;
-    z-index: 2;
-    background: var(--dark-surface);
-    margin: 2rem -2rem -2rem -2rem;
-}
-
-.view-all-link:hover {
-    background: var(--dark-surface-hover);
-    color: var(--theme-primary);
-}
-
-.top-players {
-    margin-top: 2rem;
-}
-
-.top-players-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1rem;
-}
-
-@media screen and (min-width: 769px) {
-    .rankings-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media screen and (max-width: 1024px) {
-    .top-players-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
-@media screen and (max-width: 768px) {
-    .ranking-title {
-        font-size: 1.75rem;
-    }
-
-    .top-players-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-@media screen and (max-width: 480px) {
-    .top-players-grid {
-    grid-template-columns: repeat(2, 1fr);
-}
-
-
-}
+.ranking-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; max-width: 1400px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+.ranking-card { display: flex; flex-direction: column; border: 1px solid var(--dark-border); background: var(--dark-surface); height: 100%; overflow: hidden; }
+.ranking-media { position: relative; width: 100%; padding-top: 56.25%; background: var(--dark-bg); }
+.ranking-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ranking-content { padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+.ranking-meta { color: var(--dark-text-muted); font-size: 0.9rem; }
+.ranking-title { font-size: 1.2rem; font-weight: 800; color: var(--dark-text); line-height: 1.2; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ranking-title a { color: var(--theme-primary); text-decoration: none; }
+.players-list { margin-top: auto; padding-left: 0; list-style: none; }
+.players-list li { margin: 0.15rem 0; font-size: 0.95rem; line-height: 1.35; color: var(--dark-text); }
+.players-list a { color: var(--theme-primary); text-decoration: none; }
+.players-list a:hover { color: var(--theme-primary-hover); text-decoration: none; }
+.players-list .num { color: var(--dark-text-muted); font-weight: 700; margin-right: 0.35rem; }
+.players-list .pos { color: var(--dark-text-muted); font-weight: 700; margin-right: 0.25rem; }
+@media (max-width: 1024px) { .ranking-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .ranking-grid { grid-template-columns: 1fr; } }
 </style>
 
-<div class="rankings-grid">
+<div class="ranking-grid">
     {% for ranking in rankings %}
-    <div class="ranking-card{% if ranking.featured_image %} ranking-card-with-image{% endif %}"{% if ranking.featured_image %} style="background-image: url('{{ ranking.featured_image.url }}')"{% endif %}>
+    <div class="ranking-card">
         {% if ranking.featured_image %}
-        <div class="ranking-card-overlay"></div>
-        {% endif %}
-        <div class="ranking-card-content">
-            <h2 class="ranking-title">
-                <a href="/rankings/{{ ranking.slug }}/" class="has-text-white">
-                    {{ ranking }}
-                </a>
-            </h2>
-            
-            {% if ranking.blurb %}
-            <p class="ranking-blurb">{{ ranking.blurb }}</p>
-            {% endif %}
-
-            <div class="top-players">
-                <div class="top-players-grid">
-                    {% for pr in ranking.get_playerrankings|slice:":5" %}
-                    <a href="/players/{{ pr.player.slug }}/" class="player-preview">
-                        <div class="image-wrapper">
-                            <img src="{{ pr.player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
-                                 alt="{{ pr.player.name }}">
-                            <div class="rank-badge">#{{ pr.rank }}</div>
-                        </div>
-                        <p class="player-name">{{ pr.player.name }}</p>
-                        <p class="player-position">{{ pr.player.position }}</p>
-                        {% if pr.commitment %}
-                        <p class="player-commitment" style="color: var(--theme-primary); font-size: 0.75rem; font-weight: 500; margin-top: 0.25rem;">{{ pr.commitment }}</p>
-                        {% endif %}
-                    </a>
-                    {% endfor %}
-                </div>
-            </div>
+        <div class="ranking-media">
+            <img src="{{ ranking.featured_image.url }}" alt="">
         </div>
-
-        <a href="/rankings/{{ ranking.slug }}/" class="view-all-link">Full Ranking</a>
+        {% endif %}
+        <div class="ranking-content">
+            <div class="ranking-meta">{{ ranking.created|date:"F j, Y" }}</div>
+            <h3 class="ranking-title"><a href="/rankings/{{ ranking.slug }}/">{{ ranking }}</a></h3>
+            {% if ranking.get_initial_players %}
+            <ol class="players-list">
+                {% for pr in ranking.get_initial_players|slice:":5" %}
+                <li>
+                    <a href="/players/{{ pr.player.slug }}/"><span class="num">{{ pr.rank }}.</span>{% if pr.position %}<span class="pos">{{ pr.position }}</span>{% endif %}{{ pr.player.name }}</a>
+                </li>
+                {% endfor %}
+            </ol>
+            {% endif %}
+        </div>
     </div>
     {% endfor %}
 </div>

@@ -31,6 +31,8 @@ urlpatterns = [
 
     path("players/<slug:slug>/", views.players_detail, name="players_detail"),
 
+    path("videos/", views.videos_list, name="videos_list"),
+
     path("", views.index, name="index"),
 
     path("api/search/", views.search, name="search"),
