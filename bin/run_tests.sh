@@ -17,7 +17,7 @@ run_test_suite() {
     echo "📋 Running $test_name..."
     echo "----------------------------------------"
     
-    python manage.py test $test_path --verbosity=2
+    django-admin test $test_path --verbosity=2
     
     if [ $? -eq 0 ]; then
         echo "✅ $test_name completed successfully"

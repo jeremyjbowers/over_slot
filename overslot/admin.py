@@ -140,8 +140,8 @@ from overslot.models import (
 @admin.register(Author, site=admin_site)
 class AuthorAdmin(admin.ModelAdmin):
     model = Author
-    list_display = ["display_name", "user", "email", "twitter", "bluesky"]
-    search_fields = ["display_name", "user__username", "user__email", "email", "bio", "twitter", "bluesky"]
+    list_display = ["name", "user", "email", "twitter", "bluesky"]
+    search_fields = ["name", "user__username", "user__email", "email", "bio", "twitter", "bluesky"]
     autocomplete_fields = ["user"]
     readonly_fields = ["created", "last_modified"]
 

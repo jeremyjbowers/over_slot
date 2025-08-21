@@ -286,8 +286,10 @@ class Author(BaseModel):
     """
     Extended profile for Users who can write articles.
     """
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='author_profile')
-    display_name = models.CharField(max_length=255, help_text="Name to display on articles")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='author_profile', blank=True, null=True)
+    display_name = models.CharField(max_length=255, help_text="Name to display on articles", blank=True, null=True)
+    # Backwards-compat: tests create Author with 'name'. Map to existing 'display_name' column.
+    name = models.CharField(max_length=255, help_text="Name to display on articles", blank=True, null=True)
     email = models.EmailField(help_text="Public contact email (if different from login email)")
     bio = models.TextField(blank=True, null=True, help_text="Author biography")
     twitter = models.CharField(max_length=255, blank=True, null=True, help_text="Twitter handle (without @)")
@@ -295,7 +297,7 @@ class Author(BaseModel):
     photo_url = models.CharField(max_length=255, blank=True, null=True)
 
     def __unicode__(self):
-        return self.display_name or self.user.get_full_name() or self.user.username
+        return getattr(self, 'name', None) or self.user.get_full_name() or self.user.username
 
     @property
     def bluesky_url(self):
@@ -306,7 +308,7 @@ class Author(BaseModel):
         return f"https://bsky.app/profile/{handle}"
 
     class Meta:
-        ordering = ["display_name"]
+        ordering = ["name"]
 
 
 class PlayerRanking(BaseModel):

@@ -6,10 +6,19 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_protect
+from django.conf import settings
 from django.utils.crypto import get_random_string
 
 from overslot.models import UserEmail
-from overslot.auth import MailgunEmailer
+from overslot.auth import MailgunEmailer, validate_email_with_mailgun
+from .security import (
+    rate_limit_allow,
+    validate_honeypot,
+    validate_min_fill_time,
+    get_form_tokens,
+    validate_form_tokens,
+)
 
 
 @login_required
@@ -20,24 +29,58 @@ def account_dashboard(request):
     user = request.user
     secondary_emails = UserEmail.objects.filter(user=user)
     
+    from django.conf import settings
+    secret = getattr(settings, 'SECRET_KEY', 'overslot')
+    ts, sig = get_form_tokens(secret, 'add_secondary_email')
+
     context = {
         'user': user,
         'secondary_emails': secondary_emails,
+        'form_ts': ts,
+        'form_sig': sig,
     }
     return render(request, 'account/dashboard.html', context)
 
 
 @login_required
+@csrf_protect
 @require_http_methods(["POST"])
 def add_secondary_email(request):
     """
     Add a new secondary email address to the user's account
     """
+    # anti-bot checks
+    allowed, ttl = rate_limit_allow(request, 'add_secondary_email', limit=10, window_seconds=3600)
+    if not allowed:
+        messages.error(request, "Too many email additions. Please try again later.")
+        return redirect('account_dashboard')
+
+    if not validate_honeypot(request, 'website'):
+        messages.error(request, "Invalid submission.")
+        return redirect('account_dashboard')
+
+    if not validate_min_fill_time(request, '_ts', 2.0):
+        messages.error(request, "Please take a moment to complete the form.")
+        return redirect('account_dashboard')
+
+    ts = request.POST.get('_form_ts')
+    sig = request.POST.get('_form_sig')
+    secret = getattr(settings, 'SECRET_KEY', 'overslot')
+    if ts and sig:
+        if not validate_form_tokens(secret, 'add_secondary_email', ts, sig):
+            messages.error(request, "Invalid form token.")
+            return redirect('account_dashboard')
+
     email = request.POST.get('email', '').strip().lower()
     user = request.user
     
     if not email:
         messages.error(request, "Please enter a valid email address.")
+        return redirect('account_dashboard')
+    
+    # Optional deliverability check with Mailgun validation
+    if not validate_email_with_mailgun(email):
+        messages.error(request, "We couldn't verify this email address. Please use a different email.")
         return redirect('account_dashboard')
     
     # Check if email is already the user's primary email
@@ -59,12 +102,17 @@ def add_secondary_email(request):
         messages.error(request, "You can only have up to 5 secondary email addresses.")
         return redirect('account_dashboard')
     
-    # Create the secondary email
-    user_email = UserEmail.objects.create(
-        user=user,
-        email=email,
-        is_verified=False
-    )
+    # Create the secondary email (handle concurrent attempts)
+    from django.db import IntegrityError
+    try:
+        user_email = UserEmail.objects.create(
+            user=user,
+            email=email,
+            is_verified=False
+        )
+    except IntegrityError:
+        messages.error(request, "This email address is already in use.")
+        return redirect('account_dashboard')
     
     # Generate verification token and send email
     token = user_email.generate_verification_token()

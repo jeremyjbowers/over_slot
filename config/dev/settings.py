@@ -129,6 +129,7 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Auto-login users when they verify email
 ACCOUNT_LOGOUT_ON_GET = False  # Require POST for logout
 ACCOUNT_SESSION_REMEMBER = None  # Don't auto-remember sessions
+ 
 
 # Login by code disabled - using sesame magic links instead
 

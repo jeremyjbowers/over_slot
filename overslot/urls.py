@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 from django.contrib.auth.views import LogoutView
 from django.conf import settings
 from django.conf.urls.static import static
@@ -52,7 +52,7 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),  # This includes all django-allauth URLs
     path('magic-link/', auth.magic_link_view, name='magic_link'),
     path('magic-link/signup/', auth.magic_link_signup_view, name='magic_link_signup'),
-    path('magic-link/verify/<str:token>/', auth.magic_link_verify_view, name='magic_link_verify'),
+    path('magic-link/verify/<path:token>/', auth.magic_link_verify_view, name='magic_link_verify'),
 
 
     # Account Management URLs
@@ -60,7 +60,8 @@ urlpatterns = [
     path('account/email/add/', account_views.add_secondary_email, name='add_secondary_email'),
     path('account/email/<int:email_id>/remove/', account_views.remove_secondary_email, name='remove_secondary_email'),
     path('account/email/<int:email_id>/resend/', account_views.resend_verification_email, name='resend_verification_email'),
-    path('account/email/verify/<str:token>/', account_views.verify_secondary_email, name='verify_secondary_email'),
+    # allow empty token via regex path
+    re_path(r'^account/email/verify/(?P<token>.*)$', account_views.verify_secondary_email, name='verify_secondary_email'),
 
 ]
 

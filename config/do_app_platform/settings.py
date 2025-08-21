@@ -107,6 +107,7 @@ DEVELOPMENT_MODE = False
 # Email settings for production
 MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY', None)
 MAILGUN_DOMAIN = os.environ.get('MAILGUN_DOMAIN', 'overslotbaseball.com')
+MAILGUN_VALIDATION_API_KEY = os.environ.get('MAILGUN_VALIDATION_API_KEY', None)
 
 # Email blocklist to reduce spam signups/logins (override/extend dev defaults if needed)
 BLOCKED_EMAIL_TLDS = [
