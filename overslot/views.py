@@ -59,9 +59,9 @@ def index(request):
     videos_qs = models.Player.objects.filter(
         active=True
     ).exclude(video_url__isnull=True).exclude(video_url="")\
-     .exclude(photo_url__isnull=True).exclude(photo_url="")\
-     .order_by('-created')
-    context['player_videos'] = videos_qs[:9]
+     .exclude(photo_url__isnull=True).exclude(photo_url="")
+    # Randomize selection for spotlight interviews
+    context['player_videos'] = videos_qs.order_by('?')[:9]
     context['videos_count'] = videos_qs.count()
 
     return render(request, "index.html", context)

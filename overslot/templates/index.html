@@ -184,6 +184,14 @@
     color: var(--theme-primary);
 }
 
+/* Rankings + Spotlight grid (below hero) */
+.rankings-spotlight-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
 .top-players {
     margin-top: 2rem;
 }
@@ -279,6 +287,19 @@
     .content-section {
         max-width: 900px;
     }
+
+    /* Stack rankings + spotlight */
+    .rankings-spotlight-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Make carousel appear above the two lists on mobile */
+    .lead-grid {
+        grid-template-columns: 1fr;
+    }
+    .lead-grid > .carousel-offset { order: 1; }
+    .lead-grid > .lead-list:first-of-type { order: 2; }
+    .lead-grid > .lead-list:last-of-type { order: 3; }
 }
 
 @media (max-width: 768px) {
@@ -680,10 +701,10 @@
 
 <!-- Rankings grid + Player Videos sidebar -->
 <div class="content-section" style="margin-top: 2.5rem;">
-    <div style="display:grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; align-items:start;">
+    <div class="rankings-spotlight-grid">
         <div>
             <h2 class="section-title"><span class="title-text">Rankings</span></h2>
-            <div class="ranking-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="ranking-grid">
                 {% for ranking in recent_rankings %}
                 <div class="ranking-card">
                     {% if ranking.featured_image %}
