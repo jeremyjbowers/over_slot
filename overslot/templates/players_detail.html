@@ -1163,6 +1163,10 @@ svg.selectAll(".score-label")
       if (d.axis === "Avg Exit Velocity" || d.axis === "90th % Exit Velocity") {
         return "";
       }
+      // Hide raw values for Barrel %, Pull AIR %, and xWOBA
+      if (d.axis === "Barrel %" || d.axis === "Pull AIR %" || d.axis === "xWOBA") {
+        return "";
+      }
       if (d.axis === "xWOBA") {
         return val.toFixed(3).replace(/^0/, ""); // .400 style
       }
