@@ -29,7 +29,7 @@
 .article-card { display: flex; flex-direction: column; border: 1px solid var(--dark-border); background: var(--dark-surface); overflow: hidden; }
 .article-media { position: relative; width: 100%; padding-top: 56.25%; background: var(--dark-bg); }
 .article-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.article-body { padding: 0.4rem 0.6rem 0.5rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.article-card-body { padding: 0.4rem 0.6rem 0.5rem; display: flex; flex-direction: column; gap: 0.25rem; }
 
 .article-meta {
     display: flex;
@@ -77,8 +77,8 @@
 /* Slight emphasis for author names without relying on color */
 .article-meta .has-text-weight-medium { font-weight: 700; }
 
-/* Tighten default heading margins inherited from base for list cards */
-.article-body h2 { margin-top: 0.3em; margin-bottom: 0.3em; }
+/* Tighten default heading margins for list cards */
+.article-card-body h2 { margin-top: 0.3em; margin-bottom: 0.3em; }
 
 .article-subhead { display: none; }
 
@@ -125,7 +125,7 @@
             <img src="{{ article.featured_image.url }}" alt="{{ article.headline }}">
         </a>
         {% endif %}
-        <div class="article-body">
+        <div class="article-card-body">
         <div class="article-meta">
             {% if article.authors.all %}
             <span class="icon-text has-text-info">
