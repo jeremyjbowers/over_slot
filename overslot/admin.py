@@ -127,6 +127,7 @@ admin.site = admin_site
 from overslot.models import (
     Article,
     Author,
+    PodcastEpisode,
     Player,
     Ranking,
     PlayerRanking,
@@ -500,3 +501,64 @@ class UserEmailAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('user')
+
+
+@admin.register(PodcastEpisode, site=admin_site)
+class PodcastEpisodeAdmin(admin.ModelAdmin):
+    model = PodcastEpisode
+    list_display = [
+        "title",
+        "published_at",
+        "publish",
+        "featured",
+        "episode_number",
+    ]
+    list_editable = ["publish", "featured"]
+    list_filter = ["publish", "featured", "published_at"]
+    search_fields = ["title", "guid", "external_url", "audio_url"]
+    ordering = ("-published_at",)
+
+    fieldsets = (
+        (
+            "Episode",
+            {
+                "fields": (
+                    "title",
+                    "episode_number",
+                    "published_at",
+                    "image_url",
+                    "description_html",
+                )
+            },
+        ),
+        (
+            "Links",
+            {
+                "fields": (
+                    "external_url",
+                    "audio_url",
+                    "audio_mime_type",
+                    "audio_bytes",
+                )
+            },
+        ),
+        (
+            "Identifiers",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "guid",
+                    "slug",
+                    "regenerate_slug",
+                ),
+            },
+        ),
+        (
+            "Publishing",
+            {
+                "fields": (
+                    "publish",
+                )
+            },
+        ),
+    )

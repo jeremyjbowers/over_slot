@@ -6,7 +6,7 @@ echo "Press Ctrl+C to stop"
 
 while true; do
     echo "$(date): Running live_update..."
-    # django-admin live_update
+    django-admin live_update
     
     if [ $? -eq 0 ]; then
         echo "$(date): live_update completed successfully"

@@ -495,6 +495,50 @@ class Article(BaseModel):
         return self.headline
 
 
+class PodcastEpisode(BaseModel):
+    """
+    Podcast episodes imported from Patreon RSS feed.
+    Maps to typical RSS <item> fields including enclosure metadata.
+    """
+    # Core metadata
+    title = models.CharField(max_length=255)
+    external_url = models.TextField(help_text="Link to the original Patreon post")
+    image_url = models.TextField(blank=True, null=True, help_text="Image URL from itunes:image@href")
+    description_html = models.TextField(blank=True, null=True, help_text="Episode description from RSS (HTML)")
+
+    # Audio enclosure
+    audio_url = models.TextField(help_text="Enclosure URL for the audio file")
+    audio_bytes = models.BigIntegerField(blank=True, null=True, help_text="Size in bytes from enclosure length")
+    audio_mime_type = models.CharField(max_length=100, blank=True, null=True, help_text="MIME type from enclosure type (e.g., audio/mp4)")
+
+    # Identifiers and publishing
+    guid = models.CharField(max_length=255, unique=True, help_text="GUID from RSS, not necessarily a permalink")
+    published_at = models.DateTimeField(db_index=True, help_text="Publication date from RSS pubDate")
+
+    # Site publishing controls
+    publish = models.BooleanField(default=False, help_text="Controls visibility on site")
+    featured = models.BooleanField(default=False, help_text="Pin this episode to the right side of the homepage belt")
+
+    # Slugging support for friendly URLs if we add detail pages
+    slug = models.SlugField(max_length=255, blank=True, null=True)
+    regenerate_slug = models.BooleanField(default=False)
+
+    # Optional, extracted from titles like 'Ep. 183: ...'
+    episode_number = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["-published_at", "-created"]
+
+    def save(self, *args, **kwargs):
+        if self.regenerate_slug or not self.slug:
+            base = self.title or self.guid
+            self.slug = slugify(f"{base}-{self.guid}")
+            self.regenerate_slug = False
+        super().save(*args, **kwargs)
+
+    def __unicode__(self):
+        return self.title
+
 class DuplicateDecision(BaseModel):
     """
     Stores decisions about whether two players are duplicates or separate entities.

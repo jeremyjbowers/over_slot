@@ -64,6 +64,11 @@ def index(request):
     context['player_videos'] = videos_qs.order_by('?')[:9]
     context['videos_count'] = videos_qs.count()
 
+    # Podcast belt: top 5, prioritize featured then newest
+    context['latest_podcasts'] = models.PodcastEpisode.objects.filter(
+        publish=True
+    ).order_by('-featured', '-published_at')[:5]
+
     return render(request, "index.html", context)
 
 def articles_list(request):
