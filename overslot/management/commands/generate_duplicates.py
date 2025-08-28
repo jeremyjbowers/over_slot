@@ -78,11 +78,23 @@ class Command(BaseCommand):
                     score, reasons = self._calculate_similarity(player1, player2)
                     
                     if score >= min_score:
+                        # Ensure consistent (ordered) pair to avoid (A,B) and (B,A) duplicates
+                        p1, p2 = (player1, player2)
+                        if str(player1.uuid) > str(player2.uuid):
+                            p1, p2 = player2, player1
+
+                        # Populate denormalized fields since bulk_create bypasses save()
                         potential_duplicates.append(PotentialDuplicate(
-                            player1=player1,
-                            player2=player2,
+                            player1=p1,
+                            player2=p2,
                             similarity_score=score,
-                            match_reasons=reasons
+                            match_reasons=reasons,
+                            player1_name=p1.name,
+                            player2_name=p2.name,
+                            player1_school=p1.school,
+                            player2_school=p2.school,
+                            player1_state=p1.state,
+                            player2_state=p2.state,
                         ))
                         pairs_found += 1
                         

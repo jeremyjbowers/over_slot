@@ -73,7 +73,7 @@ def review_duplicate(request):
     next_pair = PotentialDuplicate.objects.select_related('player1', 'player2').first()
     
     if not next_pair:
-        messages.info(request, "No more potential duplicates to review! Run 'python manage.py generate_duplicates' to find new ones.")
+        messages.info(request, "No more potential duplicates to review! Run 'django-admin generate_duplicates' to find new ones.")
         return redirect('duplicate_dashboard')
     
     # Redirect to the specific pair review URL
@@ -90,14 +90,15 @@ def review_duplicate_pair(request, player1_uuid, player2_uuid):
     context['player2'] = get_object_or_404(Player, uuid=player2_uuid)
     
     # Try to get the potential duplicate record for similarity score and reasons
-    try:
-        potential_dup = PotentialDuplicate.objects.get(
-            Q(player1=context['player1'], player2=context['player2']) |
-            Q(player1=context['player2'], player2=context['player1'])
-        )
+    potential_qs = PotentialDuplicate.objects.filter(
+        Q(player1=context['player1'], player2=context['player2']) |
+        Q(player1=context['player2'], player2=context['player1'])
+    ).order_by('-similarity_score', '-created')
+    if potential_qs.exists():
+        potential_dup = potential_qs.first()
         context['similarity'] = potential_dup.similarity_score
         context['match_reasons'] = potential_dup.match_reasons
-    except PotentialDuplicate.DoesNotExist:
+    else:
         # Fallback to calculating similarity
         context['similarity'] = get_name_similarity(context['player1'].name, context['player2'].name)
         context['match_reasons'] = []
