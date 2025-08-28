@@ -8,6 +8,7 @@ from django.core.paginator import Paginator
 from collections import defaultdict
 import difflib
 from overslot.models import Player, DuplicateDecision, PlayerRanking, Article, PotentialDuplicate
+from django.views.decorators.http import require_POST
 
 
 def normalize_name(name):
@@ -307,3 +308,65 @@ def manual_duplicate_check(request, player1_uuid, player2_uuid):
     except Player.DoesNotExist:
         messages.error(request, "One or both players not found")
         return redirect('duplicate_dashboard') 
+
+
+@staff_member_required
+@require_POST
+def suggest_duplicate(request):
+    """Allow staff to suggest a duplicate pair explicitly.
+    Creates or updates a PotentialDuplicate entry with optional note as a reason,
+    then redirects to review page for that pair.
+    """
+    player1_uuid = request.POST.get('player1_uuid')
+    player2_uuid = request.POST.get('player2_uuid')
+    note = request.POST.get('note', '').strip()
+
+    if not player1_uuid or not player2_uuid:
+        messages.error(request, "Please select two players to suggest as duplicates")
+        return redirect('duplicate_dashboard')
+
+    if player1_uuid == player2_uuid:
+        messages.error(request, "Please choose two different players")
+        return redirect('duplicate_dashboard')
+
+    try:
+        player1 = get_object_or_404(Player, uuid=player1_uuid)
+        player2 = get_object_or_404(Player, uuid=player2_uuid)
+
+        # Ensure ordering for uniqueness
+        p_low, p_high = (player1, player2)
+        if str(player1.uuid) > str(player2.uuid):
+            p_low, p_high = (player2, player1)
+
+        # If there's already a final decision, route accordingly
+        existing_decision = DuplicateDecision.objects.filter(
+            Q(player1=p_low, player2=p_high) | Q(player1=p_high, player2=p_low)
+        ).first()
+        if existing_decision:
+            messages.info(request, f"Already decided: {existing_decision.decision}")
+            return redirect('duplicate_history')
+
+        # Upsert PotentialDuplicate with a high similarity and add note as a reason
+        potential, created = PotentialDuplicate.objects.get_or_create(
+            player1=p_low,
+            player2=p_high,
+            defaults={
+                'similarity_score': get_name_similarity(p_low.name, p_high.name),
+                'match_reasons': [],
+            }
+        )
+        # Append note if provided and not already present
+        if note:
+            reasons = potential.match_reasons or []
+            reason_text = f"Staff suggestion: {note}"
+            if reason_text not in reasons:
+                reasons.append(reason_text)
+                potential.match_reasons = reasons
+        # Save to ensure denormalized fields update
+        potential.save()
+
+        messages.success(request, "Suggestion recorded. Review this pair now.")
+        return redirect('review_duplicate_pair', player1_uuid=p_low.uuid, player2_uuid=p_high.uuid)
+    except Exception as exc:
+        messages.error(request, f"Error suggesting duplicate: {exc}")
+        return redirect('duplicate_dashboard')

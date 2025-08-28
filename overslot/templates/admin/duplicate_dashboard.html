@@ -175,6 +175,21 @@
                 <input type="text" id="player-search" class="form-input" placeholder="Type player name...">
             </div>
             <div id="search-results"></div>
+            <div id="selection-summary" style="display: none; margin-top: 1rem;"></div>
+            <form id="suggest-form" method="post" action="{% url 'suggest_duplicate' %}" style="display: none; margin-top: 1rem;">
+                {% csrf_token %}
+                <input type="hidden" name="player1_uuid" id="player1_uuid">
+                <input type="hidden" name="player2_uuid" id="player2_uuid">
+                <div class="form-group">
+                    <label class="form-label">Note (optional)</label>
+                    <textarea name="note" class="form-textarea" placeholder="Why should these be merged?"></textarea>
+                </div>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button type="submit" class="btn btn-primary">Suggest Merge</button>
+                    <a id="review-link" href="#" class="btn btn-outline">Review Now</a>
+                    <button type="button" onclick="clearSelection()" class="btn btn-secondary">Clear</button>
+                </div>
+            </form>
         </div>
     </div>
     
@@ -259,6 +274,11 @@ let searchTimeout;
 const searchInput = document.getElementById('player-search');
 const searchResults = document.getElementById('search-results');
 let selectedPlayers = [];
+const selectionSummary = document.getElementById('selection-summary');
+const suggestForm = document.getElementById('suggest-form');
+const player1Field = document.getElementById('player1_uuid');
+const player2Field = document.getElementById('player2_uuid');
+const reviewLink = document.getElementById('review-link');
 
 searchInput.addEventListener('input', function() {
     clearTimeout(searchTimeout);
@@ -311,8 +331,20 @@ function selectPlayer(uuid, name) {
     selectedPlayers.push({uuid, name});
     
     if (selectedPlayers.length === 2) {
-        const url = `/admin/duplicates/check/${selectedPlayers[0].uuid}/${selectedPlayers[1].uuid}/`;
-        window.location.href = url;
+        // Populate suggest form and summary
+        player1Field.value = selectedPlayers[0].uuid;
+        player2Field.value = selectedPlayers[1].uuid;
+        selectionSummary.style.display = 'block';
+        selectionSummary.innerHTML = `
+            <div class="player-result selected-player">
+                <div class="player-info">
+                    <div class="player-name">Selected Pair</div>
+                    <div class="player-details">${selectedPlayers[0].name} &amp; ${selectedPlayers[1].name}</div>
+                </div>
+            </div>`;
+        suggestForm.style.display = 'block';
+        reviewLink.href = `/admin/duplicates/check/${selectedPlayers[0].uuid}/${selectedPlayers[1].uuid}/`;
+        searchResults.innerHTML = '';
     } else {
         searchResults.innerHTML = `
             <div class="search-results-container">
@@ -336,6 +368,8 @@ function clearSelection() {
     selectedPlayers = [];
     searchInput.value = '';
     searchResults.innerHTML = '';
+    if (selectionSummary) selectionSummary.style.display = 'none';
+    if (suggestForm) suggestForm.style.display = 'none';
 }
 </script>
 {% endblock %} 

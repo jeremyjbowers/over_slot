@@ -18,6 +18,7 @@ urlpatterns = [
     path('admin/duplicates/history/', duplicate_views.duplicate_history, name='duplicate_history'),
     path('admin/duplicates/search/', duplicate_views.search_duplicates, name='search_duplicates'),
     path('admin/duplicates/check/<uuid:player1_uuid>/<uuid:player2_uuid>/', duplicate_views.manual_duplicate_check, name='manual_duplicate_check'),
+    path('admin/duplicates/suggest/', duplicate_views.suggest_duplicate, name='suggest_duplicate'),
 
     path("admin/", admin_site.urls),
 
