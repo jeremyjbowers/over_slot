@@ -437,6 +437,7 @@ class DuplicateDecisionAdmin(admin.ModelAdmin):
     list_display = ["player1", "player2", "decision", "decided_by", "created"]
     list_filter = ["decision", "created"]
     search_fields = ["player1__name", "player2__name", "decided_by__username"]
+    autocomplete_fields = ["player1", "player2", "decided_by"]
     readonly_fields = ["created"]
     
     fieldsets = (
