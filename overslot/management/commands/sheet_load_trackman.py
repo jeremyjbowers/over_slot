@@ -1,6 +1,7 @@
 import numpy as np
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
+from django.db.models import Q
 from thefuzz import fuzz
 from nicknames import NickNamer
 
@@ -17,6 +18,11 @@ class Command(BaseCommand):
             default='all',
             help='Choose which group to load: hitters, pitchers, or all (default)'
         )
+        parser.add_argument(
+            '--debug',
+            action='store_true',
+            help='Enable verbose logging for player matching and saves'
+        )
 
     def fix_blanks(self, row):
         for k,v in row.items():
@@ -24,7 +30,7 @@ class Command(BaseCommand):
                 row[k] = None
         return row
 
-    def _fuzzy_find_player(self, name):
+    def _fuzzy_find_player(self, name, debug=False):
         def normalize_name(n):
             n = n.lower().strip()
             for suffix in [' jr.', ' sr.', ' ii', ' iii', ' iv']:
@@ -49,12 +55,14 @@ class Command(BaseCommand):
         # Initialize nickname handler
         nn = NickNamer()
         
-        # Get all players to check against
-        all_players = models.Player.objects.all()
+        # Get all players to check against (prefer active records)
+        all_players = models.Player.objects.filter(active=True)
         
         exact_matches = []
         nickname_matches = []
         fuzzy_matches = []
+        best_fuzzy_score = -1
+        best_fuzzy_player = None
         
         for player in all_players:
             normalized_player = normalize_name(player.name)
@@ -107,16 +115,50 @@ class Command(BaseCommand):
             
             # 3. Fall back to fuzzy matching
             score = fuzz.ratio(normalized_input, normalized_player)
+            if score > best_fuzzy_score:
+                best_fuzzy_score = score
+                best_fuzzy_player = player
             if score >= 95:
                 fuzzy_matches.append(player)
         
         # Return the best match based on priority
         if len(exact_matches) == 1:
+            if debug:
+                self.stdout.write(f"[match] Exact: '{name}' -> '{exact_matches[0].name}' (pk={exact_matches[0].pk})")
             return exact_matches[0]
+        elif len(exact_matches) > 1:
+            # Multiple exact matches — attempt to resolve using merge decisions to find the primary
+            try:
+                merges = models.DuplicateDecision.objects.filter(
+                    decision='merged',
+                    primary_player__isnull=False
+                ).filter(
+                    Q(player1__in=exact_matches) | Q(player2__in=exact_matches)
+                )
+                primary_candidates = [m.primary_player for m in merges if m.primary_player in exact_matches]
+                unique_primary_candidates = list({p.pk: p for p in primary_candidates}.values())
+                if len(unique_primary_candidates) == 1:
+                    primary = unique_primary_candidates[0]
+                    if debug:
+                        self.stdout.write(f"[match] Exact (resolved via merge): '{name}' -> '{primary.name}' (pk={primary.pk})")
+                    return primary
+            except Exception as e:
+                if debug:
+                    self.stdout.write(f"[match] Error resolving merges for '{name}': {e}")
         elif len(nickname_matches) == 1:
+            if debug:
+                self.stdout.write(f"[match] Nickname: '{name}' -> '{nickname_matches[0].name}' (pk={nickname_matches[0].pk})")
             return nickname_matches[0]
         elif len(fuzzy_matches) == 1:
+            if debug:
+                self.stdout.write(f"[match] Fuzzy: '{name}' -> '{fuzzy_matches[0].name}' (pk={fuzzy_matches[0].pk})")
             return fuzzy_matches[0]
+        else:
+            if debug:
+                self.stdout.write(
+                    f"[match] No unique match for '{name}'. exact={len(exact_matches)}, nickname={len(nickname_matches)}, "
+                    f"fuzzy={len(fuzzy_matches)}; best_fuzzy={(best_fuzzy_player.name if best_fuzzy_player else None)}({best_fuzzy_score})"
+                )
         
         return None
 
@@ -215,6 +257,8 @@ class Command(BaseCommand):
         else:
             tab_types = all_tab_types
 
+        debug = options.get('debug', False)
+
         for year in years:
             for tab_type in tab_types:
                 tab = f"{year} {tab_type}"
@@ -233,7 +277,10 @@ class Command(BaseCommand):
 
                 # Different minimum pitches for hitters vs pitchers
                 min_pitches = 250 if tab_type == "Hitters" else 100
+                total_sheet_rows = len(sheet)
                 rows = [self.fix_blanks(row) for row in sheet if int(row.get('Pitches', 0)) >= min_pitches]
+                if debug:
+                    self.stdout.write(f"[load] Tab '{tab}': loaded {total_sheet_rows} rows; min_pitches={min_pitches}; processing {len(rows)} rows")
 
                 if tab_type == "Hitters":
                     # Hitter processing logic
@@ -286,6 +333,8 @@ class Command(BaseCommand):
                     # Process each row and calculate composite scores
                     total_rows = len(rows)
                     for original_index, row in enumerate(rows):
+                        if debug and row.get('Name'):
+                            self.stdout.write(f"[hitters] Matching '{row.get('Name')}'")
                         
                         # Calculate percentiles for this row using the high-volume distributions
                         row_percentiles = {}
@@ -385,10 +434,14 @@ class Command(BaseCommand):
                         row['approach_score'] = row['approach_percentile']
 
                         if row.get('Name'):
-                            obj = self._fuzzy_find_player(row['Name'])
+                            obj = self._fuzzy_find_player(row['Name'], debug=debug)
+                        else:
+                            obj = None
 
                         if obj:
                             prs = models.PlayerRanking.objects.filter(player=obj)
+                            if debug:
+                                self.stdout.write(f"[hitters] Updating {prs.count()} PlayerRanking rows for '{obj.name}' (pk={obj.pk})")
                             for pr in prs:
                                 pr.hitter_score = row['hitter_score']
                                 pr.game_power_score = row['game_power_score']
@@ -425,6 +478,11 @@ class Command(BaseCommand):
 
                                 pr.confidence = 10
                                 pr.save()
+                                if debug:
+                                    self.stdout.write(f"[hitters] Saved PlayerRanking id={pr.id} for '{obj.name}'")
+                        else:
+                            if debug and row.get('Name'):
+                                self.stdout.write(f"[hitters] No Player match for '{row.get('Name')}' — skipping updates")
                 
                 else:
                     # Pitcher processing logic
@@ -461,6 +519,8 @@ class Command(BaseCommand):
                     # Process each row and calculate composite scores
                     total_rows = len(rows)
                     for original_index, row in enumerate(rows):
+                        if debug and row.get('Name'):
+                            self.stdout.write(f"[pitchers:{tab_type}] Matching '{row.get('Name')}'")
                         
                         # Calculate percentiles for this row using the high-volume distributions
                         row_percentiles = {}
@@ -500,10 +560,14 @@ class Command(BaseCommand):
                             row['changeup_score'] = pitch_percentile
 
                         if row.get('Name'):
-                            obj = self._fuzzy_find_player(row['Name'])
+                            obj = self._fuzzy_find_player(row['Name'], debug=debug)
+                        else:
+                            obj = None
 
                         if obj:
                             prs = models.PlayerRanking.objects.filter(player=obj)
+                            if debug:
+                                self.stdout.write(f"[pitchers:{tab_type}] Updating {prs.count()} PlayerRanking rows for '{obj.name}' (pk={obj.pk})")
                             for pr in prs:
                                 if tab_type == "Fourseam":
                                     pr.fourseam_percentile = row['fourseam_percentile']
@@ -526,5 +590,10 @@ class Command(BaseCommand):
 
                                 pr.confidence = 10
                                 pr.save()
+                                if debug:
+                                    self.stdout.write(f"[pitchers:{tab_type}] Saved PlayerRanking id={pr.id} for '{obj.name}'")
+                        else:
+                            if debug and row.get('Name'):
+                                self.stdout.write(f"[pitchers:{tab_type}] No Player match for '{row.get('Name')}' — skipping updates")
                 
                 print(f"Completed processing {total_rows} players for {tab}")
