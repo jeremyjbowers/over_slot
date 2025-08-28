@@ -109,7 +109,10 @@
                                     {% if user.is_staff %}
                                         <hr class="navbar-divider">
                                         <a class="navbar-item" href="{% url 'admin:index' %}">
-                                            Admin
+                                            Site admin
+                                        </a>
+                                        <a class="navbar-item" href="/admin/duplicates/">
+                                            Duplicates admin
                                         </a>
                                     {% endif %}
                                     <hr class="navbar-divider">
