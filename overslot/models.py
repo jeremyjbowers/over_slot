@@ -161,7 +161,14 @@ class Player(BaseModel):
     regenerate_slug = models.BooleanField(default=False)
 
     def __unicode__(self):
-        return self.name
+        player_string = f"{self.name}"
+        if self.school:
+            player_string += f" ({self.school})"
+
+        if self.position:
+            player_string += f" - {self.position}"
+
+        return player_string
 
     def save(self, *args, **kwargs):
         if self.regenerate_slug or not self.slug:
