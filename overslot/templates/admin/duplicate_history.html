@@ -121,11 +121,11 @@
                         <td>
                             <div style="display: flex; gap: 0.5rem;">
                                 {% if decision.decision == 'merged' %}
-                                    <a href="{% url 'view_player' decision.primary_player.uuid %}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+                                    <a href="{% url 'players_detail' decision.primary_player.slug %}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">
                                         View Player
                                     </a>
                                 {% else %}
-                                    <a href="{% url 'review_duplicate' decision.player1.uuid decision.player2.uuid %}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+                                    <a href="{% url 'review_duplicate_pair' decision.player1.uuid decision.player2.uuid %}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">
                                         Review Again
                                     </a>
                                 {% endif %}
