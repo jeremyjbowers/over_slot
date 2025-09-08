@@ -384,6 +384,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     list_display = ["user", "status", "plan_name", "current_period_end", "is_active"]
     list_filter = ["status", "plan_name", "created"]
     search_fields = ["user__email", "user__username", "stripe_customer_id", "stripe_subscription_id"]
+    autocomplete_fields = ["user"]
     readonly_fields = ["created", "last_modified", "stripe_customer_id", "stripe_subscription_id"]
     
     def is_active(self, obj):
