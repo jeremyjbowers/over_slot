@@ -84,6 +84,39 @@ class AuthenticationIntegrationTestCase(TestCase):
         response = self.client.get(reverse('index'))
         self.assertContains(response, self.test_email)
 
+    @patch('overslot.auth.MailgunEmailer.send_email')
+    def test_spammy_login_with_url_is_silently_ignored(self, mock_send_email):
+        mock_send_email.return_value = Mock(status_code=200)
+        response = self.client.post(reverse('magic_link'), {
+            'email': 'http://spam.example.com@domain.com'
+        })
+        self.assertEqual(response.status_code, 302)
+        # No email should be sent
+        mock_send_email.assert_not_called()
+
+    @patch('overslot.auth.MailgunEmailer.send_email')
+    def test_spammy_signup_with_url_in_name_is_silently_ignored(self, mock_send_email):
+        mock_send_email.return_value = Mock(status_code=200)
+        response = self.client.post(reverse('magic_link_signup'), {
+            'email': 'valid@example.com',
+            'first_name': 'http://bad',
+            'last_name': 'User'
+        })
+        self.assertEqual(response.status_code, 302)
+        mock_send_email.assert_not_called()
+
+    @patch('overslot.auth.MailgunEmailer.send_email')
+    def test_spammy_signup_with_very_long_name_is_silently_ignored(self, mock_send_email):
+        mock_send_email.return_value = Mock(status_code=200)
+        long_name = 'A' * 200
+        response = self.client.post(reverse('magic_link_signup'), {
+            'email': 'valid@example.com',
+            'first_name': long_name,
+            'last_name': 'User'
+        })
+        self.assertEqual(response.status_code, 302)
+        mock_send_email.assert_not_called()
+
 
 class ContentDiscoveryIntegrationTestCase(TestCase):
     """Integration tests for content discovery and navigation"""

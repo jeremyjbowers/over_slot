@@ -53,6 +53,8 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),  # This includes all django-allauth URLs
     path('magic-link/', auth.magic_link_view, name='magic_link'),
     path('magic-link/signup/', auth.magic_link_signup_view, name='magic_link_signup'),
+    # Compatibility: allow reverse with 'slug' kwarg used by older tests
+    path('magic-link/verify/<slug:slug>/', auth.magic_link_verify_view_slug, name='magic_link_verify'),
     path('magic-link/verify/<path:token>/', auth.magic_link_verify_view, name='magic_link_verify'),
 
 

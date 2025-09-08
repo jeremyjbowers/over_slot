@@ -75,3 +75,11 @@ coverage.xml
 static/*
 *.sql
 *.json
+
+test_reports/*.log
+test_reports/*.txt
+test_reports/*.csv
+test_reports/*.json
+test_reports/*.html
+test_reports/*.xml
+test_reports/*.log

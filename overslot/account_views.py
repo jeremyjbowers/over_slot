@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_protect
 from django.conf import settings
+from django.db import IntegrityError, transaction
 from django.utils.crypto import get_random_string
 
 from overslot.models import UserEmail
@@ -102,14 +103,19 @@ def add_secondary_email(request):
         messages.error(request, "You can only have up to 5 secondary email addresses.")
         return redirect('account_dashboard')
     
-    # Create the secondary email (handle concurrent attempts)
-    from django.db import IntegrityError
+    # Avoid triggering unique constraint errors by pre-checking any existing secondary
+    if UserEmail.objects.filter(email=email).exists():
+        messages.error(request, "This email address is already in use.")
+        return redirect('account_dashboard')
+
+    # Create the secondary email (handle concurrent attempts in a safe transaction)
     try:
-        user_email = UserEmail.objects.create(
-            user=user,
-            email=email,
-            is_verified=False
-        )
+        with transaction.atomic():
+            user_email = UserEmail.objects.create(
+                user=user,
+                email=email,
+                is_verified=False
+            )
     except IntegrityError:
         messages.error(request, "This email address is already in use.")
         return redirect('account_dashboard')
