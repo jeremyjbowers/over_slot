@@ -258,6 +258,7 @@ class PlayerRankingInline(admin.TabularInline):
                 "fields": (
                     ("rank", "player"),
                     ("position", "school"),
+                    ("age_at_draft",),
                     ('role', 'risk', 'carrying_tools'),
                 ),
             },
@@ -267,7 +268,7 @@ class PlayerRankingInline(admin.TabularInline):
 @admin.register(PlayerRanking, site=admin_site)
 class PlayerRankingAdmin(admin.ModelAdmin):
     model = PlayerRanking
-    list_display = ["ranking", "player", "rank"]
+    list_display = ["ranking", "player", "rank", "age_at_draft"]
     search_fields = ["player", "ranking"]
     list_filter = ["ranking"]
     autocomplete_fields = ["carrying_tools"]
@@ -277,7 +278,7 @@ class PlayerRankingAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     ("rank", "player"),
-                    ("position", "school", 'commitment'),
+                    ("position", "school", 'commitment', 'age_at_draft'),
                     ('role', 'risk', 'level'),
                     'scouting_report',
                     'raw_carrying_tools',

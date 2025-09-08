@@ -29,11 +29,21 @@
                 {% if player_ranking.player.birthdate %}
                 <span class="bio-item">DOB: {{ player_ranking.player.birthdate|date:"m-d-Y" }}</span>
                 {% endif %}
+                {% if player_ranking.age_at_draft %}
+                <span class="bio-item">Age at Draft: {{ player_ranking.age_at_draft }}</span>
+                {% endif %}
                 {% if player_ranking.player.height %}
                 <span class="bio-item">Height: {{ player_ranking.player.height }}</span>
                 {% endif %}
                 {% if player_ranking.player.weight %}
                 <span class="bio-item">Weight: {{ player_ranking.player.weight }}</span>
+                {% endif %}
+                {% if player_ranking.level == 'High School' %}
+                    {% if player_ranking.player.hometown and player_ranking.player.state %}
+                    <span class="bio-item">{{ player_ranking.player.hometown }}, {{ player_ranking.player.state }}</span>
+                    {% elif player_ranking.player.state %}
+                    <span class="bio-item">{{ player_ranking.player.state }}</span>
+                    {% endif %}
                 {% endif %}
             </div>
             

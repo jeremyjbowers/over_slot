@@ -331,6 +331,7 @@ class PlayerRanking(BaseModel):
     country = models.CharField(max_length=255, blank=True, null=True)
     commitment = models.CharField(max_length=255, blank=True, null=True)
     raw_carrying_tools = models.TextField(blank=True, null=True)
+    age_at_draft = models.CharField(max_length=10, blank=True, null=True)
     
     # Mock draft fields
     mock_team = models.CharField(max_length=255, blank=True, null=True, help_text="Team that drafted this player in mock draft")

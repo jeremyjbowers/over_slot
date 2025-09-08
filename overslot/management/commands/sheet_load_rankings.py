@@ -67,6 +67,9 @@ class Command(BaseCommand):
                     r.ranking_length = len(sheet)
                     r.save()
 
+                    # Rebuild player rankings for this ranking from scratch
+                    models.PlayerRanking.objects.filter(ranking=r).delete()
+
                     for row in sheet:
                         # player object
                         p, created = models.Player.objects.get_or_create(name=row['name'], position = row['position'])
@@ -102,14 +105,20 @@ class Command(BaseCommand):
 
                         p.save()
 
-                        # player_ranking object
-                        pr, pr_created = models.PlayerRanking.objects.get_or_create(ranking=r, player=p, school=row['school'], position=row['position'])
+                        # player_ranking object (fresh create each load)
+                        pr = models.PlayerRanking(
+                            ranking=r,
+                            player=p,
+                            school=row.get('school'),
+                            position=row.get('position'),
+                        )
                         pr.rank = row.get('rank', None)
                         pr.level = transform_level(row.get('class', None))
                         pr.commitment = row.get('commitment', None)
                         pr.raw_carrying_tools = row.get('carrying_tool', None)
                         pr.role = row.get('role', None)
                         pr.risk = row.get('risk', None)
+                        pr.age_at_draft = row.get('age_at_draft', None)
                         pr.scouting_report = ''  # Will set below after processing blurb
 
                         # Save now so we can work with M2M relationships
