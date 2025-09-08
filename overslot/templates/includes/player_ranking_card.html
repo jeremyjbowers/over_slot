@@ -22,6 +22,9 @@
             </h3>
             
             <div class="player-position-school">
+                {% if player_ranking.age_at_draft %}
+                    {{ player_ranking.age_at_draft }} &bull;
+                {% endif %}
                 {% if player_ranking.level == 'High School' %}
                     {% if player_ranking.school %}
                         {{ player_ranking.school }}{% if 'HS' not in player_ranking.school %} HS{% endif %}
