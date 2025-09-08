@@ -14,44 +14,41 @@
     
     <!-- Player Info and Photo Container -->
     <div class="player-card-content">
-        
         <!-- Player Details -->
         <div class="player-details">
             <h3 class="player-name">
+                {% if player_ranking.position %}{{ player_ranking.position }} {% endif %}
                 <a href="/players/{{ player_ranking.player.slug }}/">{{ player_ranking.player.name }}</a>
             </h3>
             
             <div class="player-position-school">
-                {{ player_ranking.position }}{% if player_ranking.school %} — {{ player_ranking.school }}{% endif %}
-            </div>
-            
-            <div class="player-bio-info">
-                {% if player_ranking.player.birthdate %}
-                <span class="bio-item">DOB: {{ player_ranking.player.birthdate|date:"m-d-Y" }}</span>
-                {% endif %}
-                {% if player_ranking.age_at_draft %}
-                <span class="bio-item">Age at Draft: {{ player_ranking.age_at_draft }}</span>
-                {% endif %}
-                {% if player_ranking.player.height %}
-                <span class="bio-item">Height: {{ player_ranking.player.height }}</span>
-                {% endif %}
-                {% if player_ranking.player.weight %}
-                <span class="bio-item">Weight: {{ player_ranking.player.weight }}</span>
-                {% endif %}
                 {% if player_ranking.level == 'High School' %}
-                    {% if player_ranking.player.hometown and player_ranking.player.state %}
-                    <span class="bio-item">{{ player_ranking.player.hometown }}, {{ player_ranking.player.state }}</span>
-                    {% elif player_ranking.player.state %}
-                    <span class="bio-item">{{ player_ranking.player.state }}</span>
+                    {% if player_ranking.school %}
+                        {{ player_ranking.school }}{% if 'HS' not in player_ranking.school %} HS{% endif %}
+                    {% endif %}
+                    {% if player_ranking.player.hometown or player_ranking.player.state %}
+                        , {% if player_ranking.player.hometown %}{{ player_ranking.player.hometown }}{% endif %}{% if player_ranking.player.hometown and player_ranking.player.state %} {% endif %}{% if player_ranking.player.state %}{{ player_ranking.player.state }}{% endif %}
+                    {% endif %}
+                {% else %}
+                    {% if player_ranking.school %}
+                        {{ player_ranking.school }}
+                    {% endif %}
+                    {% if player_ranking.player.hometown or player_ranking.player.state %}
+                        , {% if player_ranking.player.hometown %}{{ player_ranking.player.hometown }}{% endif %}{% if player_ranking.player.hometown and player_ranking.player.state %} {% endif %}{% if player_ranking.player.state %}{{ player_ranking.player.state }}{% endif %}
                     {% endif %}
                 {% endif %}
             </div>
             
-            {% if player_ranking.player.bats and player_ranking.player.throws %}
-            <div class="player-batting-info">
-                Bats: {{ player_ranking.player.bats }}, Throws: {{ player_ranking.player.throws }}
+            <div class="player-bio-info">
+                {% if player_ranking.player.bats and player_ranking.player.throws %}
+                <span class="bio-item">{{ player_ranking.player.bats }}/{{ player_ranking.player.throws }}</span>
+                {% endif %}&bull;
+                {% if player_ranking.player.height or player_ranking.player.weight %}
+                <span class="bio-item">{% if player_ranking.player.height %} {{ player_ranking.player.height }}{% endif %}{% if player_ranking.player.weight %}{% if player_ranking.player.height %}, {% endif %}{{ player_ranking.player.weight }}{% endif %}</span>
+                {% endif %}
             </div>
-            {% endif %}
+            
+            
             
             {% if player_ranking.commitment %}
             <div class="player-commitment">
@@ -59,19 +56,9 @@
             </div>
             {% endif %}
         </div>
+        <!-- Preserve 3-column grid layout without chips -->
+        <div class="player-tags"></div>
         
-        <!-- Position and Level Tags -->
-        <div class="player-tags">
-            {% if player_ranking.position %}
-            <span class="position-tag">{{ player_ranking.position }}</span>
-            {% endif %}
-            {% if player_ranking.level %}
-            <span class="level-tag">{{ player_ranking.level|upper }}</span>
-            {% endif %}
-            {% if player_ranking.role %}
-            <span class="role-tag">{{ player_ranking.role }}</span>
-            {% endif %}
-        </div>
         
         <!-- Player Photo -->
         <div class="player-photo-container">
