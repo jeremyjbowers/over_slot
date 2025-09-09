@@ -66,7 +66,7 @@ def subscription_required(view_func):
             elif view_name == 'players_detail':
                 player = get_object_or_404(Player, slug=kwargs.get('slug'))
                 context['player'] = player
-                context['rankings'] = PlayerRanking.objects.filter(player=player, ranking__publish=True)
+                context['rankings'] = PlayerRanking.objects.filter(player=player, ranking__publish=True, active=True)
                 context['articles'] = Article.objects.filter(players=player, publish=True)
         
         # Add preview mode flags

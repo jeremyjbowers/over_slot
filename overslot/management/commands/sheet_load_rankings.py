@@ -67,8 +67,8 @@ class Command(BaseCommand):
                     r.ranking_length = len(sheet)
                     r.save()
 
-                    # Rebuild player rankings for this ranking from scratch
-                    models.PlayerRanking.objects.filter(ranking=r).delete()
+                    # Deactivate all existing player rankings for this ranking, blank their rank
+                    models.PlayerRanking.objects.filter(ranking=r).update(rank=None, active=False)
 
                     for row in sheet:
                         # player object
@@ -105,13 +105,16 @@ class Command(BaseCommand):
 
                         p.save()
 
-                        # player_ranking object (fresh create each load)
-                        pr = models.PlayerRanking(
+                        # Find existing player ranking for this player+ranking or create if missing
+                        pr, pr_created = models.PlayerRanking.objects.get_or_create(
                             ranking=r,
                             player=p,
-                            school=row.get('school'),
-                            position=row.get('position'),
+                            defaults={}
                         )
+
+                        # Update fields from the sheet
+                        pr.school = row.get('school')
+                        pr.position = row.get('position')
                         pr.rank = row.get('rank', None)
                         pr.level = transform_level(row.get('class', None))
                         pr.commitment = row.get('commitment', None)
@@ -119,6 +122,7 @@ class Command(BaseCommand):
                         pr.role = row.get('role', None)
                         pr.risk = row.get('risk', None)
                         pr.age_at_draft = row.get('age_at_draft', None)
+                        pr.active = True
                         pr.scouting_report = ''  # Will set below after processing blurb
 
                         # Save now so we can work with M2M relationships

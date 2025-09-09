@@ -244,10 +244,10 @@ class Ranking(BaseModel):
         ordering = ["-year", "is_final", "-ranking_length"]
 
     def get_playerrankings(self):
-        return PlayerRanking.objects.filter(ranking=self).order_by("rank")
+        return PlayerRanking.objects.filter(ranking=self, active=True).order_by("rank")
 
     def get_initial_players(self):
-        return PlayerRanking.objects.filter(ranking=self, rank__lte=10).order_by("rank")
+        return PlayerRanking.objects.filter(ranking=self, active=True, rank__lte=10).order_by("rank")
 
     def save(self, *args, **kwargs):
         if self.regenerate_slug or not self.slug:

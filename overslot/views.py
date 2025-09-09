@@ -197,8 +197,8 @@ def players_detail(request, slug):
     context = {}
     context['player'] = get_object_or_404(models.Player, slug=slug, active=True)
     
-    # Only show rankings from published rankings
-    context['rankings'] = models.PlayerRanking.objects.filter(player=context['player'], ranking__publish=True)
+    # Only show active rankings from published rankings
+    context['rankings'] = models.PlayerRanking.objects.filter(player=context['player'], ranking__publish=True, active=True)
     
     latest_ranking = context['rankings'].order_by('-ranking__year', '-created').first()
     
@@ -313,7 +313,7 @@ def search(request):
             'slug': ranking.slug,
             'year': ranking.year,
             'preview': next(
-                (pr.player.name for pr in ranking.playerranking_set.filter(player__active=True)
+                (pr.player.name for pr in ranking.playerranking_set.filter(player__active=True, active=True)
                  if query.lower() in pr.player.name.lower()),
                 None
             )
