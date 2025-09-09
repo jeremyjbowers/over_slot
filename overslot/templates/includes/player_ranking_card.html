@@ -54,8 +54,20 @@
                     }
                 </style>
                 <table id="player-bio-info-table">
-                    <tr><th>Bats</th><th>Throws</th><th>Height</th><th>Weight</th><th>Age at draft</th></tr>
-                    <tr><td>{{ player_ranking.player.bats }}</td><td>{{ player_ranking.player.throws }}</td><td>{{ player_ranking.player.height }}</td><td>{{ player_ranking.player.weight }}</td><td>{{ player_ranking.age_at_draft }}</td></tr>
+                    <tr>
+                        <th>Bats</th>
+                        <th>Throws</th>
+                        <th>Height</th>
+                        <th>Weight</th>
+                        {% if player_ranking.age_at_draft %}<th>Age at draft</th>{% endif %}
+                    </tr>
+                    <tr>
+                        <td>{{ player_ranking.player.bats }}</td>
+                        <td>{{ player_ranking.player.throws }}</td>
+                        <td>{{ player_ranking.player.height }}</td>
+                        <td>{{ player_ranking.player.weight }}</td>
+                        {% if player_ranking.age_at_draft %}<td>{{ player_ranking.age_at_draft }}</td>{% endif %}
+                    </tr>
                 </table>
             </div>
 
