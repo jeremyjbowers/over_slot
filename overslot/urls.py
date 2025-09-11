@@ -3,10 +3,12 @@ from django.urls import include, path, re_path
 from django.contrib.auth.views import LogoutView
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.sitemaps.views import sitemap
 
 from overslot import views, subscription_views, duplicate_views, account_views
 from overslot.admin import admin_site
 from . import auth
+from .sitemaps import StaticViewSitemap, ArticleSitemap, RankingSitemap, PlayerSitemap, PodcastEpisodeSitemap
 
 urlpatterns = [
     # Duplicate Management URLs (admin only)
@@ -35,6 +37,21 @@ urlpatterns = [
     path("videos/", views.videos_list, name="videos_list"),
 
     path("", views.index, name="index"),
+
+    # SEO
+    path("robots.txt", views.robots_txt, name="robots_txt"),
+    path(
+        "sitemap.xml",
+        sitemap,
+        {"sitemaps": {
+            "static": StaticViewSitemap(),
+            "articles": ArticleSitemap(),
+            "rankings": RankingSitemap(),
+            "players": PlayerSitemap(),
+            "podcasts": PodcastEpisodeSitemap(),
+        }},
+        name="django.contrib.sitemaps.views.sitemap",
+    ),
 
     path("api/search/", views.search, name="search"),
 

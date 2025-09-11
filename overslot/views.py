@@ -325,3 +325,12 @@ def search(request):
             'school': player.school
         } for player in players]
     })
+
+
+def robots_txt(request):
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        f"Sitemap: {request.build_absolute_uri('/sitemap.xml')}",
+    ]
+    return HttpResponse("\n".join(lines), content_type="text/plain")
