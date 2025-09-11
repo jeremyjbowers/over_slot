@@ -1,10 +1,19 @@
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
+from django.contrib.sites.models import Site
 
 from overslot import models
 
 
-class StaticViewSitemap(Sitemap):
+class BaseForcedDomainSitemap(Sitemap):
+    protocol = "https"
+
+    def get_urls(self, page=1, site=None, protocol=None):
+        forced_site = Site(domain="overslotbaseball.com", name="overslotbaseball.com")
+        return super().get_urls(page=page, site=forced_site, protocol="https")
+
+
+class StaticViewSitemap(BaseForcedDomainSitemap):
     priority = 0.8
     changefreq = "daily"
 
@@ -21,7 +30,7 @@ class StaticViewSitemap(Sitemap):
         return reverse(item)
 
 
-class ArticleSitemap(Sitemap):
+class ArticleSitemap(BaseForcedDomainSitemap):
     priority = 0.7
     changefreq = "daily"
 
@@ -35,7 +44,7 @@ class ArticleSitemap(Sitemap):
         return obj.last_modified or obj.created
 
 
-class RankingSitemap(Sitemap):
+class RankingSitemap(BaseForcedDomainSitemap):
     priority = 0.7
     changefreq = "daily"
 
@@ -49,7 +58,7 @@ class RankingSitemap(Sitemap):
         return obj.last_modified or obj.created
 
 
-class PlayerSitemap(Sitemap):
+class PlayerSitemap(BaseForcedDomainSitemap):
     priority = 0.6
     changefreq = "weekly"
 
@@ -63,7 +72,7 @@ class PlayerSitemap(Sitemap):
         return obj.last_modified or obj.created
 
 
-class PodcastEpisodeSitemap(Sitemap):
+class PodcastEpisodeSitemap(BaseForcedDomainSitemap):
     priority = 0.5
     changefreq = "weekly"
 

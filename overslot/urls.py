@@ -8,7 +8,7 @@ from django.contrib.sitemaps.views import sitemap
 from overslot import views, subscription_views, duplicate_views, account_views
 from overslot.admin import admin_site
 from . import auth
-from .sitemaps import StaticViewSitemap, ArticleSitemap, RankingSitemap, PlayerSitemap, PodcastEpisodeSitemap
+from .sitemaps import StaticViewSitemap, ArticleSitemap, RankingSitemap, PlayerSitemap
 
 urlpatterns = [
     # Duplicate Management URLs (admin only)
@@ -48,7 +48,6 @@ urlpatterns = [
             "articles": ArticleSitemap(),
             "rankings": RankingSitemap(),
             "players": PlayerSitemap(),
-            "podcasts": PodcastEpisodeSitemap(),
         }},
         name="django.contrib.sitemaps.views.sitemap",
     ),
