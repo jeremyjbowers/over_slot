@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 
+{% block og_image %}{% if articles and articles.0.featured_image %}{{ articles.0.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+{% block twitter_image %}{% if articles and articles.0.featured_image %}{{ articles.0.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+
 {% block content %}
 <style>
 /* Main layout with sidebar */

@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 
+{% block og_image %}{% if rankings and rankings.0.featured_image %}{{ rankings.0.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+{% block twitter_image %}{% if rankings and rankings.0.featured_image %}{{ rankings.0.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+
 {% block content %}
 <style>
 .ranking-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; max-width: 1400px; margin: 0 auto; padding: 2.5rem 1.5rem; }

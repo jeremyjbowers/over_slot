@@ -1,5 +1,25 @@
 {% extends "base.html" %}
 
+{% block og_image %}
+{% if latest_articles and latest_articles.0.featured_image %}
+{{ latest_articles.0.featured_image.url }}
+{% elif latest_rankings and latest_rankings.0.featured_image %}
+{{ latest_rankings.0.featured_image.url }}
+{% else %}
+https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png
+{% endif %}
+{% endblock %}
+
+{% block twitter_image %}
+{% if latest_articles and latest_articles.0.featured_image %}
+{{ latest_articles.0.featured_image.url }}
+{% elif latest_rankings and latest_rankings.0.featured_image %}
+{{ latest_rankings.0.featured_image.url }}
+{% else %}
+https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png
+{% endif %}
+{% endblock %}
+
 {% block content %}
 <style>
 .content-section {

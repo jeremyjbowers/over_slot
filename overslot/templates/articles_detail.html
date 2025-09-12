@@ -16,11 +16,11 @@
 
 {% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
 
-{% block og_image %}{% if article.featured_image %}{{ request.scheme }}://{{ request.get_host }}{{ article.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+{% block og_image %}{% if article.featured_image %}{{ article.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
 
 {% block twitter_card %}summary_large_image{% endblock %}
 
-{% block twitter_image %}{% if article.featured_image %}{{ request.scheme }}://{{ request.get_host }}{{ article.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+{% block twitter_image %}{% if article.featured_image %}{{ article.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
 
 {% block twitter_image_alt %}{% if article.featured_image %}{{ article.headline }}{% else %}Over Slot - Baseball prospect coverage{% endif %}{% endblock %}
 

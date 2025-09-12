@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 {% load humanize %}
 
+{% block og_title %}{{ player.name }}{% endblock %}
+{% block og_description %}{% if rankings and rankings.0 %}Profile, rankings, and scouting for {{ player.name }}{% else %}Player profile for {{ player.name }}{% endif %}{% endblock %}
+{% block og_type %}profile{% endblock %}
+{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
+{% block og_image %}{% if player.photo_url %}{{ player.photo_url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+
+{% block twitter_title %}{{ player.name }}{% endblock %}
+{% block twitter_description %}{% if rankings and rankings.0 %}Profile, rankings, and scouting for {{ player.name }}{% else %}Player profile for {{ player.name }}{% endif %}{% endblock %}
+{% block twitter_card %}summary_large_image{% endblock %}
+{% block twitter_image %}{% if player.photo_url %}{{ player.photo_url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+
 {% block content %}
 <!-- Hero section with player name and position -->
 <style>
