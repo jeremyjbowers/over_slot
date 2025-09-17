@@ -332,6 +332,7 @@ class RankingAdmin(admin.ModelAdmin):
     ]
     search_fields = [
         "headline",
+        "custom_title",
         "year",
         "subhead",
         "blurb",
@@ -357,7 +358,7 @@ class RankingAdmin(admin.ModelAdmin):
             "Editorial Content",
             {
                 "fields": (
-                    "headline",
+                    ("headline", "custom_title"),
                     "subhead",
                     "blurb",
                     "featured_image",

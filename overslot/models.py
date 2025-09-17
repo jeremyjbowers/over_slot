@@ -200,6 +200,7 @@ class Ranking(BaseModel):
 
     # publishing fields
     headline = models.CharField(max_length=255, blank=True, null=True)
+    custom_title = models.CharField(max_length=255, blank=True, null=True, help_text="Optional override for display title. Does not affect URL.")
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.SlugField(max_length=255, blank=True, null=True)
     regenerate_slug = models.BooleanField(default=False)
@@ -254,13 +255,21 @@ class Ranking(BaseModel):
             if self.headline:
                 self.slug = slugify(f"{self.headline}-{self.uuid}")
             else:
-                self.slug = slugify(f"{self.__unicode__()}-{self.uuid}")
+                # IMPORTANT: Do not base slug on custom_title so URLs remain stable
+                self.slug = slugify(f"{self._get_default_computed_title()}-{self.uuid}")
     
             self.regenerate_slug = False
 
         super().save(*args, **kwargs)
 
-    def __unicode__(self):
+    def get_computed_title(self):
+        if self.custom_title:
+            return self.custom_title
+
+        return self._get_default_computed_title()
+
+    def _get_default_computed_title(self):
+        """Computed title that ignores custom_title. Used for slugs and fallback display."""
         payload = f"{self.year} {self.draft_level}"
 
         if self.is_draft:
@@ -275,6 +284,9 @@ class Ranking(BaseModel):
                 payload += f" {self.ranking_type} Players"
 
         return payload
+
+    def __unicode__(self):
+        return self.get_computed_title()
 
 
 class PlayerRankingCarryingTool(BaseModel):
