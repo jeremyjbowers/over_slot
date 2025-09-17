@@ -14,6 +14,11 @@ class Command(BaseCommand):
             action='store_true',
             help='Clear all existing players, rankings, and player rankings before loading (DESTRUCTIVE)',
         )
+        parser.add_argument(
+            'tab',
+            nargs='?',
+            help='Only load a specific tab (e.g., "2027 High School")',
+        )
 
     def handle(self, *args, **options):
         # Only delete if explicitly requested
@@ -58,9 +63,21 @@ class Command(BaseCommand):
 
             return None
 
-        for year in ["2026", "2027"]:
-            levels = ["Overall", "High School", "College"]
-            for level in levels:
+        default_years = ["2026", "2027"]
+        default_levels = ["Overall", "High School", "College"]
+
+        tab = options.get('tab')
+        if tab:
+            tab_normalized = ' '.join(str(tab).split())
+            if ' ' not in tab_normalized:
+                raise CommandError('Tab must be in the format "YYYY Level", e.g., "2027 High School"')
+            year, level = tab_normalized.split(' ', 1)
+            year_level_pairs = [(year, level)]
+            self.stdout.write(self.style.WARNING(f'Only loading tab: {year} {level}'))
+        else:
+            year_level_pairs = [(y, l) for y in default_years for l in default_levels]
+
+        for (year, level) in year_level_pairs:
                 try:
                     sheet = utils.get_sheet("15kLgnYACmlcrYV3QI5TECb2Vzkz-9jkrc8kc_IG6rkE", f"{year} {level}!A:Z", value_cutoff=None)
                     r, r_created = models.Ranking.objects.get_or_create(year=year, ranking_type=None, is_mock_draft=False, is_draft=True, is_final=True, draft_level=level)
