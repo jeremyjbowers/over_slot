@@ -269,7 +269,16 @@ class PlayerRankingInline(admin.TabularInline):
 class PlayerRankingAdmin(admin.ModelAdmin):
     model = PlayerRanking
     list_display = ["ranking", "player", "rank", "age_at_draft"]
-    search_fields = ["player", "ranking"]
+    search_fields = [
+        "player__name",
+        "player__school",
+        "player__position",
+        "position",
+        "school",
+        "commitment",
+        "ranking__year",
+        "ranking__draft_level",
+    ]
     list_filter = ["ranking"]
     autocomplete_fields = ["carrying_tools"]
     fieldsets = (
