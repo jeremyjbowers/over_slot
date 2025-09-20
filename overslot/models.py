@@ -204,6 +204,7 @@ class Ranking(BaseModel):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.SlugField(max_length=255, blank=True, null=True)
     regenerate_slug = models.BooleanField(default=False)
+    current = models.BooleanField(default=True, help_text="Mark as current to include in current rankings; uncheck to archive.")
     subhead = models.CharField(max_length=255, blank=True, null=True)
     blurb = models.CharField(max_length=255, blank=True, null=True)
     featured_image = models.ImageField(upload_to='rankings/featured/', blank=True, null=True, help_text="Featured image for the ranking")

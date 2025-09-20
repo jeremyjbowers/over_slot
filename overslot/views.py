@@ -4,7 +4,7 @@ import itertools
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, get_object_or_404
-from django.db.models import Count, Avg, Sum, Max, Min, Q
+from django.db.models import Count, Avg, Sum, Max, Min, Q, Case, When, Value, IntegerField
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import JsonResponse
 from django.conf import settings
@@ -28,8 +28,16 @@ def index(request):
     context['latest_articles'] = latest_articles
 
     latest_rankings = models.Ranking.objects.filter(
-        is_mock_draft=False, publish=True, is_carousel=True
-    ).order_by('-created')[:5]
+        is_mock_draft=False, publish=True, is_carousel=True, current=True
+    ).annotate(
+        level_order=Case(
+            When(draft_level='Overall', then=Value(0)),
+            When(draft_level='College', then=Value(1)),
+            When(draft_level='High School', then=Value(2)),
+            default=Value(99),
+            output_field=IntegerField(),
+        )
+    ).order_by('year', 'level_order')[:5]
     context['latest_rankings'] = latest_rankings
 
     # Flanking lists: left = scouting articles; right = non-scouting
@@ -47,10 +55,29 @@ def index(request):
         a.active_players = a.players.filter(active=True)
     context['non_scouting_articles'] = non_scouting_articles
 
-    # Rankings grid below: recent published non-mock rankings
-    context['recent_rankings'] = models.Ranking.objects.filter(
-        is_mock_draft=False, publish=True
-    ).order_by('-created')[:7]
+    # Rankings grid below: split into current (ordered by year ascending) and archived
+    context['current_rankings'] = models.Ranking.objects.filter(
+        is_mock_draft=False, publish=True, current=True
+    ).annotate(
+        level_order=Case(
+            When(draft_level='Overall', then=Value(0)),
+            When(draft_level='College', then=Value(1)),
+            When(draft_level='High School', then=Value(2)),
+            default=Value(99),
+            output_field=IntegerField(),
+        )
+    ).order_by('year', 'level_order')
+    context['archived_rankings'] = models.Ranking.objects.filter(
+        is_mock_draft=False, publish=True, current=False
+    ).annotate(
+        level_order=Case(
+            When(draft_level='Overall', then=Value(0)),
+            When(draft_level='College', then=Value(1)),
+            When(draft_level='High School', then=Value(2)),
+            default=Value(99),
+            output_field=IntegerField(),
+        )
+    ).order_by('-year', 'level_order')
     context['rankings_count'] = models.Ranking.objects.filter(
         is_mock_draft=False, publish=True
     ).count()
@@ -101,8 +128,26 @@ def articles_detail(request, slug):
 
 def rankings_list(request):
     context = {}
-    # Only show published rankings
-    context['rankings'] = models.Ranking.objects.filter(is_mock_draft=False, publish=True)
+    # Only show published rankings - show current first (ascending by year), then archived
+    current_qs = models.Ranking.objects.filter(is_mock_draft=False, publish=True, current=True).annotate(
+        level_order=Case(
+            When(draft_level='Overall', then=Value(0)),
+            When(draft_level='College', then=Value(1)),
+            When(draft_level='High School', then=Value(2)),
+            default=Value(99),
+            output_field=IntegerField(),
+        )
+    ).order_by('year', 'level_order')
+    archived_qs = models.Ranking.objects.filter(is_mock_draft=False, publish=True, current=False).annotate(
+        level_order=Case(
+            When(draft_level='Overall', then=Value(0)),
+            When(draft_level='College', then=Value(1)),
+            When(draft_level='High School', then=Value(2)),
+            default=Value(99),
+            output_field=IntegerField(),
+        )
+    ).order_by('-year', 'level_order')
+    context['rankings'] = list(current_qs) + list(archived_qs)
 
     return render(request, "rankings_list.html", context)
 

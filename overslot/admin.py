@@ -317,13 +317,15 @@ class RankingAdmin(admin.ModelAdmin):
         "is_mock_draft",
         "mock_draft_version",
         "is_final",
+        "current",
         "publish",
         "is_carousel",
     ]
-    list_editable = ["publish", "is_carousel"]
+    list_editable = ["current", "publish", "is_carousel"]
     list_filter = [
         "publish",
         "is_carousel",
+        "current",
         "year",
         "is_final",
         "is_draft",
@@ -370,9 +372,10 @@ class RankingAdmin(admin.ModelAdmin):
             "Publishing Controls",
             {
                 "fields": (
+                    "current",
                     "publish",
                     "is_carousel",
-                ),
+                )
             },
         ),
         (
