@@ -987,17 +987,17 @@
         {% if ranking.blurb %}
         <div class="hero-blurb">{{ ranking.blurb }}</div>
         {% endif %}
-        {% if ranking.body %}
-        <div class="hero-content">
-            {{ ranking.body|safe }}
-        </div>
-        {% endif %}
     </div>
 </div>
 
 <!-- Main content area with sidebar layout -->
 <div class="main-layout">
     <div class="content-area">
+        {% if ranking.body %}
+        <div class="article-body" style="margin-bottom: 1.5rem;">
+            {{ ranking.body|safe }}
+        </div>
+        {% endif %}
         {% if preview_mode %}
         <!-- Preview Mode: Show partial ranking with subscription prompt -->
         <div class="player-rankings-container">

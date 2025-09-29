@@ -301,7 +301,10 @@ def players_detail(request, slug):
     # Only show active rankings from published rankings
     context['rankings'] = models.PlayerRanking.objects.filter(player=context['player'], ranking__publish=True, active=True)
     
-    latest_ranking = context['rankings'].order_by('-ranking__year', '-created').first()
+    # Prefer the latest non-mock ranking for chart data (mock drafts don't carry metrics)
+    rankings_qs = context['rankings']
+    latest_ranking = rankings_qs.filter(ranking__is_mock_draft=False).order_by('-ranking__year', '-created').first() or \
+                     rankings_qs.order_by('-ranking__year', '-created').first()
     
     if latest_ranking:
         # Build hitter metric chart data from new fields (percentiles drive bars; raw values shown on right)
