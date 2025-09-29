@@ -28,7 +28,7 @@ def index(request):
     context['latest_articles'] = latest_articles
 
     latest_rankings = models.Ranking.objects.filter(
-        is_mock_draft=False, publish=True, is_carousel=True, current=True
+        publish=True, is_carousel=True
     ).annotate(
         level_order=Case(
             When(draft_level='Overall', then=Value(0)),
@@ -37,7 +37,7 @@ def index(request):
             default=Value(99),
             output_field=IntegerField(),
         )
-    ).order_by('year', 'level_order')[:5]
+    ).order_by('-created')[:5]
     context['latest_rankings'] = latest_rankings
 
     # Flanking lists: left = scouting articles; right = non-scouting
@@ -185,10 +185,66 @@ def videos_list(request):
 def rankings_detail(request, slug):
     context = {}
     # Only allow access to published rankings
-    ranking = get_object_or_404(models.Ranking, slug=slug, publish=True)
+    ranking = get_object_or_404(models.Ranking, slug=slug, publish=True, is_mock_draft=False)
     context['ranking'] = ranking
     
     # Get all player rankings for this ranking
+    player_rankings = ranking.get_playerrankings()
+    
+    # Get unique values for filters (sorted alphabetically)
+    schools = sorted([pr.school for pr in player_rankings if pr.school])
+    commitments = sorted([pr.commitment for pr in player_rankings if pr.commitment])
+    states = sorted([pr.player.state for pr in player_rankings if pr.player.state])
+    
+    # Remove duplicates while preserving order
+    schools = list(dict.fromkeys(schools))
+    commitments = list(dict.fromkeys(commitments))
+    states = list(dict.fromkeys(states))
+    
+    # Create simplified position categories in baseball positional order
+    position_mapping = [
+        ('P', ['P', 'RHP', 'LHP']),
+        ('C', ['C']),
+        ('1B', ['1B']),
+        ('2B', ['2B']),
+        ('3B', ['3B']),
+        ('SS', ['SS']),
+        ('OF', ['OF', 'LF', 'CF', 'RF']),
+        ('INF', ['INF']),
+        ('UTL', ['UTL', 'UTIL'])
+    ]
+    
+    # Find which simplified positions are actually present in the data
+    all_positions = [pr.position for pr in player_rankings if pr.position]
+    positions = []
+    
+    for simple_pos, variants in position_mapping:
+        # Check if any player has a position that contains any of the variants
+        for player_pos in all_positions:
+            if any(variant in player_pos.upper() for variant in variants):
+                if simple_pos not in positions:
+                    positions.append(simple_pos)
+                break
+    
+    context['filter_positions'] = positions
+    context['filter_schools'] = schools
+    context['filter_commitments'] = commitments
+    context['filter_states'] = states
+    
+    # Add recent articles for sidebar - only published
+    context['recent_articles'] = models.Article.objects.filter(publish=True).order_by('-created')[:5]
+
+    return render(request, "rankings_detail.html", context)
+
+
+@subscription_required
+def mock_drafts_detail(request, slug):
+    context = {}
+    # Only allow access to published mock drafts
+    ranking = get_object_or_404(models.Ranking, slug=slug, publish=True, is_mock_draft=True)
+    context['ranking'] = ranking
+    
+    # Get all player rankings for this mock draft
     player_rankings = ranking.get_playerrankings()
     
     # Get unique values for filters (sorted alphabetically)
@@ -357,6 +413,7 @@ def search(request):
             'headline': str(ranking),  # Uses the ranking's __unicode__ method
             'slug': ranking.slug,
             'year': ranking.year,
+            'is_mock_draft': ranking.is_mock_draft,
             'preview': next(
                 (pr.player.name for pr in ranking.playerranking_set.filter(player__active=True, active=True)
                  if query.lower() in pr.player.name.lower()),

@@ -9,16 +9,32 @@
     
     <!-- Rank Badge -->
     <div class="player-rank-badge">
-        {{ player_ranking.rank }}
+        {% if player_ranking.ranking.is_mock_draft and player_ranking.mock_pick_number %}
+            {{ player_ranking.mock_pick_number }}
+        {% else %}
+            {{ player_ranking.rank }}
+        {% endif %}
     </div>
     
     <!-- Player Info and Photo Container -->
     <div class="player-card-content">
         <!-- Player Details -->
         <div class="player-details">
-            <h3 class="player-name">
+            <h3 class="player-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                 {% if player_ranking.position %}{{ player_ranking.position }} {% endif %}
                 <a href="/players/{{ player_ranking.player.slug }}/">{{ player_ranking.player.name }}</a>
+                {% if player_ranking.ranking.is_mock_draft %}
+                    {% if player_ranking.mock_team or player_ranking.mock_team_logo_url %}
+                        <span class="team-inline" style="white-space: nowrap;">
+                            {% if player_ranking.mock_team %}
+                                <span>to {{ player_ranking.mock_team }}</span>
+                            {% endif %}
+                            {% if player_ranking.mock_team_logo_url %}
+                                <img class="team-logo" src="{{ player_ranking.mock_team_logo_url }}" alt="{{ player_ranking.mock_team }}"/>
+                            {% endif %}
+                        </span>
+                    {% endif %}
+                {% endif %}
             </h3>
             
             <div class="player-position-school">
@@ -28,6 +44,8 @@
                     {% if player_ranking.school %}{{ player_ranking.school }}{% endif %}{% if player_ranking.player.hometown or player_ranking.player.state %}, {% if player_ranking.player.hometown %}{{ player_ranking.player.hometown }}{% endif %}{% if player_ranking.player.hometown and player_ranking.player.state %} {% endif %}{% if player_ranking.player.state %}{{ player_ranking.player.state }}{% endif %}{% endif %}
                 {% endif %}
             </div>
+
+            
 
             <div class="player-bio-info">
                 <style>

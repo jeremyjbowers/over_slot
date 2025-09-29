@@ -6,12 +6,13 @@
 {% block content %}
 <style>
 .ranking-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; max-width: 1400px; margin: 0 auto; padding: 2.5rem 1.5rem; }
-.ranking-card { display: flex; flex-direction: column; border: 1px solid var(--dark-border); background: var(--dark-surface); height: 100%; overflow: hidden; }
+.ranking-card { display: flex; flex-direction: column; border: 1px solid var(--dark-border); background: var(--dark-surface); height: 100%; overflow: hidden; transition: transform 0.2s ease, border-color 0.2s ease; }
+.ranking-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
 .ranking-media { position: relative; width: 100%; padding-top: 56.25%; background: var(--dark-bg); }
 .ranking-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.ranking-content { padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+.ranking-content { padding: 0.9rem 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.6rem; flex: 1; }
 .ranking-meta { color: var(--dark-text-muted); font-size: 0.9rem; }
-.ranking-title { font-size: 1.2rem; font-weight: 800; color: var(--dark-text); line-height: 1.2; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ranking-title { font-size: 1.2rem; font-weight: 800; color: var(--theme-primary); line-height: 1.2; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ranking-title a { color: var(--theme-primary); text-decoration: none; }
 .players-list { margin-top: auto; padding-left: 0; list-style: none; }
 .players-list li { margin: 0.15rem 0; font-size: 0.95rem; line-height: 1.35; color: var(--dark-text); }
@@ -19,6 +20,9 @@
 .players-list a:hover { color: var(--theme-primary-hover); text-decoration: none; }
 .players-list .num { color: var(--dark-text-muted); font-weight: 700; margin-right: 0.35rem; }
 .players-list .pos { color: var(--dark-text-muted); font-weight: 700; margin-right: 0.25rem; }
+/* Inline team name + logo for mock drafts */
+.players-list .team-inline { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.players-list .team-inline .team-logo { height: 14px; width: auto; display: inline-block; vertical-align: middle; }
 @media (max-width: 1024px) { .ranking-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px) { .ranking-grid { grid-template-columns: 1fr; } }
 </style>
@@ -33,12 +37,29 @@
         {% endif %}
         <div class="ranking-content">
             <div class="ranking-meta">{{ ranking.created|date:"F j, Y" }}</div>
-            <h3 class="ranking-title"><a href="/rankings/{{ ranking.slug }}/">{{ ranking }}</a></h3>
+            <h3 class="ranking-title">
+                {% if ranking.is_mock_draft %}
+                <a href="/mock-drafts/{{ ranking.slug }}/">{{ ranking }}</a>
+                {% else %}
+                <a href="/rankings/{{ ranking.slug }}/">{{ ranking }}</a>
+                {% endif %}
+            </h3>
             {% if ranking.get_initial_players %}
             <ol class="players-list">
                 {% for pr in ranking.get_initial_players|slice:":5" %}
                 <li>
-                    <a href="/players/{{ pr.player.slug }}/"><span class="num">{{ pr.rank }}.</span>{% if pr.position %}<span class="pos">{{ pr.position }}</span>{% endif %}{{ pr.player.name }}</a>
+                    <a href="/players/{{ pr.player.slug }}/">
+                        <span class="num">{% if ranking.is_mock_draft and pr.mock_pick_number %}{{ pr.mock_pick_number }}.{% else %}{{ pr.rank }}.{% endif %}</span>
+                        {% if pr.position %}<span class="pos">{{ pr.position }}</span>{% endif %}{{ pr.player.name }}
+                        {% if ranking.is_mock_draft %}
+                            {% if pr.mock_team or pr.mock_team_logo_url %}
+                                <span class="team-inline">
+                                    {% if pr.mock_team %} — {{ pr.mock_team }}{% endif %}
+                                    {% if pr.mock_team_logo_url %}<img class="team-logo" src="{{ pr.mock_team_logo_url }}" alt="{{ pr.mock_team }}"/>{% endif %}
+                                </span>
+                            {% endif %}
+                        {% endif %}
+                    </a>
                 </li>
                 {% endfor %}
             </ol>

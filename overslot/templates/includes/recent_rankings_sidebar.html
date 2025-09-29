@@ -8,6 +8,7 @@
     <div class="sidebar-content">
         {% if recent_rankings %}
             {% for ranking in recent_rankings %}
+                {% if not ranking.is_mock_draft %}
                 <article class="sidebar-ranking">
                     <a href="{% url 'rankings_detail' ranking.slug %}" class="sidebar-ranking-link">
                         <div class="sidebar-ranking-content">
@@ -23,6 +24,7 @@
                         </div>
                     </a>
                 </article>
+                {% endif %}
             {% endfor %}
         {% else %}
             <p class="sidebar-empty">No recent rankings available.</p>

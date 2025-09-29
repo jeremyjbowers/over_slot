@@ -31,6 +31,7 @@ urlpatterns = [
     path("rankings/<slug:slug>/", views.rankings_detail, name="rankings_detail"),
 
     path("mock-drafts/", views.mock_drafts_list, name="mock_drafts_list"),
+    path("mock-drafts/<slug:slug>/", views.mock_drafts_detail, name="mock_drafts_detail"),
 
     path("players/<slug:slug>/", views.players_detail, name="players_detail"),
 

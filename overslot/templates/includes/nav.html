@@ -34,6 +34,11 @@
                     Rankings
                 </a>
                 <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
+                   href="/mock-drafts/"
+                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
+                    Mock Drafts
+                </a>
+                <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
                    href="/videos/"
                    style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
                     Videos
@@ -503,10 +508,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                     });
 
-                    // Populate rankings
+                    // Populate rankings (including mock drafts)
                     data.rankings.forEach(ranking => {
+                        const rankingHref = ranking.is_mock_draft ? `/mock-drafts/${ranking.slug}/` : `/rankings/${ranking.slug}/`;
                         rankingResults.innerHTML += `
-                            <a href="/rankings/${ranking.slug}/" class="search-item">
+                            <a href="${rankingHref}" class="search-item">
                                 <div class="search-item-title">
                                     ${ranking.headline}
                                     <a href="${window.subscriptionUrl}" class="premium-badge icon-only" title="Subscribe for Premium Content" onclick="event.stopPropagation();">

@@ -702,7 +702,7 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
                         </div>
                         {% endfor %}
                         {% for ranking in latest_rankings %}
-                        <div class="carousel-slide" data-mobile-link="/rankings/{{ ranking.slug }}/">
+                        <div class="carousel-slide" data-mobile-link="{% if ranking.is_mock_draft %}/mock-drafts/{{ ranking.slug }}/{% else %}/rankings/{{ ranking.slug }}/{% endif %}">
                             <div class="hero-slide">
                                 <div class="lead-visual">
                                     <div class="ratio">
@@ -711,7 +711,7 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
                                         {% endif %}
                                     </div>
                                     <div class="lead-overlay">
-                                        <div class="lead-title"><a class="hero-title-link" href="/rankings/{{ ranking.slug }}/">{{ ranking }}</a></div>
+                                        <div class="lead-title"><a class="hero-title-link" href="{% if ranking.is_mock_draft %}/mock-drafts/{{ ranking.slug }}/{% else %}/rankings/{{ ranking.slug }}/{% endif %}">{{ ranking }}</a></div>
                                         {% if ranking.subhead %}<div class="lead-sub">{{ ranking.subhead }}</div>{% endif %}
                                     </div>
                                 </div>

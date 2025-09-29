@@ -271,20 +271,26 @@ class Ranking(BaseModel):
 
     def _get_default_computed_title(self):
         """Computed title that ignores custom_title. Used for slugs and fallback display."""
-        payload = f"{self.year} {self.draft_level}"
+        parts = [str(self.year).strip()] if self.year else []
+        if self.draft_level:
+            parts.append(self.draft_level)
+        title = " ".join(p for p in parts if p and p.lower() != 'none')
 
-        if self.is_draft:
-            payload += " Draft"
-
+        # For mock drafts, don't append plain "Draft" to avoid "Draft Mock Draft"
         if self.is_mock_draft:
-            payload += f" Mock Draft {self.mock_draft_version}"
-
+            if title:
+                title += f" Mock Draft {self.mock_draft_version}"
+            else:
+                title = f"Mock Draft {self.mock_draft_version}"
         else:
-            payload += f" Top {self.ranking_length}"
-            if self.ranking_type:
-                payload += f" {self.ranking_type} Players"
+            if self.is_draft:
+                title += " Draft"
+            else:
+                title += f" Top {self.ranking_length}"
+                if self.ranking_type:
+                    title += f" {self.ranking_type} Players"
 
-        return payload
+        return title
 
     def __unicode__(self):
         return self.get_computed_title()

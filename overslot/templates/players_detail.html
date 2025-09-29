@@ -863,8 +863,12 @@ body {
             {% for r in rankings %}
             <div class="ranking-card">
                 <div class="ranking-header">
-                    <a href="/rankings/{{ r.ranking.slug }}/#{{ r.player.slug }}">
-                        Ranked {{ r.rank|ordinal }} in {{ r.ranking }}
+                    <a href="{% if r.ranking.is_mock_draft %}/mock-drafts/{{ r.ranking.slug }}{% else %}/rankings/{{ r.ranking.slug }}{% endif %}/#{{ r.player.slug }}">
+                        {% if r.ranking.is_mock_draft %}
+                            Mock Pick {{ r.mock_pick_number|default:r.rank|ordinal }} in {{ r.ranking }}
+                        {% else %}
+                            Ranked {{ r.rank|ordinal }} in {{ r.ranking }}
+                        {% endif %}
                     </a>
                 </div>
                 

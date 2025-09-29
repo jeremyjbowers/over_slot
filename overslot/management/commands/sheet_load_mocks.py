@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
+from django.db.models import Q
 
 from overslot import models, utils
 
@@ -13,15 +14,30 @@ class Command(BaseCommand):
             action='store_true',
             help='Clear all existing players, rankings, and player rankings before loading (DESTRUCTIVE)',
         )
+        parser.add_argument(
+            '--year',
+            type=str,
+            help='Year to load (e.g., 2025). Must be used with --version.'
+        )
+        parser.add_argument(
+            '--mock-version',
+            dest='mock_version',
+            type=str,
+            help='Mock version to load (e.g., 1.0 or Final). Must be used with --year.'
+        )
+        parser.add_argument(
+            'tab',
+            nargs='?',
+            help='Only load a specific tab (e.g., "2025 Mock 1.0")',
+        )
 
     def handle(self, *args, **options):
         # Only delete if explicitly requested
         if options['clear']:
-            self.stdout.write(self.style.WARNING('DESTRUCTIVE MODE: Clearing all existing data...'))
-            models.Player.objects.all().delete()
-            models.PlayerRanking.objects.all().delete()
-            models.Ranking.objects.all().delete()
-            self.stdout.write(self.style.SUCCESS('Cleared existing data'))
+            self.stdout.write(self.style.WARNING('DESTRUCTIVE MODE: Clearing existing MOCK DRAFT data...'))
+            models.PlayerRanking.objects.filter(ranking__is_mock_draft=True).delete()
+            models.Ranking.objects.filter(is_mock_draft=True).delete()
+            self.stdout.write(self.style.SUCCESS('Cleared existing mock draft data'))
         else:
             self.stdout.write('Running in non-destructive mode. Use --clear to delete existing data.')
 
@@ -37,7 +53,7 @@ class Command(BaseCommand):
                     decision='merged',
                     primary_player__isnull=False
                 ).filter(
-                    models.Q(player1=player) | models.Q(player2=player)
+                    Q(player1=player) | Q(player2=player)
                 ).exclude(
                     primary_player=player  # Don't match if this player was the primary
                 ).first()
@@ -58,9 +74,46 @@ class Command(BaseCommand):
 
             return None
 
-        for year in ["2025"]:
-            # for mock_number in ["1.0", "2.0", "3.0", "4.0", "5.0", "Final"]:
-            for mock_number in ["1.0"]:
+        def to_int_or_none(value):
+            """Coerce sheet values to int or None (handles '', None, numeric strings)."""
+            if value is None:
+                return None
+            if isinstance(value, str):
+                stripped = value.strip()
+                if stripped == "" or stripped.lower() in {"na", "n/a", "null"}:
+                    return None
+                value = stripped
+            try:
+                # Some sheets store numbers as '1.0'; convert safely
+                return int(float(value))
+            except Exception:
+                return None
+
+        # Pre-populated years/versions to iterate over when no specific tab is provided
+        # Update this list over time (e.g., ["2026", "2027"]).
+        default_years = ["2026"]
+        default_versions = ["1.0", "Final"]  # Extend as needed (e.g., "2.0", "3.0")
+
+        explicit_year = options.get('year')
+        explicit_version = options.get('mock_version')
+        tab = options.get('tab')
+
+        if explicit_year and explicit_version:
+            year = str(explicit_year).strip()
+            version = str(explicit_version).strip()
+            year_version_pairs = [(year, version)]
+            self.stdout.write(self.style.WARNING(f'Only loading explicit: {year} Mock {version}'))
+        elif tab:
+            tab_normalized = ' '.join(str(tab).split())
+            if ' Mock ' not in tab_normalized:
+                raise CommandError('Tab must be in the format "YYYY Mock X.Y", e.g., "2025 Mock 1.0"')
+            year, _, version = tab_normalized.partition(' Mock ')
+            year_version_pairs = [(year, version)]
+            self.stdout.write(self.style.WARNING(f'Only loading tab: {year} Mock {version}'))
+        else:
+            year_version_pairs = [(y, v) for y in default_years for v in default_versions]
+
+        for (year, mock_number) in year_version_pairs:
                 print(year, mock_number)
 
                 sheet = None
@@ -72,12 +125,29 @@ class Command(BaseCommand):
                     continue
 
                 if sheet:
-                    r, r_created = models.Ranking.objects.get_or_create(year=year, is_mock_draft=True, mock_draft_version=mock_number, ranking_type=None, is_draft=True, is_final=True)
+                    # Normalize version and final flag
+                    version_display = str(mock_number).strip()
+                    is_final_version = version_display.lower() == "final"
+
+                    # Create/update the mock draft ranking
+                    r, r_created = models.Ranking.objects.get_or_create(
+                        year=year,
+                        is_mock_draft=True,
+                        mock_draft_version=version_display,
+                        ranking_type=None,
+                        is_draft=True,
+                        defaults={
+                            'is_final': False,
+                        }
+                    )
+                    # Update mutable fields
+                    r.is_final = is_final_version
                     r.ranking_length = len(sheet)
-                    if mock_number == "Final":
-                        r.is_final = True
 
                     r.save()
+
+                    # Deactivate existing player rankings for this mock ranking
+                    models.PlayerRanking.objects.filter(ranking=r).update(rank=None, active=False)
 
                     for row in sheet:
                         # player object
@@ -115,17 +185,26 @@ class Command(BaseCommand):
                         p.save()
 
                         # player_ranking object
-                        pr, pr_created = models.PlayerRanking.objects.get_or_create(ranking=r, player=p, rank=row['rank'], school=row['school'], position=row['position'])
+                        pr, pr_created = models.PlayerRanking.objects.get_or_create(
+                            ranking=r,
+                            player=p,
+                            defaults={}
+                        )
 
+                        # Update fields from the sheet
+                        pr.school = row.get('school')
+                        pr.position = row.get('position')
+                        pr.rank = to_int_or_none(row.get('rank'))
                         pr.level = transform_level(row.get('class', None))
                         pr.commitment = row.get('commitment', None)
                         pr.raw_carrying_tools = row.get('carrying_tool', None)
                         pr.role = row.get('role', None)
                         pr.risk = row.get('risk', None)
                         pr.scouting_report = ''  # Will set below after processing blurb
-                        pr.mock_pick_number = row.get('mock_pick_number', None)
+                        pr.mock_pick_number = to_int_or_none(row.get('mock_pick_number'))
                         pr.mock_team = row.get('mock_team', None)
                         pr.mock_team_logo_url = row.get('mock_team_photo_url', None)
+                        pr.active = True
 
                         # Save now so we can work with M2M relationships
                         pr.save()
