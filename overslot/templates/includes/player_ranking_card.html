@@ -30,7 +30,7 @@
                                 <span>to {{ player_ranking.mock_team }}</span>
                             {% endif %}
                             {% if player_ranking.mock_team_logo_url %}
-                                <img class="team-logo" src="{{ player_ranking.mock_team_logo_url }}" alt="{{ player_ranking.mock_team }}"/>
+                                <img class="team-logo" src="{{ player_ranking.mock_team_logo_url }}" alt="{{ player_ranking.mock_team }}" style="background:#ffffff; border-radius:50%; padding:2px; box-shadow: 0 0 0 1px rgba(0,0,0,0.1) inset; height:20px;"/>
                             {% endif %}
                         </span>
                     {% endif %}
@@ -41,11 +41,9 @@
                 {% if player_ranking.level == 'High School' %}
                     {% if player_ranking.school %}{{ player_ranking.school }}{% if 'HS' not in player_ranking.school %} HS{% endif %}{% endif %}{% if player_ranking.player.hometown or player_ranking.player.state %}, {% if player_ranking.player.hometown %}{{ player_ranking.player.hometown }}{% endif %}{% if player_ranking.player.hometown and player_ranking.player.state %} {% endif %}{% if player_ranking.player.state %}{{ player_ranking.player.state }}{% endif %}{% endif %}
                 {% else %}
-                    {% if player_ranking.school %}{{ player_ranking.school }}{% endif %}{% if player_ranking.player.hometown or player_ranking.player.state %}, {% if player_ranking.player.hometown %}{{ player_ranking.player.hometown }}{% endif %}{% if player_ranking.player.hometown and player_ranking.player.state %} {% endif %}{% if player_ranking.player.state %}{{ player_ranking.player.state }}{% endif %}{% endif %}
+                    {% if player_ranking.school %}{{ player_ranking.school }}{% endif %}
                 {% endif %}
             </div>
-
-            
 
             <div class="player-bio-info">
                 <style>
@@ -88,31 +86,6 @@
                     </tr>
                 </table>
             </div>
-
-            <!-- <div class="player-bio-info">
-                {% if player_ranking.player.bats and player_ranking.player.throws %}
-                <span class="bio-item">Bats / Throws: {{ player_ranking.player.bats }}/{{ player_ranking.player.throws }}</span>
-                {% endif %}
-            </div>
-
-            <div class="player-bio-info">
-                {% if player_ranking.player.height or player_ranking.player.weight %}
-                <span class="bio-item">Height / Weight: {% if player_ranking.player.height %} {{ player_ranking.player.height }}{% endif %}{% if player_ranking.player.weight %}{% if player_ranking.player.height %}, {% endif %}{{ player_ranking.player.weight }}{% endif %}</span>
-                {% endif %}
-            </div>
-
-            {% if player_ranking.age_at_draft %}
-            <div class="player-bio-info">
-                <span class="bio-item">Age at draft: {{ player_ranking.age_at_draft }}</span>
-            </div>
-            {% endif %}
-            
-            
-            {% if player_ranking.commitment %}
-            <div class="player-commitment">
-                Committed to {{ player_ranking.commitment }}
-            </div>
-            {% endif %} -->
         </div>
         <!-- Preserve 3-column grid layout without chips -->
         <div class="player-tags"></div>
