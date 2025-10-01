@@ -54,6 +54,7 @@ urlpatterns = [
     ),
 
     path("api/search/", views.search, name="search"),
+    path("api/v1/players/", views.api_players, name="api_players"),
 
     # Subscription URLs
     path('subscription/', subscription_views.subscription_dashboard, name='subscription_dashboard'),

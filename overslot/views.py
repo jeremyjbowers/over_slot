@@ -1,4 +1,5 @@
 import csv
+import os
 import datetime
 import itertools
 from django.http import HttpResponse
@@ -439,3 +440,59 @@ def robots_txt(request):
         "Sitemap: https://overslotbaseball.com/sitemap.xml",
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
+
+
+def api_players(request):
+    """Return all Player records as JSON or CSV with all fields, including IDs."""
+    # API key check via query param against environment variable
+    expected_key = os.environ.get('OVERSLOT_API_KEY')
+    if not expected_key:
+        return JsonResponse({
+            'error': 'Server misconfiguration',
+            'message': 'OVERSLOT_API_KEY not set'
+        }, status=500)
+
+    provided_key = request.GET.get('overslot_api_key')
+    if not provided_key or provided_key != expected_key:
+        return JsonResponse({
+            'error': 'Unauthorized',
+            'message': 'Invalid or missing API key.'
+        }, status=401)
+
+    # Determine response format via ?format= and Accept header
+    format_param = (request.GET.get('format') or '').lower()
+    accept_header = request.META.get('HTTP_ACCEPT', '')
+    wants_csv = format_param == 'csv' or 'text/csv' in accept_header
+
+    # Concrete model fields only (no relations), including BaseModel fields
+    player_model = models.Player
+    fields = [f.name for f in player_model._meta.fields]
+
+    queryset = player_model.objects.all()
+
+    if wants_csv:
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="players.csv"'
+        writer = csv.writer(response)
+        writer.writerow(fields)
+        for player in queryset.iterator():
+            row = []
+            for field_name in fields:
+                value = getattr(player, field_name)
+                # Normalize boolean/None for CSV readability
+                if value is None:
+                    row.append('')
+                else:
+                    row.append(str(value))
+            writer.writerow(row)
+        return response
+
+    # Default: JSON
+    data = []
+    for player in queryset.iterator():
+        record = {}
+        for field_name in fields:
+            record[field_name] = getattr(player, field_name)
+        data.append(record)
+
+    return JsonResponse(data, safe=False)
