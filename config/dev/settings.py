@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     "sesame",
     "storages",  # Add storages for S3/Spaces support
     "overslot",
-    "django_prose_editor"
+    "django_summernote"
 ]
 
 MIDDLEWARE = [
@@ -166,18 +166,17 @@ STORAGES = {
             'location': 'media',
         },
     },
+    # Use local staticfiles storage in development to avoid S3 delete permissions during collectstatic
     'staticfiles': {
-        'BACKEND': 'storages.backends.s3boto3.S3StaticStorage',
-        'OPTIONS': {
-            'location': 'static',
-        },
+        'BACKEND': 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage',
     },
 }
 
 # Static and Media URLs
-STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
+# Serve static locally in development; media remains on Spaces
+STATIC_URL = "/static/"
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
-STATIC_ROOT = "static/"  # Still needed for collectstatic
+STATIC_ROOT = "static/"  # Local static root for collectstatic in dev
 
 CORS_ALLOWED_ORIGINS = [
     "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
@@ -237,6 +236,25 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 USE_TLS = env('USE_TLS', default=True)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = False  # Don't force redirect in development
+
+# django-summernote configuration
+SUMMERNOTE_CONFIG = {
+    'iframe': True,
+    'airMode': False,
+    'disableDragAndDrop': False,
+    'summernote': {
+        'width': '100%',
+        'height': 600,
+        'toolbar': [
+            ['style', ['style']],
+            ['font', ['bold', 'italic', 'underline', 'clear']],
+            ['para', ['ul', 'ol', 'paragraph']],
+            ['table', ['table']],
+            ['insert', ['link', 'picture', 'video']],
+            ['view', ['codeview', 'help']],
+        ],
+    },
+}
 
 # Email blocklist to reduce spam signups/logins
 # Blocked top-level domains (TLDs)

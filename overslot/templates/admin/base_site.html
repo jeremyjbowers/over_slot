@@ -47,23 +47,28 @@
     margin-bottom: 80px;
 }
 
-/* Django Prose Editor styling - make editor taller */
-.prose-editor {
-    min-height: 300px !important;
+/* Summernote editor tweaks */
+.note-editor.note-frame, .note-editor.note-airframe {
+    border-color: var(--border-color);
 }
-
-.prose-editor .ProseMirror {
-    min-height: 250px !important;
-    padding: 1rem !important;
+.note-editor.note-frame .note-editing-area .note-editable {
+    min-height: 600px;
 }
-
-/* Ensure the editor container has proper height */
-.field-body .prose-editor-wrapper {
-    min-height: 300px;
+/* Make Summernote use full available width on change forms */
+.form-row.field-body .flex-container,
+.form-row.field-scouting_report .flex-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flow;
 }
-
-.field-body .prose-editor-wrapper .prose-editor-content {
-    min-height: 250px;
+.form-row.field-body .note-editor,
+.form-row.field-scouting_report .note-editor {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+.form-row.field-body .note-editor .note-editing-area,
+.form-row.field-scouting_report .note-editor .note-editing-area {
+    width: 100% !important;
 }
 </style>
 {% endblock %} 

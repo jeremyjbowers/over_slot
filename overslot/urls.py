@@ -23,6 +23,8 @@ urlpatterns = [
     path('admin/duplicates/suggest/', duplicate_views.suggest_duplicate, name='suggest_duplicate'),
 
     path("admin/", admin_site.urls),
+    # Summernote editor URLs (includes image upload endpoints)
+    path('summernote/', include('django_summernote.urls')),
 
     path("articles/", views.articles_list, name="articles_list"),
     path("articles/<slug:slug>/", views.articles_detail, name="articles_detail"),

@@ -9,7 +9,6 @@ from django.contrib.postgres.fields import JSONField, ArrayField
 from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 from django.conf import settings
-from django_prose_editor.fields import ProseEditorField
 from django.utils.text import slugify
 from django.utils.crypto import get_random_string
 
@@ -210,37 +209,7 @@ class Ranking(BaseModel):
     featured_image = models.ImageField(upload_to='rankings/featured/', blank=True, null=True, help_text="Featured image for the ranking")
     publish = models.BooleanField(default=False)
     is_carousel = models.BooleanField(default=False, help_text="Display in homepage carousel")
-    body = ProseEditorField(
-        extensions={
-            # Core text formatting
-            "Bold": True,
-            "Italic": True,
-            "Strike": True,
-            "Underline": True,
-            "HardBreak": True,
-            "Link": True,
-
-            # Structure
-            "Heading": {
-                "levels": [1, 2, 3, 4, 5]  # Only allow h1, h2, h3
-            },
-            "BulletList": True,
-            "OrderedList": True,
-            "Blockquote": True,
-            "Table": True,
-
-            # Editor capabilities
-            "History": True,       # Enables undo/redo
-            "HTML": True,          # Allows HTML view
-            "Typographic": True,   # Enables typographic chars
-
-            # Media
-            "Image": True,         # Enable inline image upload
-        },
-        sanitize=True,
-        null=True,
-        blank=True
-    )
+    body = models.TextField(null=True, blank=True)
 
     class Meta:
         ordering = ["-year", "is_final", "-ranking_length"]
@@ -413,37 +382,7 @@ class PlayerRanking(BaseModel):
     
     confidence = models.IntegerField(blank=True, null=True)
 
-    scouting_report = ProseEditorField(
-        extensions={
-            # Core text formatting
-            "Bold": True,
-            "Italic": True,
-            "Strike": True,
-            "Underline": True,
-            "HardBreak": True,
-            "Link": True,
-
-            # Structure
-            "Heading": {
-                "levels": [1, 2, 3, 4, 5]  # Only allow h1, h2, h3
-            },
-            "BulletList": True,
-            "OrderedList": True,
-            "Blockquote": True,
-            "Table": True,
-
-            # Editor capabilities
-            "History": True,       # Enables undo/redo
-            "HTML": True,          # Allows HTML view
-            "Typographic": True,   # Enables typographic chars
-
-            # Media
-            "Image": True,
-        },
-        sanitize=True,
-        null=True,
-        blank=True
-    )
+    scouting_report = models.TextField(null=True, blank=True)
 
     class Meta:
         ordering = ['ranking', 'rank']
@@ -470,37 +409,7 @@ class Article(BaseModel):
 
     article_type = models.CharField(max_length=255, choices=ARTICLE_TYPE_CHOICES, blank=True, null=True)
 
-    body = ProseEditorField(
-        extensions={
-            # Core text formatting
-            "Bold": True,
-            "Italic": True,
-            "Strike": True,
-            "Underline": True,
-            "HardBreak": True,
-            "Link": True,
-
-            # Structure
-            "Heading": {
-                "levels": [1, 2, 3, 4, 5]  # Only allow h1, h2, h3
-            },
-            "BulletList": True,
-            "OrderedList": True,
-            "Blockquote": True,
-            "Table": True,
-
-            # Editor capabilities
-            "History": True,       # Enables undo/redo
-            "HTML": True,          # Allows HTML view
-            "Typographic": True,   # Enables typographic chars
-
-            # Media
-            "Image": True,
-        },
-        sanitize=True,
-        null=True,
-        blank=True
-    )
+    body = models.TextField(null=True, blank=True)
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     slug = models.SlugField(max_length=255, blank=True, null=True)
     regenerate_slug = models.BooleanField(default=False)

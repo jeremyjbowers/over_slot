@@ -63,7 +63,7 @@ Rather than implementing hard paywalls, the system provides contextual previews 
 The publish boolean on articles enables draft-to-publication workflow management. Content creators can save work in progress without immediately making it public, while the boolean provides simple on/off publishing control. This approach prioritizes editorial control over complex approval workflows.
 
 **Rich Text Integration**
-django-prose-editor provides a professional content creation environment with carefully selected extensions. The configuration emphasizes text formatting and structural elements while avoiding potentially problematic features like unrestricted HTML embedding. Sanitization is enabled to ensure content security.
+django-summernote provides a rich content creation environment with inline image uploads (stored to Spaces/S3 via default storage) and easy embeds (YouTube, Twitter/X). The configuration emphasizes essential formatting and media insertion while keeping content secure.
 
 **Bulk Data Management**
 [Human will update this section soon - involves custom management commands for spreadsheet imports]
@@ -267,7 +267,7 @@ To provide the most comprehensive and insightful coverage of MLB draft prospects
 - **PostgreSQL**: Robust relational database
 - **django-allauth 65.8.1**: Authentication and account management
 - **django-sesame 3.2.3**: Magic link authentication
-- **django-prose-editor**: Rich text editing for content creation
+- **django-summernote**: Rich text editing with image uploads and embeds
 
 ### Frontend
 - **Bulma CSS Framework**: Modern, responsive CSS framework

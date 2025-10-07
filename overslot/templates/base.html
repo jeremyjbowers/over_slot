@@ -290,6 +290,23 @@
         </main>
 
         {% block extra_js %}{% endblock %}
+        <script>
+        // Lightweight support for Twitter and YouTube embeds in rendered content
+        document.addEventListener('DOMContentLoaded', function() {
+            // Twitter/X embeds: load widgets.js if tweets are present
+            if (document.querySelector('[data-twitter]') || document.querySelector('.twitter-tweet')) {
+                var tw = document.createElement('script');
+                tw.async = true;
+                tw.src = 'https://platform.twitter.com/widgets.js';
+                document.body.appendChild(tw);
+            }
+            // YouTube iframes are rendered natively; ensure responsive container if needed
+            document.querySelectorAll('.article-body iframe[src*="youtube.com"], .article-body iframe[src*="youtu.be"]').forEach(function(iframe){
+                iframe.style.maxWidth = '100%';
+                iframe.style.height = iframe.style.height || '360px';
+            });
+        });
+        </script>
         <!-- Google tag (gtag.js) -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-DXYDWXSQVP"></script>
         <script>

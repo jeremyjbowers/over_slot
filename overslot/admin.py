@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django_summernote.admin import SummernoteModelAdmin
 from django.contrib.admin import AdminSite
 from django.urls import reverse_lazy
 from django.contrib.auth.models import User, Group
@@ -148,7 +149,7 @@ class AuthorAdmin(admin.ModelAdmin):
 
 
 @admin.register(Article, site=admin_site)
-class ArticleAdmin(admin.ModelAdmin):
+class ArticleAdmin(SummernoteModelAdmin):
     model = Article
     # --- List / overview ----------------------------------------------------
     list_display = [
@@ -176,12 +177,14 @@ class ArticleAdmin(admin.ModelAdmin):
     ordering = ("-created",)
 
     # --- Form configuration -------------------------------------------------
+    summernote_fields = ('body',)
     autocomplete_fields = ["players", "authors"]
 
     fieldsets = (
         (
             "Core Content",
             {
+                "classes": ["wide"],
                 "fields": (
                     "headline",
                     "subhead",
@@ -266,7 +269,8 @@ class PlayerRankingInline(admin.TabularInline):
     )
 
 @admin.register(PlayerRanking, site=admin_site)
-class PlayerRankingAdmin(admin.ModelAdmin):
+class PlayerRankingAdmin(SummernoteModelAdmin):
+    summernote_fields = ('scouting_report',)
     model = PlayerRanking
     list_display = ["ranking", "player", "rank", "age_at_draft"]
     search_fields = [
@@ -285,6 +289,7 @@ class PlayerRankingAdmin(admin.ModelAdmin):
         (
             None,
             {
+                "classes": ("wide",),
                 "fields": (
                     ("rank", "player"),
                     ("position", "school", 'commitment', 'age_at_draft'),
@@ -307,7 +312,8 @@ class PlayerRankingAdmin(admin.ModelAdmin):
     )
 
 @admin.register(Ranking, site=admin_site)
-class RankingAdmin(admin.ModelAdmin):
+class RankingAdmin(SummernoteModelAdmin):
+    summernote_fields = ('body',)
     model = Ranking
     # --- List / overview ----------------------------------------------------
     list_display = [
@@ -359,6 +365,7 @@ class RankingAdmin(admin.ModelAdmin):
         (
             "Editorial Content",
             {
+                "classes": ("wide",),
                 "fields": (
                     ("headline", "custom_title"),
                     "subhead",
