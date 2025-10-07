@@ -53,6 +53,10 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Static and media files settings inherited from dev 
 # (Both use DigitalOcean Spaces)
+# Override staticfiles storage to avoid manifest errors if collectstatic hasn't run
+STORAGES['staticfiles'] = {
+    'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+}
 
 # Production-specific CORS settings
 CORS_ALLOWED_ORIGINS = [
