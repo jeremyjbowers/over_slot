@@ -51,12 +51,17 @@ SECURE_HSTS_PRELOAD = True
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Static and media files settings inherited from dev 
-# (Both use DigitalOcean Spaces)
-# Override staticfiles storage to avoid manifest errors if collectstatic hasn't run
+# Static and media files settings
+# Serve static from DigitalOcean Spaces CDN in production
 STORAGES['staticfiles'] = {
-    'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    'BACKEND': 'storages.backends.s3boto3.S3StaticStorage',
+    'OPTIONS': {
+        'location': 'static',
+    },
 }
+
+# Point STATIC_URL at the CDN domain
+STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/static/"
 
 # Production-specific CORS settings
 CORS_ALLOWED_ORIGINS = [
