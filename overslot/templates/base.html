@@ -144,6 +144,233 @@
                 color: var(--dark-text);
             }
 
+            /* Rich text: support all heading levels and text elements across editor content */
+            .article-body h1,
+            .scouting-report h1 {
+                font-family: var(--font-sans);
+                font-size: var(--text-4xl);
+                font-weight: 800;
+                margin-top: 2.5em;
+                margin-bottom: 0.8em;
+                color: var(--dark-text);
+                letter-spacing: -0.02em;
+                line-height: var(--leading-tight);
+            }
+
+            .scouting-report h2 {
+                font-family: var(--font-sans);
+                font-size: var(--text-3xl);
+                font-weight: 700;
+                margin-top: 2.25em;
+                margin-bottom: 0.8em;
+                color: var(--dark-text);
+            }
+
+            .scouting-report h3 {
+                font-family: var(--font-sans);
+                font-size: var(--text-2xl);
+                font-weight: 600;
+                margin-top: 2em;
+                margin-bottom: 0.8em;
+                color: var(--dark-text);
+            }
+
+            .article-body h4,
+            .scouting-report h4 {
+                font-family: var(--font-sans);
+                font-size: var(--text-xl);
+                font-weight: 600;
+                margin-top: 1.75em;
+                margin-bottom: 0.6em;
+                color: var(--dark-text);
+            }
+
+            .article-body h5,
+            .scouting-report h5 {
+                font-family: var(--font-sans);
+                font-size: var(--text-lg);
+                font-weight: 600;
+                margin-top: 1.5em;
+                margin-bottom: 0.5em;
+                color: var(--dark-text);
+            }
+
+            .article-body h6,
+            .scouting-report h6 {
+                font-family: var(--font-sans);
+                font-size: var(--text-base);
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                margin-top: 1.25em;
+                margin-bottom: 0.5em;
+                color: var(--dark-text);
+            }
+
+            .scouting-report p { margin-bottom: 1.5em; }
+
+            .article-body ul,
+            .article-body ol,
+            .scouting-report ul,
+            .scouting-report ol {
+                margin: 1.5em 0;
+                padding-left: 1.5em;
+            }
+
+            .article-body li,
+            .scouting-report li {
+                margin-bottom: 0.5em;
+            }
+
+            .article-body blockquote,
+            .scouting-report blockquote {
+                font-style: italic;
+                border-left: 3px solid var(--theme-primary);
+                padding-left: 1.5em;
+                margin: 2em 0;
+                color: var(--dark-text);
+            }
+
+            .article-body hr,
+            .scouting-report hr {
+                border: 0;
+                border-top: 1px solid var(--dark-border);
+                margin: 2rem 0;
+            }
+
+            .article-body b,
+            .article-body strong,
+            .scouting-report b,
+            .scouting-report strong { color: #ffffff; font-weight: 700; }
+
+            .article-body em,
+            .scouting-report em { font-style: italic; }
+
+            .article-body u,
+            .scouting-report u { text-decoration: underline; }
+
+            .article-body s,
+            .article-body del,
+            .scouting-report s,
+            .scouting-report del { text-decoration: line-through; }
+
+            .article-body mark,
+            .scouting-report mark {
+                background: rgba(var(--theme-primary-rgb), 0.2);
+                color: var(--dark-text);
+                padding: 0 0.2em;
+                border-radius: 0.2em;
+            }
+
+            .article-body sup,
+            .article-body sub,
+            .scouting-report sup,
+            .scouting-report sub { font-size: 0.75em; }
+
+            .article-body code,
+            .scouting-report code {
+                font-family: var(--font-mono);
+                font-size: 0.95em;
+                background: var(--dark-surface-hover);
+                color: var(--dark-text);
+                padding: 0.15em 0.35em;
+                border: 1px solid var(--dark-border);
+                border-radius: 4px;
+            }
+
+            .article-body pre,
+            .scouting-report pre {
+                background: var(--dark-surface);
+                color: var(--dark-text);
+                padding: 1rem;
+                overflow: auto;
+                border: 1px solid var(--dark-border);
+                border-radius: 6px;
+                line-height: var(--leading-relaxed);
+            }
+
+            .article-body pre code,
+            .scouting-report pre code {
+                background: transparent;
+                border: none;
+                padding: 0;
+            }
+
+            .article-body table,
+            .scouting-report table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 1.5rem 0;
+                overflow: hidden;
+                border: 1px solid var(--dark-border);
+            }
+
+            .article-body th,
+            .article-body td,
+            .scouting-report th,
+            .scouting-report td {
+                border: 1px solid var(--dark-border);
+                padding: 0.625rem 0.75rem;
+                text-align: left;
+            }
+
+            .article-body thead th,
+            .scouting-report thead th {
+                background: var(--dark-surface);
+                color: var(--dark-text);
+            }
+
+            .article-body tbody tr:nth-child(odd),
+            .scouting-report tbody tr:nth-child(odd) {
+                background: rgba(255,255,255,0.02);
+            }
+
+            .article-body img,
+            .scouting-report img {
+                max-width: 100%;
+                height: auto;
+                display: block;
+                margin: 1.5rem auto;
+            }
+
+            .article-body figure,
+            .scouting-report figure {
+                margin: 1.5rem 0;
+                text-align: center;
+            }
+
+            .article-body figcaption,
+            .scouting-report figcaption {
+                font-size: var(--text-sm);
+                color: var(--dark-text-muted);
+                margin-top: 0.5rem;
+            }
+
+            /* Alignment helpers commonly emitted by editors */
+            .article-body .text-left, .scouting-report .text-left { text-align: left; }
+            .article-body .text-center, .scouting-report .text-center { text-align: center; }
+            .article-body .text-right, .scouting-report .text-right { text-align: right; }
+
+            /* Float helpers from Summernote */
+            .article-body .note-float-left,
+            .scouting-report .note-float-left { float: left; margin: 0 15px 15px 0; }
+            .article-body .note-float-right,
+            .scouting-report .note-float-right { float: right; margin: 0 0 15px 15px; }
+
+            /* Ensure iframes scale */
+            .article-body iframe,
+            .scouting-report iframe { max-width: 100%; }
+
+            @media screen and (max-width: 640px) {
+                .article-body .note-float-left,
+                .article-body .note-float-right,
+                .scouting-report .note-float-left,
+                .scouting-report .note-float-right {
+                    float: none;
+                    margin: 1rem 0;
+                }
+            }
+
             .article-body p {
                 margin-bottom: 1.5em;
             }
