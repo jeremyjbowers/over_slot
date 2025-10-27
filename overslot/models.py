@@ -582,3 +582,93 @@ class DataSheetTab(models.Model):
         if self.data_sheet:
             return f"{self.data_sheet} {self.tab}"
         return self.tab
+
+
+class FeatureFlag(BaseModel):
+    """
+    Configurable feature flag with multiple visibility modes:
+    - staff_only: visible only to staff users when enabled
+    - users: explicit allow-list of users
+    - rollout_percentage: helper to pick a random cohort of public users
+    - general_availability: visible to everyone when true
+    """
+    ROLLOUT_CHOICES = (
+        (0, "0%"),
+        (5, "5%"),
+        (25, "25%"),
+        (50, "50%"),
+    )
+
+    key = models.SlugField(max_length=100, unique=True, help_text="Stable key used in code/templates")
+    name = models.CharField(max_length=255, help_text="Human readable name")
+    description = models.TextField(blank=True, null=True)
+
+    # Visibility controls
+    staff_only = models.BooleanField(default=False, help_text="If checked, only staff users see this feature")
+    general_availability = models.BooleanField(default=False, help_text="If checked, feature is visible to everyone")
+
+    # Targeted rollout
+    rollout_percentage = models.IntegerField(choices=ROLLOUT_CHOICES, default=0, help_text="Select cohort size and use 'Assign rollout users' action")
+    users = models.ManyToManyField(User, blank=True, related_name='feature_flags', help_text="Users explicitly enabled for this feature")
+
+    class Meta:
+        ordering = ["key"]
+        verbose_name = "Feature Flag"
+        verbose_name_plural = "Feature Flags"
+
+    def __unicode__(self):
+        return self.name or self.key
+
+    def is_enabled_for(self, user):
+        """Return True if the feature is visible to the given user."""
+        if self.general_availability:
+            return True
+
+        # Staff-only mode takes precedence over targeted lists
+        if self.staff_only:
+            return bool(user and user.is_authenticated and user.is_staff)
+
+        # Explicit allow-list
+        if user and getattr(user, 'is_authenticated', False):
+            if self.users.filter(pk=user.pk).exists():
+                return True
+
+        return False
+
+    def assign_rollout_users(self, replace=True):
+        """
+        Assign a random cohort of public users (non-staff, non-superuser) to this
+        flag's allow-list based on rollout_percentage. If replace=True, replace the
+        current allow-list with the new cohort; otherwise, add to it.
+        """
+        percent = int(self.rollout_percentage or 0)
+        if percent <= 0:
+            if replace:
+                self.users.clear()
+            return 0
+
+        public_users = User.objects.filter(is_active=True, is_staff=False, is_superuser=False)
+        total = public_users.count()
+        if total == 0:
+            if replace:
+                self.users.clear()
+            return 0
+
+        target_size = max(1, round(total * (percent / 100.0)))
+        # Random sample using database-level random ordering
+        cohort = list(public_users.order_by('?')[:target_size])
+
+        if replace:
+            self.users.set(cohort)
+        else:
+            self.users.add(*cohort)
+        return len(cohort)
+
+    @classmethod
+    def enabled(cls, key, user):
+        """Convenience classmethod to check a flag by key for a user."""
+        try:
+            flag = cls.objects.get(key=key, active=True)
+        except cls.DoesNotExist:
+            return False
+        return flag.is_enabled_for(user)

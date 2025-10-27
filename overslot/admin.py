@@ -135,7 +135,8 @@ from overslot.models import (
     PlayerRankingCarryingTool,
     Subscription,
     DuplicateDecision,
-    UserEmail
+    UserEmail,
+    FeatureFlag
 )
 
 
@@ -585,3 +586,60 @@ class PodcastEpisodeAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(FeatureFlag, site=admin_site)
+class FeatureFlagAdmin(admin.ModelAdmin):
+    list_display = [
+        "key",
+        "name",
+        "staff_only",
+        "rollout_percentage",
+        "general_availability",
+        "active",
+        "last_modified",
+    ]
+    list_editable = ["staff_only", "rollout_percentage", "general_availability", "active"]
+    search_fields = ["key", "name", "description", "users__username", "users__email"]
+    list_filter = ["staff_only", "general_availability", "active", "rollout_percentage"]
+    autocomplete_fields = ["users"]
+    readonly_fields = ["created", "last_modified"]
+
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    ("key", "name"),
+                    "description",
+                )
+            },
+        ),
+        (
+            "Visibility",
+            {
+                "fields": (
+                    "general_availability",
+                    "staff_only",
+                    ("rollout_percentage",),
+                    "users",
+                )
+            },
+        ),
+        (
+            "System",
+            {
+                "classes": ("collapse",),
+                "fields": ("active", "created", "last_modified"),
+            },
+        ),
+    )
+
+    actions = ["assign_rollout_users_action"]
+
+    def assign_rollout_users_action(self, request, queryset):
+        total_assigned = 0
+        for flag in queryset:
+            total_assigned += flag.assign_rollout_users(replace=True)
+        self.message_user(request, f"Assigned rollout cohorts, total users selected across flags: {total_assigned}")
+    assign_rollout_users_action.short_description = "Assign rollout users based on percentage (replace current)"

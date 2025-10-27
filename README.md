@@ -439,3 +439,91 @@ For questions about Over Slot or this website, please contact the development te
 ---
 
 *Over Slot - Comprehensive coverage of baseball's future stars*
+
+## 🧩 Feature Flags
+
+Feature flags let us ship code safely and selectively expose features to users. This project includes a `FeatureFlag` model, Django admin integration, and template/Python helpers.
+
+- **Model**: `FeatureFlag` with fields: `key` (slug, unique), `name`, `description`, `staff_only` (bool), `general_availability` (bool), `rollout_percentage` (0/5/25/50), `users` (M2M allow-list), `active`.
+- **Logic precedence**:
+  - If `general_availability` is true → enabled for everyone
+  - Else if `staff_only` is true → enabled only for staff
+  - Else if user is explicitly in `users` → enabled
+  - Else → disabled
+- **Helpers**:
+  - Python: `FeatureFlag.enabled(key, user)` and instance method `is_enabled_for(user)`
+  - Templates: `{% feature_enabled 'flag_key' as var %}` and `{% if_feature 'flag_key' 'then' 'else' %}`
+
+### How engineers should gate features
+
+1) Pick a stable `key` for your feature (e.g., `new_homepage_belt`).
+
+2) Gate in templates:
+
+```django
+{% load overslot_tags %}
+{% feature_enabled 'new_homepage_belt' as show_belt %}
+{% if show_belt %}
+  <!-- New experience -->
+  <section class="belt"> ... </section>
+{% else %}
+  <!-- Fallback experience -->
+  <section class="belt--legacy"> ... </section>
+{% endif %}
+```
+
+Inline alternative for small text substitutions:
+
+```django
+{% load overslot_tags %}
+<h2>{% if_feature 'new_homepage_belt' 'New Belt' 'Belt' %}</h2>
+```
+
+3) Gate in Python (views, utils, etc.):
+
+```python
+from overslot.models import FeatureFlag
+
+def view(request):
+    if FeatureFlag.enabled('new_homepage_belt', request.user):
+        # serve new experience
+        ...
+    else:
+        # serve legacy experience
+        ...
+```
+
+Notes:
+- If a flag with that `key` does not exist, `FeatureFlag.enabled(...)` returns False (feature remains hidden by default).
+- Prefer gating at the narrowest point needed (template fragment or specific code path) to minimize complexity.
+
+### How admins enable and manage flags
+
+1) In Django Admin, go to `Feature Flags` → `Add`.
+- Set `key` to exactly match what templates/code expect (e.g., `new_homepage_belt`).
+- Optionally set `name` and `description` for clarity.
+
+2) Choose visibility mode:
+- **General availability**: check `general_availability` to show to everyone.
+- **Staff only**: check `staff_only` to limit to staff accounts.
+- **Allow-list**: add specific users to the `users` field.
+- **Percentage rollout**: pick `rollout_percentage` (5/25/50). Then use the admin action “Assign rollout users based on percentage (replace current)” to populate the `users` list. Re-run this action after changing the percentage.
+
+3) Toggle `active` to quickly disable the flag entirely if needed.
+
+Precedence reminders:
+- `general_availability` overrides all other controls.
+- `staff_only` takes precedence over any non-staff `users` allow-list membership.
+
+### Rollout best practices
+
+- Start with `staff_only` to validate internally.
+- Move to a small `rollout_percentage` and click the admin action to assign a random cohort.
+- Monitor, then increase to 25%/50% as confidence grows.
+- Finally, set `general_availability` to true and optionally clear the allow-list.
+
+### Troubleshooting
+
+- Seeing legacy UI? Confirm the flag exists, is `active`, and your user matches the visibility rules.
+- Percentage changed but audience didn’t? Re-run the “Assign rollout users…” admin action to refresh the cohort.
+- Template key mismatch? Ensure the admin `key` exactly matches the string used in templates/Python.

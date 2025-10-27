@@ -1,6 +1,7 @@
 from django import template
 from decimal import Decimal
 from overslot.decorators import has_active_subscription
+from overslot.models import FeatureFlag
 
 register = template.Library()
 
@@ -47,3 +48,17 @@ def recent_rankings_sidebar(limit=5):
     return {
         'recent_rankings': recent_rankings
     }
+
+
+@register.simple_tag(takes_context=True)
+def feature_enabled(context, key):
+    """Return True if feature flag `key` is enabled for request.user."""
+    request = context.get('request')
+    user = getattr(request, 'user', None)
+    return FeatureFlag.enabled(key, user)
+
+
+@register.simple_tag(takes_context=True)
+def if_feature(context, key, then_value, else_value=""):
+    """Return then_value if flag enabled else else_value (for inline usage)."""
+    return then_value if feature_enabled(context, key) else else_value
