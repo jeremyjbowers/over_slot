@@ -345,26 +345,89 @@ class PlayerRanking(BaseModel):
     # Trackman data - Hitter metrics (raw values and corresponding percentiles)
     whiff_pct = models.FloatField(blank=True, null=True)
     whiff_pct_percentile = models.FloatField(blank=True, null=True)
+    whiff_pct_points_above_median = models.FloatField(blank=True, null=True)
     iz_whiff_pct = models.FloatField(blank=True, null=True)
     iz_whiff_pct_percentile = models.FloatField(blank=True, null=True)
+    iz_whiff_pct_points_above_median = models.FloatField(blank=True, null=True)
     ooz_whiff_pct = models.FloatField(blank=True, null=True)
     ooz_whiff_pct_percentile = models.FloatField(blank=True, null=True)
+    ooz_whiff_pct_points_above_median = models.FloatField(blank=True, null=True)
     chase_pct = models.FloatField(blank=True, null=True)
     chase_pct_percentile = models.FloatField(blank=True, null=True)
+    chase_pct_points_above_median = models.FloatField(blank=True, null=True)
     k_pct = models.FloatField(blank=True, null=True)
     k_pct_percentile = models.FloatField(blank=True, null=True)
+    k_pct_points_above_median = models.FloatField(blank=True, null=True)
     bb_pct = models.FloatField(blank=True, null=True)
     bb_pct_percentile = models.FloatField(blank=True, null=True)
+    bb_pct_points_above_median = models.FloatField(blank=True, null=True)
     avg_exit_velocity = models.FloatField(blank=True, null=True)
     avg_exit_velocity_percentile = models.FloatField(blank=True, null=True)
+    avg_exit_velocity_points_above_median = models.FloatField(blank=True, null=True)
     ev_90th = models.FloatField(blank=True, null=True)
     ev_90th_percentile = models.FloatField(blank=True, null=True)
+    ev_90th_points_above_median = models.FloatField(blank=True, null=True)
     barrel_pct = models.FloatField(blank=True, null=True)
     barrel_pct_percentile = models.FloatField(blank=True, null=True)
+    barrel_pct_points_above_median = models.FloatField(blank=True, null=True)
     pull_air_pct = models.FloatField(blank=True, null=True)
     pull_air_pct_percentile = models.FloatField(blank=True, null=True)
+    pull_air_pct_points_above_median = models.FloatField(blank=True, null=True)
     xwoba = models.FloatField(blank=True, null=True)
     xwoba_percentile = models.FloatField(blank=True, null=True)
+    xwoba_points_above_median = models.FloatField(blank=True, null=True)
+
+    # High School Hitters (Trackman/PG) - 2026 HS Hitters - 2025
+    # Actual stat line values
+    hs_pa = models.FloatField(blank=True, null=True)
+    hs_ba = models.FloatField(blank=True, null=True)
+    hs_obp = models.FloatField(blank=True, null=True)
+    hs_slg = models.FloatField(blank=True, null=True)
+    hs_ops = models.FloatField(blank=True, null=True)
+    hs_iso = models.FloatField(blank=True, null=True)
+
+    # Percentiles (0-100) and raw deltas above median for HS metrics
+    hs_contact_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_contact_pct_points_above_median = models.FloatField(blank=True, null=True)
+
+    hs_chase_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_chase_pct_points_above_median = models.FloatField(blank=True, null=True)
+
+    hs_iz_contact_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_iz_contact_pct_points_above_median = models.FloatField(blank=True, null=True)
+
+    hs_ooz_contact_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_ooz_contact_pct_points_above_median = models.FloatField(blank=True, null=True)
+
+    hs_k_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_k_pct_points_above_median = models.FloatField(blank=True, null=True)
+
+    hs_gb_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_gb_pct_points_above_median = models.FloatField(blank=True, null=True)
+
+    hs_fb_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_fb_pct_points_above_median = models.FloatField(blank=True, null=True)
+
+    hs_air_pull_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_air_pull_pct_points_above_median = models.FloatField(blank=True, null=True)
+
+    # PG 60 Yard (displayed as Sprint Speed)
+    hs_sprint_speed_percentile = models.FloatField(blank=True, null=True)
+    hs_sprint_speed_points_above_median = models.FloatField(blank=True, null=True)
+
+    # Bat metrics
+    hs_bat_speed_percentile = models.FloatField(blank=True, null=True)
+    hs_bat_speed_points_above_median = models.FloatField(blank=True, null=True)
+
+    hs_avg_rot_acc_percentile = models.FloatField(blank=True, null=True)
+    hs_avg_rot_acc_points_above_median = models.FloatField(blank=True, null=True)
+
+    hs_peak_hand_speed_percentile = models.FloatField(blank=True, null=True)
+    hs_peak_hand_speed_points_above_median = models.FloatField(blank=True, null=True)
+
+    # Peak Power/BM (displayed as Force Plate Explosiveness)
+    hs_force_plate_explosiveness_percentile = models.FloatField(blank=True, null=True)
+    hs_force_plate_explosiveness_points_above_median = models.FloatField(blank=True, null=True)
     
     # Trackman data - Pitchers
     fourseam_percentile = models.FloatField(blank=True, null=True)
