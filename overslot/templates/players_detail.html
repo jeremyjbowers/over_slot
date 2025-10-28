@@ -1242,6 +1242,9 @@ svg.selectAll(".score-label")
       if (isNaN(val)) return "";
       // HS mode: show signed delta (+/-) with one decimal, always show
       if (hitterChartPayload.hs_mode) {
+        if (d.axis === "Sprint Speed") {
+          return "";
+        }
         const signed = (val >= 0 ? "+" : "") + val.toFixed(1);
         return signed;
       }

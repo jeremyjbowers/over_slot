@@ -720,14 +720,14 @@ class Command(BaseCommand):
                 (["IZ Contact%", "Contact% IZ", "In-Zone Contact%"], False, "hs_iz_contact_pct_percentile", "hs_iz_contact_pct_points_above_median"),
                 (["OOZ Contact%", "Contact% Out-Of-Zone", "Out-Of-Zone Contact%"], False, "hs_ooz_contact_pct_percentile", "hs_ooz_contact_pct_points_above_median"),
                 (["K%", "K %"], True, "hs_k_pct_percentile", "hs_k_pct_points_above_median"),
-                (["GB%", "Ground%", "GB %"], False, "hs_gb_pct_percentile", "hs_gb_pct_points_above_median"),
+                (["GB%", "Ground%", "GB %"], True, "hs_gb_pct_percentile", "hs_gb_pct_points_above_median"),
                 (["FB%", "Fly Ball%", "FB %"], False, "hs_fb_pct_percentile", "hs_fb_pct_points_above_median"),
                 (["Air PULL%", "Pull AIR%", "Air Pull%"], False, "hs_air_pull_pct_percentile", "hs_air_pull_pct_points_above_median"),
                 (["PG 60 Yard", "60 Yard", "60 yd", "PG 60yd"], True, "hs_sprint_speed_percentile", "hs_sprint_speed_points_above_median"),
                 (["Bat Speed"], False, "hs_bat_speed_percentile", "hs_bat_speed_points_above_median"),
                 (["Avg Rot. Acc.", "Average Rot. Acc.", "Avg Rot Acc"], False, "hs_avg_rot_acc_percentile", "hs_avg_rot_acc_points_above_median"),
                 (["Peak Hand Speed", "Peak HandSpeed"], False, "hs_peak_hand_speed_percentile", "hs_peak_hand_speed_points_above_median"),
-                (["Peak Power/BM", "Peak Power", "Force Plate Explosiveness"], False, "hs_force_plate_explosiveness_percentile", "hs_force_plate_explosiveness_points_above_median"),
+                (["Peak Power"], False, "hs_force_plate_explosiveness_percentile", "hs_force_plate_explosiveness_points_above_median"),
             ]
 
             # Build distributions and medians
