@@ -706,6 +706,13 @@ class Command(BaseCommand):
                         return pct_or_number(row.get(k))
                 return None
 
+            # Raw numeric (no percent scaling) — for BA/OBP/SLG/OPS/ISO actuals
+            def row_value_raw(row, keys):
+                for k in keys:
+                    if k in row and row.get(k) is not None:
+                        return _parse_value(row.get(k))
+                return None
+
             # Define metric mappings: ([possible header names], invert_percentile, percentile_field, points_delta_field)
             metric_map = [
                 (["Contact%", "Contact %"], False, "hs_contact_pct_percentile", "hs_contact_pct_points_above_median"),
@@ -777,7 +784,12 @@ class Command(BaseCommand):
 
                 # Actuals
                 for field_name, keys in actual_map.items():
-                    val = row_value(row, keys)
+                    # Keep actual statline values as decimals (e.g., 0.247).
+                    # If sheet provides percent-style numbers (e.g., 24.7), normalize to decimal.
+                    val = row_value_raw(row, keys)
+                    # Never normalize PA; it is a raw count
+                    if field_name != 'hs_pa' and val is not None and val > 1.0:
+                        val = val / 100.0
                     computed[field_name] = val
 
                 # Save onto all PlayerRanking rows for this player
