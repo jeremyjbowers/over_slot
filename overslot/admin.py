@@ -136,7 +136,9 @@ from overslot.models import (
     Subscription,
     DuplicateDecision,
     UserEmail,
-    FeatureFlag
+    FeatureFlag,
+    SubscriptionPlan,
+    SubscriptionPrice
 )
 
 
@@ -452,6 +454,42 @@ class SubscriptionAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(SubscriptionPlan, site=admin_site)
+class SubscriptionPlanAdmin(admin.ModelAdmin):
+    list_display = ["name", "slug", "stripe_product_id", "active", "sort_order", "last_modified"]
+    list_editable = ["active", "sort_order"]
+    search_fields = ["name", "slug", "stripe_product_id"]
+    ordering = ("sort_order", "slug")
+
+
+@admin.register(SubscriptionPrice, site=admin_site)
+class SubscriptionPriceAdmin(admin.ModelAdmin):
+    list_display = [
+        "plan",
+        "interval",
+        "currency",
+        "amount_decimal",
+        "is_active",
+        "is_default_for_interval",
+        "stripe_price_id",
+        "last_modified",
+    ]
+    list_editable = ["is_active", "is_default_for_interval"]
+    list_filter = ["plan", "interval", "is_active", "currency"]
+    search_fields = ["stripe_price_id", "plan__slug", "plan__name"]
+    actions = ["set_as_default"]
+
+    def set_as_default(self, request, queryset):
+        updated = 0
+        for price in queryset:
+            price.is_active = True
+            price.is_default_for_interval = True
+            price.save()
+            updated += 1
+        self.message_user(request, f"Set {updated} price(s) as default for their plan/interval.")
+    set_as_default.short_description = "Set selected as default for their plan+interval"
 
 
 @admin.register(DuplicateDecision, site=admin_site)

@@ -110,6 +110,88 @@ class Subscription(BaseModel):
         return self.is_active or self.is_trial
 
 
+# --- New subscription pricing models ---
+class SubscriptionPlan(BaseModel):
+    """
+    Represents a purchasable plan (e.g., Standard membership). Prices (monthly/annual) are separate rows.
+    """
+    slug = models.SlugField(max_length=100, unique=True, help_text="Stable key, e.g., 'standard'")
+    name = models.CharField(max_length=255, help_text="Display name, e.g., 'Overslot Membership'")
+    description = models.TextField(blank=True, null=True)
+    stripe_product_id = models.CharField(max_length=255, blank=True, null=True, help_text="Optional Stripe product id (prod_...)")
+    sort_order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "slug"]
+        verbose_name = "Subscription Plan"
+        verbose_name_plural = "Subscription Plans"
+
+    def __unicode__(self):
+        return self.name or self.slug
+
+
+class SubscriptionPrice(BaseModel):
+    """
+    A specific Stripe price for a plan and interval. Multiple historical prices can exist;
+    one active default per plan+interval should be maintained.
+    """
+    INTERVAL_CHOICES = (
+        ("month", "Monthly"),
+        ("year", "Yearly"),
+    )
+
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.CASCADE, related_name="prices")
+    stripe_price_id = models.CharField(max_length=255, unique=True, help_text="Stripe price id (price_...)")
+    currency = models.CharField(max_length=10, default="usd")
+    interval = models.CharField(max_length=10, choices=INTERVAL_CHOICES)
+    amount_decimal = models.DecimalField(max_digits=10, decimal_places=2)
+
+    # Flags
+    is_active = models.BooleanField(default=True)
+    is_default_for_interval = models.BooleanField(
+        default=False,
+        help_text="Mark the default selectable price for this plan+interval"
+    )
+
+    trial_period_days = models.IntegerField(blank=True, null=True)
+    tax_behavior = models.CharField(max_length=20, blank=True, null=True, help_text="inclusive|exclusive (optional)")
+
+    class Meta:
+        ordering = ["plan__sort_order", "plan__slug", "interval", "-created"]
+        verbose_name = "Subscription Price"
+        verbose_name_plural = "Subscription Prices"
+        indexes = [
+            models.Index(fields=["plan", "interval", "is_active", "is_default_for_interval"]),
+        ]
+
+    def __unicode__(self):
+        return f"{self.plan.slug} {self.interval} {self.currency} {self.amount_decimal} ({self.stripe_price_id})"
+
+    def save(self, *args, **kwargs):
+        """
+        Enforce single default per plan+interval by un-setting others when this becomes default.
+        """
+        super_result = None
+        # We have to save first to ensure we have a PK for update queries when toggling defaults
+        if self.pk is None:
+            super_result = super().save(*args, **kwargs)
+        
+        if self.is_default_for_interval and self.is_active and self.plan_id:
+            SubscriptionPrice.objects.filter(
+                plan_id=self.plan_id,
+                interval=self.interval,
+                is_default_for_interval=True
+            ).exclude(pk=self.pk).update(is_default_for_interval=False)
+        
+        # If deactivating a default, try to keep at least one default if any active price exists
+        if not self.is_active and self.is_default_for_interval:
+            # Remove default flag on self; caller should set another default explicitly
+            self.is_default_for_interval = False
+        
+        # Final save to persist any flag changes
+        return super().save(*args, **kwargs)
+
+
 LEVEL_CHOICES = (
     ("College", "College"),
     ("High School", "High School"),

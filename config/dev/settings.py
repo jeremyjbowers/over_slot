@@ -227,8 +227,13 @@ STRIPE_PUBLISHABLE_KEY = env('STRIPE_PUBLISHABLE_KEY', default=None)
 STRIPE_WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET', default=None)
 STRIPE_PRICE_ID = env('STRIPE_PRICE_ID', default=None)
 
-# Subscription pricing
+# Optional JSON mapping for prices (DB-first resolver will fall back to this)
+# Example: {"standard": {"usd": {"month": "price_xxx", "year": "price_yyy"}}}
+SUBSCRIPTION_PRICE_IDS_JSON = env('SUBSCRIPTION_PRICE_IDS_JSON', default=None)
+
+# Subscription pricing (display fallbacks; DB values preferred)
 SUBSCRIPTION_PRICE_MONTHLY = 7.49  # Monthly price in USD
+SUBSCRIPTION_PRICE_ANNUAL = 79.99  # Annual price in USD
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 

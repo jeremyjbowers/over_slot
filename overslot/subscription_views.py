@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.urls import reverse
 
 from overslot.models import Subscription
+from overslot.pricing import get_price_id, get_default_amounts
 
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -24,10 +25,17 @@ def subscription_dashboard(request):
         subscription = request.user.subscription
     except Subscription.DoesNotExist:
         subscription = None
-    
+
+    # Fetch display amounts (DB-first, fallback to settings)
+    monthly_amount, annual_amount = get_default_amounts()
+    annual_equiv_monthly = round((annual_amount or 0) / 12.0, 2) if annual_amount else None
+
     context = {
         'subscription': subscription,
         'stripe_publishable_key': settings.STRIPE_PUBLISHABLE_KEY,
+        'monthly_amount': monthly_amount,
+        'annual_amount': annual_amount,
+        'annual_equiv_monthly': annual_equiv_monthly,
     }
     return render(request, 'subscription/dashboard.html', context)
 
@@ -37,6 +45,10 @@ def create_checkout_session(request):
     """Create a Stripe checkout session for subscription."""
     if request.method == 'POST':
         try:
+            # Resolve requested interval; default to month
+            interval = request.POST.get('interval', 'month')
+            plan_slug = request.POST.get('plan', 'standard')
+
             # Get or create subscription record
             subscription, created = Subscription.objects.get_or_create(
                 user=request.user
@@ -50,20 +62,26 @@ def create_checkout_session(request):
                 )
                 subscription.stripe_customer_id = customer.id
                 subscription.save()
+
+            # Resolve price id
+            price_id = get_price_id(plan_slug=plan_slug, interval=interval, currency='usd')
+            if not price_id:
+                messages.error(request, 'Pricing is temporarily unavailable. Please try again later.')
+                return redirect('subscription_dashboard')
             
             # Create checkout session
             checkout_session = stripe.checkout.Session.create(
                 customer=subscription.stripe_customer_id,
                 payment_method_types=['card'],
                 line_items=[{
-                    'price': settings.STRIPE_PRICE_ID,
+                    'price': price_id,
                     'quantity': 1,
                 }],
                 mode='subscription',
-                allow_promotion_codes=True,
+                allow_promotion_codes=False,
                 success_url=request.build_absolute_uri(reverse('subscription_success')),
                 cancel_url=request.build_absolute_uri(reverse('subscription_dashboard')),
-                metadata={'user_id': request.user.id}
+                metadata={'user_id': request.user.id, 'plan': plan_slug, 'interval': interval}
             )
             
             return redirect(checkout_session.url)
