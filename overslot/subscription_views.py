@@ -30,12 +30,22 @@ def subscription_dashboard(request):
     monthly_amount, annual_amount = get_default_amounts()
     annual_equiv_monthly = round((annual_amount or 0) / 12.0, 2) if annual_amount else None
 
+    # Price availability flags for templates
+    monthly_price_id = get_price_id(plan_slug='standard', interval='month', currency='usd')
+    annual_price_id = get_price_id(plan_slug='standard', interval='year', currency='usd')
+    has_monthly_price = bool(monthly_price_id)
+    has_annual_price = bool(annual_price_id)
+    has_any_price = has_monthly_price or has_annual_price
+
     context = {
         'subscription': subscription,
         'stripe_publishable_key': settings.STRIPE_PUBLISHABLE_KEY,
         'monthly_amount': monthly_amount,
         'annual_amount': annual_amount,
         'annual_equiv_monthly': annual_equiv_monthly,
+        'has_monthly_price': has_monthly_price,
+        'has_annual_price': has_annual_price,
+        'has_any_price': has_any_price,
     }
     return render(request, 'subscription/dashboard.html', context)
 
