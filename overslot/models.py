@@ -45,6 +45,12 @@ class UserEmail(BaseModel):
         verbose_name = "User Email"
         verbose_name_plural = "User Emails"
     
+    def save(self, *args, **kwargs):
+        # Normalize email to lowercase for consistent storage and comparisons
+        if self.email:
+            self.email = self.email.strip().lower()
+        super().save(*args, **kwargs)
+    
     def __unicode__(self):
         verified_status = "✓" if self.is_verified else "✗"
         return f"{self.user.username} - {self.email} {verified_status}"
@@ -61,6 +67,7 @@ class UserEmail(BaseModel):
         Find a user by email address, checking both primary and secondary emails.
         Returns the User object if found, None otherwise.
         """
+        email = (email or "").strip().lower()
         # First check primary email
         try:
             return User.objects.get(email=email)
