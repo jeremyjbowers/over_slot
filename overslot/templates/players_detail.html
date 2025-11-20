@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load overslot_tags %}
 
 {% block og_title %}{{ player.name }}{% endblock %}
 {% block og_description %}{% if rankings and rankings.0 %}Profile, rankings, and scouting for {{ player.name }}{% else %}Player profile for {{ player.name }}{% endif %}{% endblock %}
