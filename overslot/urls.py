@@ -37,6 +37,10 @@ urlpatterns = [
 
     path("players/<slug:slug>/", views.players_detail, name="players_detail"),
 
+    # Hitters lists
+    path("hitters/college/", views.college_hitters_list, name="college_hitters_list"),
+    path("hitters/high-school/", views.hs_hitters_list, name="hs_hitters_list"),
+
     path("videos/", views.videos_list, name="videos_list"),
 
     path("", views.index, name="index"),

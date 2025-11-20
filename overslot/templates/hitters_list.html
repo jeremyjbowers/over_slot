@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load overslot_tags %}
+
+{% block extra_css %}
+<meta name="robots" content="noindex, nofollow">
+{% endblock %}
+
+{% block content %}
+<div class="content-container">
+    <div class="grid grid-cols-12 gap-6">
+        <div class="col-span-12">
+            <div class="info-section">
+                <div class="info-section-header">
+                    <span class="icon">
+                        <i class="fas fa-list"></i>
+                    </span>
+                    <h3 class="info-section-title">{{ page_title }}</h3>
+                </div>
+                <div class="info-section-content">
+                    <div class="table-responsive">
+                        <table id="hitters-table" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th data-key="player_name" class="sortable">Player</th>
+                                    <th data-key="school" class="sortable">School</th>
+                                    {% for key, label in columns %}
+                                        <th data-key="{{ key }}" class="sortable">{{ label }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in rows %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'players_detail' slug=r.player_slug %}">{{ r.player_name }}</a>
+                                    </td>
+                                    <td>{{ r.school }}</td>
+                                    {% for key, _label in columns %}
+                                        {% with val=r|get_item:key %}
+                                            <td data-value="{{ val|default_if_none:'' }}">
+                                                {% if val is not None %}
+                                                    {{ val|floatformat:0 }}
+                                                {% else %}
+                                                    —
+                                                {% endif %}
+                                            </td>
+                                        {% endwith %}
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    function getCellValue(td, isNumeric) {
+        if (!td) return null;
+        const raw = td.getAttribute('data-value') ?? td.textContent.trim();
+        if (isNumeric) {
+            if (raw === '' || raw === '—') return null;
+            const num = Number(raw);
+            return isNaN(num) ? null : num;
+        }
+        return raw.toLowerCase();
+    }
+
+    function compare(a, b, isNumeric, direction) {
+        const av = a, bv = b;
+        if (av === null && bv === null) return 0;
+        if (av === null) return 1;   // nulls last
+        if (bv === null) return -1;  // nulls last
+        if (isNumeric) {
+            return direction * (av - bv);
+        }
+        if (av < bv) return -direction;
+        if (av > bv) return direction;
+        return 0;
+    }
+
+    function sortTableByColumn(table, columnIndex, isNumeric, asc) {
+        const tbody = table.tBodies[0];
+        if (!tbody) return;
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const direction = asc ? 1 : -1;
+        rows.sort((r1, r2) => {
+            const c1 = r1.children[columnIndex];
+            const c2 = r2.children[columnIndex];
+            const v1 = getCellValue(c1, isNumeric);
+            const v2 = getCellValue(c2, isNumeric);
+            return compare(v1, v2, isNumeric, direction);
+        });
+        rows.forEach(r => tbody.appendChild(r));
+    }
+
+    function setupSorting() {
+        const table = document.getElementById('hitters-table');
+        if (!table) return;
+
+        const headers = table.querySelectorAll('thead th.sortable');
+        headers.forEach((th, idx) => {
+            let asc = false;
+            th.addEventListener('click', () => {
+                const key = th.getAttribute('data-key') || '';
+                // Columns: 0=Player, 1=School, rest numeric percentiles
+                const isNumeric = idx >= 2;
+                asc = !asc;
+                // Clear active classes
+                headers.forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
+                th.classList.add(asc ? 'sorted-asc' : 'sorted-desc');
+                sortTableByColumn(table, idx, isNumeric, asc);
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupSorting);
+    } else {
+        setupSorting();
+    }
+})();
+</script>
+{% endblock %}
+
+{% block extra_templates %}
+{% comment %}
+Utility to access dict key in template: r|get_item:key
+{% endcomment %}
+{% endblock %}
+

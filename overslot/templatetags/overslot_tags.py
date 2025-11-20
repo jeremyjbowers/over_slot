@@ -86,3 +86,18 @@ def format_avg3(value):
     if -1 < number < 0 and formatted.startswith("-0"):
         return "-" + formatted[2:]
     return formatted
+
+
+@register.filter
+def get_item(mapping, key):
+    """
+    Safely get item from a dict-like mapping in templates.
+    Returns None if key is absent or mapping is not subscriptable.
+    """
+    try:
+        return mapping.get(key)
+    except Exception:
+        try:
+            return mapping[key]
+        except Exception:
+            return None

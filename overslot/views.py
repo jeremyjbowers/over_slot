@@ -549,3 +549,120 @@ def api_players(request):
         data.append(record)
 
     return JsonResponse(data, safe=False)
+
+
+@subscription_required
+def college_hitters_list(request):
+    """
+    Render a sortable table of college hitters using percentile metrics from the latest available
+    published PlayerRanking per player.
+    """
+    # Define columns: key -> (field on PlayerRanking, display label)
+    columns = [
+        ("whiff_pct_percentile", "Whiff %"),
+        ("iz_whiff_pct_percentile", "In-Zone Whiff %"),
+        ("ooz_whiff_pct_percentile", "Out-of-Zone Whiff %"),
+        ("chase_pct_percentile", "Chase %"),
+        ("k_pct_percentile", "K %"),
+        ("bb_pct_percentile", "BB %"),
+        ("avg_exit_velocity_percentile", "Avg Exit Velocity"),
+        ("ev_90th_percentile", "90th % Exit Velocity"),
+        ("barrel_pct_percentile", "Barrel %"),
+        ("pull_air_pct_percentile", "Pull AIR %"),
+        ("xwoba_percentile", "xWOBA"),
+    ]
+
+    # Base queryset: published college rankings, players active, with at least one college hitter percentile present
+    percentile_fields = [c[0] for c in columns]
+    any_percentile_q = Q()
+    for f in percentile_fields:
+        any_percentile_q |= Q(**{f"{f}__isnull": False})
+    pr_qs = models.PlayerRanking.objects.filter(
+        ranking__publish=True,
+        active=True,
+        player__active=True,
+        level="College",
+    ).filter(any_percentile_q).select_related("player", "ranking").order_by("-ranking__year", "-created")
+
+    # Pick latest per player
+    latest_by_player = {}
+    for pr in pr_qs:
+        pid = pr.player_id
+        if pid not in latest_by_player:
+            latest_by_player[pid] = pr
+
+    rows = []
+    for pr in latest_by_player.values():
+        row = {
+            "player_name": pr.player.name,
+            "player_slug": pr.player.slug,
+            "school": pr.school,
+        }
+        for key, _label in columns:
+            row[key] = getattr(pr, key)
+        rows.append(row)
+
+    context = {
+        "page_title": "College Hitters",
+        "columns": columns,
+        "rows": rows,
+    }
+    return render(request, "hitters_list.html", context)
+
+
+@subscription_required
+def hs_hitters_list(request):
+    """
+    Render a sortable table of high school hitters using percentile metrics from the latest available
+    published PlayerRanking per player.
+    """
+    columns = [
+        ("hs_contact_pct_percentile", "Contact%"),
+        ("hs_chase_pct_percentile", "Chase%"),
+        ("hs_iz_contact_pct_percentile", "IZ Contact%"),
+        ("hs_ooz_contact_pct_percentile", "OOZ Contact%"),
+        ("hs_k_pct_percentile", "K%"),
+        ("hs_gb_pct_percentile", "GB%"),
+        ("hs_fb_pct_percentile", "FB%"),
+        ("hs_air_pull_pct_percentile", "Air PULL%"),
+        ("hs_sprint_speed_percentile", "Sprint Speed"),
+        ("hs_bat_speed_percentile", "Bat Speed"),
+        ("hs_avg_rot_acc_percentile", "Avg Rot. Acc."),
+        ("hs_peak_hand_speed_percentile", "Peak Hand Speed"),
+        ("hs_force_plate_explosiveness_percentile", "Explosiveness"),
+    ]
+
+    percentile_fields = [c[0] for c in columns]
+    any_percentile_q = Q()
+    for f in percentile_fields:
+        any_percentile_q |= Q(**{f"{f}__isnull": False})
+    pr_qs = models.PlayerRanking.objects.filter(
+        ranking__publish=True,
+        active=True,
+        player__active=True,
+        level="High School",
+    ).filter(any_percentile_q).select_related("player", "ranking").order_by("-ranking__year", "-created")
+
+    latest_by_player = {}
+    for pr in pr_qs:
+        pid = pr.player_id
+        if pid not in latest_by_player:
+            latest_by_player[pid] = pr
+
+    rows = []
+    for pr in latest_by_player.values():
+        row = {
+            "player_name": pr.player.name,
+            "player_slug": pr.player.slug,
+            "school": pr.school,
+        }
+        for key, _label in columns:
+            row[key] = getattr(pr, key)
+        rows.append(row)
+
+    context = {
+        "page_title": "High School Hitters",
+        "columns": columns,
+        "rows": rows,
+    }
+    return render(request, "hitters_list.html", context)
