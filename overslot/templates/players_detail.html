@@ -743,6 +743,7 @@ body {
                     <span class="info-section-subtitle">Summer circuit performance metrics. Bat speed, average rotational acceleration, and peak hand speed provided by Blast Motion.</span>
                     <span class="info-section-subtitle">“Explosiveness” is a composite score based on general athletic testing and force plate outputs.</span>
                     <span class="info-section-subtitle">High school deltas show actual points vs median (±).</span>
+                        <span class="info-section-subtitle">“Visuals are built exclusively on data from high school players draft-eligible in 2026.”</span>
                     {% elif rankings.0.level == "College" %}
                     <span class="info-section-subtitle">Percentile ranks and raw values based on Trackman hitter metrics.</span>
                     {% endif %}
@@ -757,51 +758,31 @@ body {
                         <div class="info-item">
                             <div class="info-label">BA</div>
                             <div class="info-value">
-                                {% if hs_statline.ba %}
-                                    {% with v=hs_statline.ba|floatformat:3 %}
-                                        {% if v|slice:":1" == "0" %}{{ v|slice:"1:" }}{% else %}{{ v }}{% endif %}
-                                    {% endwith %}
-                                {% endif %}
+                                {% if hs_statline.ba %}{{ hs_statline.ba|format_avg3 }}{% endif %}
                             </div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">OBP</div>
                             <div class="info-value">
-                                {% if hs_statline.obp %}
-                                    {% with v=hs_statline.obp|floatformat:3 %}
-                                        {% if v|slice:":1" == "0" %}{{ v|slice:"1:" }}{% else %}{{ v }}{% endif %}
-                                    {% endwith %}
-                                {% endif %}
+                                {% if hs_statline.obp %}{{ hs_statline.obp|format_avg3 }}{% endif %}
                             </div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">SLG</div>
                             <div class="info-value">
-                                {% if hs_statline.slg %}
-                                    {% with v=hs_statline.slg|floatformat:3 %}
-                                        {% if v|slice:":1" == "0" %}{{ v|slice:"1:" }}{% else %}{{ v }}{% endif %}
-                                    {% endwith %}
-                                {% endif %}
+                                {% if hs_statline.slg %}{{ hs_statline.slg|format_avg3 }}{% endif %}
                             </div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">OPS</div>
                             <div class="info-value">
-                                {% if hs_statline.ops %}
-                                    {% with v=hs_statline.ops|floatformat:3 %}
-                                        {% if v|slice:":1" == "0" %}{{ v|slice:"1:" }}{% else %}{{ v }}{% endif %}
-                                    {% endwith %}
-                                {% endif %}
+                                {% if hs_statline.ops %}{{ hs_statline.ops|format_avg3 }}{% endif %}
                             </div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">ISO</div>
                             <div class="info-value">
-                                {% if hs_statline.iso %}
-                                    {% with v=hs_statline.iso|floatformat:3 %}
-                                        {% if v|slice:":1" == "0" %}{{ v|slice:"1:" }}{% else %}{{ v }}{% endif %}
-                                    {% endwith %}
-                                {% endif %}
+                                {% if hs_statline.iso %}{{ hs_statline.iso|format_avg3 }}{% endif %}
                             </div>
                         </div>
                     </div>

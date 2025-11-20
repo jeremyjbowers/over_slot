@@ -788,7 +788,9 @@ class Command(BaseCommand):
                     # If sheet provides percent-style numbers (e.g., 24.7), normalize to decimal.
                     val = row_value_raw(row, keys)
                     # Never normalize PA; it is a raw count
-                    if field_name != 'hs_pa' and val is not None and val > 1.0:
+                    # For SLG and OPS, values may legitimately exceed 1.000 — do not scale.
+                    # Only normalize BA/OBP/ISO if someone entered percent-style numbers.
+                    if field_name in ('hs_ba', 'hs_obp', 'hs_iso') and val is not None and val > 1.0:
                         val = val / 100.0
                     computed[field_name] = val
 

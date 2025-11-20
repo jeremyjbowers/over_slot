@@ -62,3 +62,27 @@ def feature_enabled(context, key):
 def if_feature(context, key, then_value, else_value=""):
     """Return then_value if flag enabled else else_value (for inline usage)."""
     return then_value if feature_enabled(context, key) else else_value
+
+
+@register.filter
+def format_avg3(value):
+    """
+    Format a numeric stat to three decimals.
+    - If value is < 1 and >= 0, drop leading zero (e.g., 0.345 -> .345)
+    - If value is >= 1, keep the integer part (e.g., 1.123 -> 1.123)
+    - Non-numeric or None returns empty string
+    """
+    if value is None:
+        return ""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return ""
+    formatted = f"{number:.3f}"
+    # Drop leading zero only for non-negative values between 0 and 1
+    if 0 <= number < 1 and formatted.startswith("0"):
+        return formatted[1:]
+    # Handle potential "-0.xyz" edge case by normalizing to "-.xyz"
+    if -1 < number < 0 and formatted.startswith("-0"):
+        return "-" + formatted[2:]
+    return formatted
