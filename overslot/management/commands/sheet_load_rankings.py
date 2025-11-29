@@ -71,7 +71,7 @@ class Command(BaseCommand):
 
             return None
 
-        default_years = ["2026", "2027"]
+        default_years = ["2020","2021","2022","2023","2024","2025", "2026", "2027"]
         default_levels = ["Overall", "High School", "College"]
 
         tab = options.get('tab')
