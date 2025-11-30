@@ -47,6 +47,7 @@
 
 .table-responsive {
     overflow-x: auto;
+    overflow-y: visible; /* allow sticky header to anchor to viewport */
 }
 
 /* Data table polish for professional, readable appearance */
@@ -65,17 +66,12 @@
     --sticky-header-top: 3.5rem;
 }
 
-.data-table thead {
-    position: sticky;
-    top: var(--sticky-header-top);
-    z-index: 2;
-    background: var(--dark-surface);
-}
+/* Avoid sticky on thead for better cross-browser behavior; keep th sticky only */
 
 .data-table thead th {
     position: sticky;
     top: var(--sticky-header-top); /* account for fixed navbar */
-    z-index: 2;
+    z-index: 5; /* ensure it overlays shaded cells below */
     background: var(--dark-surface);
     color: var(--dark-text);
     border-bottom: 2px solid var(--dark-border);
@@ -188,10 +184,11 @@
     position: sticky;
     left: 0;
     background: var(--dark-surface);
-    z-index: 1;
+    z-index: 3;
+    box-shadow: inset -1px 0 0 var(--dark-border); /* right divider to avoid color bleed underneath */
 }
 .data-table thead th:first-child {
-    z-index: 3; /* above other sticky cells */
+    z-index: 6; /* above other sticky cells */
 }
 
 /* Sticky second column (School) aligned just to the right of the first) */
@@ -200,10 +197,11 @@
     position: sticky;
     left: var(--first-col-sticky-width);
     background: var(--dark-surface);
-    z-index: 1;
+    z-index: 3;
+    box-shadow: inset -1px 0 0 var(--dark-border); /* right divider line */
 }
 .data-table thead th:nth-child(2) {
-    z-index: 3;
+    z-index: 6;
 }
 
 /* Percentile shading buckets (0–100) for quick at-a-glance scanning)
