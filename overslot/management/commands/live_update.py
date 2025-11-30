@@ -10,5 +10,6 @@ class Command(BaseCommand):
         call_command('generate_duplicates')
         call_command('sheet_load_rankings')
         call_command('sheet_load_trackman')
+        call_command('generate_duplicates')
         # call_command('sheet_load_mocks')
-        call_command('sheet_load_podcasts')
+        call_command('load_podcast_episodes')

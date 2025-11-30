@@ -631,8 +631,32 @@ def hs_hitters_list(request):
         ("hs_peak_hand_speed_percentile", "Peak Hand Speed"),
         ("hs_force_plate_explosiveness_percentile", "Explosiveness"),
     ]
+    # Append baseball-card style raw stats when available (not used to filter presence)
+    columns += [
+        ("hs_pa", "PA"),
+        ("hs_ba", "BA"),
+        ("hs_obp", "OBP"),
+        ("hs_slg", "SLG"),
+        ("hs_ops", "OPS"),
+        ("hs_iso", "ISO"),
+    ]
 
-    percentile_fields = [c[0] for c in columns]
+    # Only percentile fields are used to decide whether a row should appear
+    percentile_fields = [
+        "hs_contact_pct_percentile",
+        "hs_chase_pct_percentile",
+        "hs_iz_contact_pct_percentile",
+        "hs_ooz_contact_pct_percentile",
+        "hs_k_pct_percentile",
+        "hs_gb_pct_percentile",
+        "hs_fb_pct_percentile",
+        "hs_air_pull_pct_percentile",
+        "hs_sprint_speed_percentile",
+        "hs_bat_speed_percentile",
+        "hs_avg_rot_acc_percentile",
+        "hs_peak_hand_speed_percentile",
+        "hs_force_plate_explosiveness_percentile",
+    ]
     any_percentile_q = Q()
     for f in percentile_fields:
         any_percentile_q |= Q(**{f"{f}__isnull": False})
