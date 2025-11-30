@@ -540,6 +540,22 @@
 
 <div class="article-container">
     <div class="article-body-container">
+        <div class="article-meta">
+            {% if article.authors.exists %}
+            <div class="authors">
+                By {% for author in article.authors.all %}
+                    {{ author.display_name|default:author.name }}
+                    {% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="date-info">
+                Published {{ article.created|date:"M j, Y" }}
+                {% if article.last_modified and article.last_modified|date:"Ymd" != article.created|date:"Ymd" %}
+                    · Updated {{ article.last_modified|date:"M j, Y" }}
+                {% endif %}
+            </div>
+        </div>
         {% if preview_mode %}
         <!-- Preview Mode: Show first few paragraphs with subscription prompt -->
         <div class="article-body">

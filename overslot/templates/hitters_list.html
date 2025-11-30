@@ -3,6 +3,152 @@
 
 {% block extra_css %}
 <meta name="robots" content="noindex, nofollow">
+<style>
+.table-responsive {
+    overflow-x: auto;
+}
+
+/* Data table polish for professional, readable appearance */
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+    font-variant-numeric: tabular-nums;
+    /* Sticky column sizing */
+    --first-col-sticky-width: 200px;
+    --second-col-sticky-width: 140px;
+}
+
+.data-table thead th {
+    position: sticky;
+    top: 3.5rem; /* account for fixed navbar */
+    z-index: 2;
+    background: var(--dark-surface);
+    color: var(--dark-text);
+    border-bottom: 1px solid var(--dark-border);
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-align: center;
+    vertical-align: bottom;
+    white-space: nowrap;
+}
+
+.data-table thead th .th-text {
+    display: inline-block;
+    line-height: 1.1;
+    white-space: normal; /* Allow stacking when not rotated */
+}
+
+/* First two columns: keep readable widths and left alignment */
+.data-table thead th:first-child {
+    text-align: left;
+    min-width: var(--first-col-sticky-width);
+}
+.data-table thead th:nth-child(2) {
+    text-align: left;
+    min-width: var(--second-col-sticky-width);
+}
+
+/* Metric columns: compact, optionally angled header labels on wider screens */
+.data-table thead th.metric {
+    width: 64px;
+    padding: 1.25rem 0.5rem 0.5rem;
+    height: 84px; /* room for rotated label */
+}
+.data-table thead th.metric .th-text {
+    transform: rotate(-45deg);
+    transform-origin: left bottom;
+    white-space: nowrap;
+}
+
+/* On smaller screens, stack labels instead of rotating */
+@media (max-width: 1024px) {
+    .data-table thead th {
+        font-size: 0.85rem;
+    }
+    .data-table thead th.metric {
+        height: auto;
+        padding: 0.75rem 0.5rem;
+        width: 56px;
+    }
+    .data-table thead th.metric .th-text {
+        transform: none;
+        white-space: normal;
+        line-height: 1.15;
+    }
+}
+
+.data-table tbody td {
+    border-top: 1px solid var(--dark-border);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    color: var(--dark-text-secondary);
+    text-align: center;
+}
+.data-table tbody td:first-child,
+.data-table tbody td:nth-child(2) {
+    text-align: left;
+    color: var(--dark-text);
+    font-weight: 500;
+}
+
+.data-table tbody tr:nth-child(odd) {
+    background: rgba(255, 255, 255, 0.02);
+}
+.data-table tbody tr:hover {
+    background: var(--dark-surface-hover);
+}
+
+/* Sort affordance */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+.sortable.sorted-asc::after,
+.sortable.sorted-desc::after {
+    content: '';
+    display: inline-block;
+    margin-left: 6px;
+    border: 5px solid transparent;
+}
+.sortable.sorted-asc::after {
+    border-bottom-color: var(--theme-primary);
+    margin-top: -2px;
+}
+.sortable.sorted-desc::after {
+    border-top-color: var(--theme-primary);
+    margin-top: 2px;
+}
+
+/* Sticky first column for better horizontal scanning */
+.data-table thead th:first-child,
+.data-table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--dark-surface);
+    z-index: 1;
+}
+.data-table thead th:first-child {
+    z-index: 3; /* above other sticky cells */
+}
+
+/* Sticky second column (School) aligned just to the right of the first) */
+.data-table thead th:nth-child(2),
+.data-table tbody td:nth-child(2) {
+    position: sticky;
+    left: var(--first-col-sticky-width);
+    background: var(--dark-surface);
+    z-index: 1;
+}
+.data-table thead th:nth-child(2) {
+    z-index: 3;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -21,10 +167,10 @@
                         <table id="hitters-table" class="data-table">
                             <thead>
                                 <tr>
-                                    <th data-key="player_name" class="sortable">Player</th>
-                                    <th data-key="school" class="sortable">School</th>
+                                    <th data-key="player_name" class="sortable"><span class="th-text">Player</span></th>
+                                    <th data-key="school" class="sortable"><span class="th-text">School</span></th>
                                     {% for key, label in columns %}
-                                        <th data-key="{{ key }}" class="sortable">{{ label }}</th>
+                                        <th data-key="{{ key }}" class="sortable metric"><span class="th-text">{{ label }}</span></th>
                                     {% endfor %}
                                 </tr>
                             </thead>
