@@ -606,6 +606,7 @@ def college_hitters_list(request):
         "page_title": "College Hitters",
         "columns": columns,
         "rows": rows,
+        "is_college": True,
     }
     return render(request, "hitters_list.html", context)
 
@@ -688,5 +689,6 @@ def hs_hitters_list(request):
         "page_title": "High School Hitters",
         "columns": columns,
         "rows": rows,
+        "is_college": False,
     }
     return render(request, "hitters_list.html", context)

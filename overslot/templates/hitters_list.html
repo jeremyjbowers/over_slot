@@ -230,7 +230,7 @@
 </div>
 <div class="page-intro">
     <div class="container">
-        {% if page_title|lower|startswith:"college" %}
+        {% if is_college %}
             <p>These are 2025 <strong>percentiles (0–100)</strong> for college hitters from TrackMan data. Higher is better unless noted.</p>
             <p class="muted">Whiff %, In‑Zone Whiff %, and Out‑of‑Zone Whiff % capture swing‑and‑miss; Chase % reflects swings outside the zone; K % and BB % summarize outcomes; Avg EV and 90th % EV are batted‑ball quality; Barrel % and Pull AIR % indicate damage contact patterns; xWOBA is an expected run value per plate appearance.</p>
             <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below. Click any header to sort.</p>
