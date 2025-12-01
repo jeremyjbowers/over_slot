@@ -264,6 +264,7 @@ class Command(BaseCommand):
                 tab = f"{year} {tab_type}"
 
                 sheet = None
+                print(f"[load] Reading tab: {tab}")
 
                 try:
                     # Include AB to capture K % column as requested
@@ -491,58 +492,58 @@ class Command(BaseCommand):
                             obj = None
 
                         if obj:
-                            prs = models.PlayerRanking.objects.filter(player=obj)
+                            # Upsert PlayerStatSeason (College)
+                            season, _created = models.PlayerStatSeason.objects.get_or_create(
+                                player=obj, year=str(year), level="College"
+                            )
+                            season.hitter_score = row['hitter_score']
+                            season.game_power_score = row['game_power_score']
+                            season.raw_power_score = row['raw_power_score']
+                            season.approach_score = row['approach_score']
+                            season.hitter_percentile = row['hitter_percentile']
+                            season.game_power_percentile = row['game_power_percentile']
+                            season.raw_power_percentile = row['raw_power_percentile']
+                            season.approach_percentile = row['approach_percentile']
+
+                            # Save requested hitter metrics
+                            season.whiff_pct = row.get('whiff_pct')
+                            season.whiff_pct_percentile = row.get('whiff_pct_percentile')
+                            season.whiff_pct_points_above_median = row.get('whiff_pct_points_above_median')
+                            season.iz_whiff_pct = row.get('iz_whiff_pct')
+                            season.iz_whiff_pct_percentile = row.get('iz_whiff_pct_percentile')
+                            season.iz_whiff_pct_points_above_median = row.get('iz_whiff_pct_points_above_median')
+                            season.ooz_whiff_pct = row.get('ooz_whiff_pct')
+                            season.ooz_whiff_pct_percentile = row.get('ooz_whiff_pct_percentile')
+                            season.ooz_whiff_pct_points_above_median = row.get('ooz_whiff_pct_points_above_median')
+                            season.chase_pct = row.get('chase_pct')
+                            season.chase_pct_percentile = row.get('chase_pct_percentile')
+                            season.chase_pct_points_above_median = row.get('chase_pct_points_above_median')
+                            season.k_pct = row.get('k_pct')
+                            season.k_pct_percentile = row.get('k_pct_percentile')
+                            season.k_pct_points_above_median = row.get('k_pct_points_above_median')
+                            season.bb_pct = row.get('bb_pct')
+                            season.bb_pct_percentile = row.get('bb_pct_percentile')
+                            season.bb_pct_points_above_median = row.get('bb_pct_points_above_median')
+                            season.avg_exit_velocity = row.get('avg_exit_velocity')
+                            season.avg_exit_velocity_percentile = row.get('avg_exit_velocity_percentile')
+                            season.avg_exit_velocity_points_above_median = row.get('avg_exit_velocity_points_above_median')
+                            season.ev_90th = row.get('ev_90th')
+                            season.ev_90th_percentile = row.get('ev_90th_percentile')
+                            season.ev_90th_points_above_median = row.get('ev_90th_points_above_median')
+                            season.barrel_pct = row.get('barrel_pct')
+                            season.barrel_pct_percentile = row.get('barrel_pct_percentile')
+                            season.barrel_pct_points_above_median = row.get('barrel_pct_points_above_median')
+                            season.pull_air_pct = row.get('pull_air_pct')
+                            season.pull_air_pct_percentile = row.get('pull_air_pct_percentile')
+                            season.pull_air_pct_points_above_median = row.get('pull_air_pct_points_above_median')
+                            season.xwoba = row.get('xwoba')
+                            season.xwoba_percentile = row.get('xwoba_percentile')
+                            season.xwoba_points_above_median = row.get('xwoba_points_above_median')
+
+                            season.confidence = 10
+                            season.save()
                             if debug:
-                                self.stdout.write(f"[hitters] Updating {prs.count()} PlayerRanking rows for '{obj.name}' (pk={obj.pk})")
-                            for pr in prs:
-                                pr.hitter_score = row['hitter_score']
-                                pr.game_power_score = row['game_power_score']
-                                pr.raw_power_score = row['raw_power_score']
-                                pr.approach_score = row['approach_score']
-                                pr.hitter_percentile = row['hitter_percentile']
-                                pr.game_power_percentile = row['game_power_percentile']
-                                pr.raw_power_percentile = row['raw_power_percentile']
-                                pr.approach_percentile = row['approach_percentile']
-
-                                # Save requested hitter metrics
-                                pr.whiff_pct = row.get('whiff_pct')
-                                pr.whiff_pct_percentile = row.get('whiff_pct_percentile')
-                                pr.whiff_pct_points_above_median = row.get('whiff_pct_points_above_median')
-                                pr.iz_whiff_pct = row.get('iz_whiff_pct')
-                                pr.iz_whiff_pct_percentile = row.get('iz_whiff_pct_percentile')
-                                pr.iz_whiff_pct_points_above_median = row.get('iz_whiff_pct_points_above_median')
-                                pr.ooz_whiff_pct = row.get('ooz_whiff_pct')
-                                pr.ooz_whiff_pct_percentile = row.get('ooz_whiff_pct_percentile')
-                                pr.ooz_whiff_pct_points_above_median = row.get('ooz_whiff_pct_points_above_median')
-                                pr.chase_pct = row.get('chase_pct')
-                                pr.chase_pct_percentile = row.get('chase_pct_percentile')
-                                pr.chase_pct_points_above_median = row.get('chase_pct_points_above_median')
-                                pr.k_pct = row.get('k_pct')
-                                pr.k_pct_percentile = row.get('k_pct_percentile')
-                                pr.k_pct_points_above_median = row.get('k_pct_points_above_median')
-                                pr.bb_pct = row.get('bb_pct')
-                                pr.bb_pct_percentile = row.get('bb_pct_percentile')
-                                pr.bb_pct_points_above_median = row.get('bb_pct_points_above_median')
-                                pr.avg_exit_velocity = row.get('avg_exit_velocity')
-                                pr.avg_exit_velocity_percentile = row.get('avg_exit_velocity_percentile')
-                                pr.avg_exit_velocity_points_above_median = row.get('avg_exit_velocity_points_above_median')
-                                pr.ev_90th = row.get('ev_90th')
-                                pr.ev_90th_percentile = row.get('ev_90th_percentile')
-                                pr.ev_90th_points_above_median = row.get('ev_90th_points_above_median')
-                                pr.barrel_pct = row.get('barrel_pct')
-                                pr.barrel_pct_percentile = row.get('barrel_pct_percentile')
-                                pr.barrel_pct_points_above_median = row.get('barrel_pct_points_above_median')
-                                pr.pull_air_pct = row.get('pull_air_pct')
-                                pr.pull_air_pct_percentile = row.get('pull_air_pct_percentile')
-                                pr.pull_air_pct_points_above_median = row.get('pull_air_pct_points_above_median')
-                                pr.xwoba = row.get('xwoba')
-                                pr.xwoba_percentile = row.get('xwoba_percentile')
-                                pr.xwoba_points_above_median = row.get('xwoba_points_above_median')
-
-                                pr.confidence = 10
-                                pr.save()
-                                if debug:
-                                    self.stdout.write(f"[hitters] Saved PlayerRanking id={pr.id} for '{obj.name}'")
+                                self.stdout.write(f"[hitters] Saved PlayerStatSeason {season.year} College for '{obj.name}'")
                         else:
                             if debug and row.get('Name'):
                                 self.stdout.write(f"[hitters] No Player match for '{row.get('Name')}' — skipping updates")
@@ -628,48 +629,58 @@ class Command(BaseCommand):
                             obj = None
 
                         if obj:
-                            prs = models.PlayerRanking.objects.filter(player=obj)
-                            if debug:
-                                self.stdout.write(f"[pitchers:{tab_type}] Updating {prs.count()} PlayerRanking rows for '{obj.name}' (pk={obj.pk})")
-                            for pr in prs:
-                                if tab_type == "Fourseam":
-                                    pr.fourseam_percentile = row['fourseam_percentile']
-                                    pr.fourseam_score = row['fourseam_score']
-                                elif tab_type == "Sinkers":
-                                    pr.sinker_percentile = row['sinker_percentile']
-                                    pr.sinker_score = row['sinker_score']
-                                elif tab_type == "Sliders":
-                                    pr.slider_percentile = row['slider_percentile']
-                                    pr.slider_score = row['slider_score']
-                                elif tab_type == "Sweepers":
-                                    pr.sweeper_percentile = row['sweeper_percentile']
-                                    pr.sweeper_score = row['sweeper_score']
-                                elif tab_type == "Curveballs":
-                                    pr.curveball_percentile = row['curveball_percentile']
-                                    pr.curveball_score = row['curveball_score']
-                                elif tab_type == "Changeup/Splitters":
-                                    pr.changeup_percentile = row['changeup_percentile']
-                                    pr.changeup_score = row['changeup_score']
+                            season, _created = models.PlayerStatSeason.objects.get_or_create(
+                                player=obj, year=str(year), level="College"
+                            )
+                            if tab_type == "Fourseam":
+                                season.fourseam_percentile = row['fourseam_percentile']
+                                season.fourseam_score = row['fourseam_score']
+                            elif tab_type == "Sinkers":
+                                season.sinker_percentile = row['sinker_percentile']
+                                season.sinker_score = row['sinker_score']
+                            elif tab_type == "Sliders":
+                                season.slider_percentile = row['slider_percentile']
+                                season.slider_score = row['slider_score']
+                            elif tab_type == "Sweepers":
+                                season.sweeper_percentile = row['sweeper_percentile']
+                                season.sweeper_score = row['sweeper_score']
+                            elif tab_type == "Curveballs":
+                                season.curveball_percentile = row['curveball_percentile']
+                                season.curveball_score = row['curveball_score']
+                            elif tab_type == "Changeup/Splitters":
+                                season.changeup_percentile = row['changeup_percentile']
+                                season.changeup_score = row['changeup_score']
 
-                                pr.confidence = 10
-                                pr.save()
-                                if debug:
-                                    self.stdout.write(f"[pitchers:{tab_type}] Saved PlayerRanking id={pr.id} for '{obj.name}'")
+                            season.confidence = 10
+                            season.save()
+                            if debug:
+                                self.stdout.write(f"[pitchers:{tab_type}] Saved PlayerStatSeason {season.year} College for '{obj.name}'")
                         else:
                             if debug and row.get('Name'):
                                 self.stdout.write(f"[pitchers:{tab_type}] No Player match for '{row.get('Name')}' — skipping updates")
                 
                 print(f"Completed processing {total_rows} players for {tab}")
 
-        # Additional processing for High School Hitters tabs like '2026 HS Hitters - 2025'
-        # Pattern: "{Draft Year} HS Hitters - {Year stats acquired}"
-        hs_tabs = [
-            "2026 HS Hitters - 2025",
+        # Additional processing for High School Hitters tabs
+        # Supported patterns:
+        #   "{DRAFT_YEAR} HS Hitters - {STATS_YEAR}"
+        #   "{DRAFT_YEAR} HS Hitters {STATS_YEAR}"
+        # The stat season should be STATS_YEAR.
+        hs_pairs = [
+            ("2026", "2025"),
+            ("2025", "2024"),
+            ("2024", "2023"),
+            ("2023", "2022"),
+            ("2026", "2024"),
         ]
+        hs_tabs = []
+        for draft_year, stats_year in hs_pairs:
+            hs_tabs.append(f"{draft_year} HS Hitters - {stats_year}")
 
         for hs_tab in hs_tabs:
             sheet = None
             try:
+                print(f"[load] Reading tab: {hs_tab}")
                 sheet = utils.get_sheet("1KJwXOxOKZvk50bP186klB_YXUdWVylJwEHvHUBorULA", f"{hs_tab}!A:AZ", value_cutoff=None)
             except Exception as e:
                 print(e)
@@ -763,10 +774,18 @@ class Command(BaseCommand):
                     if debug and (row.get('Name') or row.get('Player') or row.get('Player Name')):
                         self.stdout.write(f"[hs_hitters] No Player match for '{row.get('Name') or row.get('Player') or row.get('Player Name')}' — skipping updates")
                     continue
-
-                prs = models.PlayerRanking.objects.filter(player=obj)
+                # infer stats year from tab label after the dash if present, else fallback to first token
+                stats_year = None
+                if " - " in hs_tab:
+                    try:
+                        stats_year = hs_tab.split(" - ", 1)[1].strip()
+                    except Exception:
+                        stats_year = None
+                if not stats_year:
+                    # Fallback: last token
+                    stats_year = hs_tab.split()[-1]
                 if debug:
-                    self.stdout.write(f"[hs_hitters] Updating {prs.count()} PlayerRanking rows for '{obj.name}' (pk={obj.pk}) from tab '{hs_tab}'")
+                    self.stdout.write(f"[hs_hitters] Saving PlayerStatSeason for '{obj.name}' year={stats_year}")
 
                 # Prepare computed values for this row
                 computed = {}
@@ -794,45 +813,47 @@ class Command(BaseCommand):
                         val = val / 100.0
                     computed[field_name] = val
 
-                # Save onto all PlayerRanking rows for this player
-                for pr in prs:
-                    # Actuals
-                    pr.hs_pa = computed.get('hs_pa')
-                    pr.hs_ba = computed.get('hs_ba')
-                    pr.hs_obp = computed.get('hs_obp')
-                    pr.hs_slg = computed.get('hs_slg')
-                    pr.hs_ops = computed.get('hs_ops')
-                    pr.hs_iso = computed.get('hs_iso')
+                # Save onto PlayerStatSeason for this player/year at High School level
+                season, _created = models.PlayerStatSeason.objects.get_or_create(
+                    player=obj, year=str(stats_year), level="High School"
+                )
+                # Actuals
+                season.hs_pa = computed.get('hs_pa')
+                season.hs_ba = computed.get('hs_ba')
+                season.hs_obp = computed.get('hs_obp')
+                season.hs_slg = computed.get('hs_slg')
+                season.hs_ops = computed.get('hs_ops')
+                season.hs_iso = computed.get('hs_iso')
 
-                    # Percentiles and above-median deltas
-                    pr.hs_contact_pct_percentile = computed.get('hs_contact_pct_percentile')
-                    pr.hs_contact_pct_points_above_median = computed.get('hs_contact_pct_points_above_median')
-                    pr.hs_chase_pct_percentile = computed.get('hs_chase_pct_percentile')
-                    pr.hs_chase_pct_points_above_median = computed.get('hs_chase_pct_points_above_median')
-                    pr.hs_iz_contact_pct_percentile = computed.get('hs_iz_contact_pct_percentile')
-                    pr.hs_iz_contact_pct_points_above_median = computed.get('hs_iz_contact_pct_points_above_median')
-                    pr.hs_ooz_contact_pct_percentile = computed.get('hs_ooz_contact_pct_percentile')
-                    pr.hs_ooz_contact_pct_points_above_median = computed.get('hs_ooz_contact_pct_points_above_median')
-                    pr.hs_k_pct_percentile = computed.get('hs_k_pct_percentile')
-                    pr.hs_k_pct_points_above_median = computed.get('hs_k_pct_points_above_median')
-                    pr.hs_gb_pct_percentile = computed.get('hs_gb_pct_percentile')
-                    pr.hs_gb_pct_points_above_median = computed.get('hs_gb_pct_points_above_median')
-                    pr.hs_fb_pct_percentile = computed.get('hs_fb_pct_percentile')
-                    pr.hs_fb_pct_points_above_median = computed.get('hs_fb_pct_points_above_median')
-                    pr.hs_air_pull_pct_percentile = computed.get('hs_air_pull_pct_percentile')
-                    pr.hs_air_pull_pct_points_above_median = computed.get('hs_air_pull_pct_points_above_median')
-                    pr.hs_sprint_speed_percentile = computed.get('hs_sprint_speed_percentile')
-                    pr.hs_sprint_speed_points_above_median = computed.get('hs_sprint_speed_points_above_median')
-                    pr.hs_bat_speed_percentile = computed.get('hs_bat_speed_percentile')
-                    pr.hs_bat_speed_points_above_median = computed.get('hs_bat_speed_points_above_median')
-                    pr.hs_avg_rot_acc_percentile = computed.get('hs_avg_rot_acc_percentile')
-                    pr.hs_avg_rot_acc_points_above_median = computed.get('hs_avg_rot_acc_points_above_median')
-                    pr.hs_peak_hand_speed_percentile = computed.get('hs_peak_hand_speed_percentile')
-                    pr.hs_peak_hand_speed_points_above_median = computed.get('hs_peak_hand_speed_points_above_median')
-                    pr.hs_force_plate_explosiveness_percentile = computed.get('hs_force_plate_explosiveness_percentile')
-                    pr.hs_force_plate_explosiveness_points_above_median = computed.get('hs_force_plate_explosiveness_points_above_median')
+                # Percentiles and above-median deltas
+                season.hs_contact_pct_percentile = computed.get('hs_contact_pct_percentile')
+                season.hs_contact_pct_points_above_median = computed.get('hs_contact_pct_points_above_median')
+                season.hs_chase_pct_percentile = computed.get('hs_chase_pct_percentile')
+                season.hs_chase_pct_points_above_median = computed.get('hs_chase_pct_points_above_median')
+                season.hs_iz_contact_pct_percentile = computed.get('hs_iz_contact_pct_percentile')
+                season.hs_iz_contact_pct_points_above_median = computed.get('hs_iz_contact_pct_points_above_median')
+                season.hs_ooz_contact_pct_percentile = computed.get('hs_ooz_contact_pct_percentile')
+                season.hs_ooz_contact_pct_points_above_median = computed.get('hs_ooz_contact_pct_points_above_median')
+                season.hs_k_pct_percentile = computed.get('hs_k_pct_percentile')
+                season.hs_k_pct_points_above_median = computed.get('hs_k_pct_points_above_median')
+                season.hs_gb_pct_percentile = computed.get('hs_gb_pct_percentile')
+                season.hs_gb_pct_points_above_median = computed.get('hs_gb_pct_points_above_median')
+                season.hs_fb_pct_percentile = computed.get('hs_fb_pct_percentile')
+                season.hs_fb_pct_points_above_median = computed.get('hs_fb_pct_points_above_median')
+                season.hs_air_pull_pct_percentile = computed.get('hs_air_pull_pct_percentile')
+                season.hs_air_pull_pct_points_above_median = computed.get('hs_air_pull_pct_points_above_median')
+                season.hs_sprint_speed_percentile = computed.get('hs_sprint_speed_percentile')
+                season.hs_sprint_speed_points_above_median = computed.get('hs_sprint_speed_points_above_median')
+                season.hs_bat_speed_percentile = computed.get('hs_bat_speed_percentile')
+                season.hs_bat_speed_points_above_median = computed.get('hs_bat_speed_points_above_median')
+                season.hs_avg_rot_acc_percentile = computed.get('hs_avg_rot_acc_percentile')
+                season.hs_avg_rot_acc_points_above_median = computed.get('hs_avg_rot_acc_points_above_median')
+                season.hs_peak_hand_speed_percentile = computed.get('hs_peak_hand_speed_percentile')
+                season.hs_peak_hand_speed_points_above_median = computed.get('hs_peak_hand_speed_points_above_median')
+                season.hs_force_plate_explosiveness_percentile = computed.get('hs_force_plate_explosiveness_percentile')
+                season.hs_force_plate_explosiveness_points_above_median = computed.get('hs_force_plate_explosiveness_points_above_median')
 
-                    pr.confidence = 10
-                    pr.save()
-                    if debug:
-                        self.stdout.write(f"[hs_hitters] Saved PlayerRanking id={pr.id} for '{obj.name}' from '{hs_tab}'")
+                season.confidence = 10
+                season.save()
+                if debug:
+                    self.stdout.write(f"[hs_hitters] Saved PlayerStatSeason {season.year} High School for '{obj.name}' from '{hs_tab}'")

@@ -543,6 +543,128 @@ class PlayerRanking(BaseModel):
         return f"({self.rank}) {self.player} in {self.ranking}"
 
 
+class PlayerStatSeason(BaseModel):
+    """
+    Seasonal stats for a player, by level (High School / College).
+    This consolidates the various TrackMan- and event-derived metrics that previously
+    lived on PlayerRanking. One row per (player, year, level).
+    """
+    LEVEL_CHOICES = (
+        ("College", "College"),
+        ("High School", "High School"),
+    )
+
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="stat_seasons")
+    year = models.CharField(max_length=10, help_text="Season year for these stats (e.g., 2025)")
+    level = models.CharField(max_length=25, choices=LEVEL_CHOICES, help_text="High School or College")
+
+    # Composite hitter metrics (percentiles and scores)
+    hitter_percentile = models.FloatField(blank=True, null=True)
+    game_power_percentile = models.FloatField(blank=True, null=True)
+    raw_power_percentile = models.FloatField(blank=True, null=True)
+    approach_percentile = models.FloatField(blank=True, null=True)
+
+    hitter_score = models.FloatField(blank=True, null=True)
+    game_power_score = models.FloatField(blank=True, null=True)
+    raw_power_score = models.FloatField(blank=True, null=True)
+    approach_score = models.FloatField(blank=True, null=True)
+
+    # College hitter requested metrics (raw values in "points" and associated percentiles and deltas)
+    whiff_pct = models.FloatField(blank=True, null=True)
+    whiff_pct_percentile = models.FloatField(blank=True, null=True)
+    whiff_pct_points_above_median = models.FloatField(blank=True, null=True)
+    iz_whiff_pct = models.FloatField(blank=True, null=True)
+    iz_whiff_pct_percentile = models.FloatField(blank=True, null=True)
+    iz_whiff_pct_points_above_median = models.FloatField(blank=True, null=True)
+    ooz_whiff_pct = models.FloatField(blank=True, null=True)
+    ooz_whiff_pct_percentile = models.FloatField(blank=True, null=True)
+    ooz_whiff_pct_points_above_median = models.FloatField(blank=True, null=True)
+    chase_pct = models.FloatField(blank=True, null=True)
+    chase_pct_percentile = models.FloatField(blank=True, null=True)
+    chase_pct_points_above_median = models.FloatField(blank=True, null=True)
+    k_pct = models.FloatField(blank=True, null=True)
+    k_pct_percentile = models.FloatField(blank=True, null=True)
+    k_pct_points_above_median = models.FloatField(blank=True, null=True)
+    bb_pct = models.FloatField(blank=True, null=True)
+    bb_pct_percentile = models.FloatField(blank=True, null=True)
+    bb_pct_points_above_median = models.FloatField(blank=True, null=True)
+    avg_exit_velocity = models.FloatField(blank=True, null=True)
+    avg_exit_velocity_percentile = models.FloatField(blank=True, null=True)
+    avg_exit_velocity_points_above_median = models.FloatField(blank=True, null=True)
+    ev_90th = models.FloatField(blank=True, null=True)
+    ev_90th_percentile = models.FloatField(blank=True, null=True)
+    ev_90th_points_above_median = models.FloatField(blank=True, null=True)
+    barrel_pct = models.FloatField(blank=True, null=True)
+    barrel_pct_percentile = models.FloatField(blank=True, null=True)
+    barrel_pct_points_above_median = models.FloatField(blank=True, null=True)
+    pull_air_pct = models.FloatField(blank=True, null=True)
+    pull_air_pct_percentile = models.FloatField(blank=True, null=True)
+    pull_air_pct_points_above_median = models.FloatField(blank=True, null=True)
+    xwoba = models.FloatField(blank=True, null=True)
+    xwoba_percentile = models.FloatField(blank=True, null=True)
+    xwoba_points_above_median = models.FloatField(blank=True, null=True)
+
+    # Pitcher pitch-type composite percentiles (when available)
+    fourseam_percentile = models.FloatField(blank=True, null=True)
+    sinker_percentile = models.FloatField(blank=True, null=True)
+    slider_percentile = models.FloatField(blank=True, null=True)
+    sweeper_percentile = models.FloatField(blank=True, null=True)
+    curveball_percentile = models.FloatField(blank=True, null=True)
+    changeup_percentile = models.FloatField(blank=True, null=True)
+    fourseam_score = models.FloatField(blank=True, null=True)
+    sinker_score = models.FloatField(blank=True, null=True)
+    slider_score = models.FloatField(blank=True, null=True)
+    sweeper_score = models.FloatField(blank=True, null=True)
+    curveball_score = models.FloatField(blank=True, null=True)
+    changeup_score = models.FloatField(blank=True, null=True)
+
+    # High school statline actuals
+    hs_pa = models.FloatField(blank=True, null=True)
+    hs_ba = models.FloatField(blank=True, null=True)
+    hs_obp = models.FloatField(blank=True, null=True)
+    hs_slg = models.FloatField(blank=True, null=True)
+    hs_ops = models.FloatField(blank=True, null=True)
+    hs_iso = models.FloatField(blank=True, null=True)
+
+    # High school percentiles and points above median
+    hs_contact_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_contact_pct_points_above_median = models.FloatField(blank=True, null=True)
+    hs_chase_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_chase_pct_points_above_median = models.FloatField(blank=True, null=True)
+    hs_iz_contact_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_iz_contact_pct_points_above_median = models.FloatField(blank=True, null=True)
+    hs_ooz_contact_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_ooz_contact_pct_points_above_median = models.FloatField(blank=True, null=True)
+    hs_k_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_k_pct_points_above_median = models.FloatField(blank=True, null=True)
+    hs_gb_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_gb_pct_points_above_median = models.FloatField(blank=True, null=True)
+    hs_fb_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_fb_pct_points_above_median = models.FloatField(blank=True, null=True)
+    hs_air_pull_pct_percentile = models.FloatField(blank=True, null=True)
+    hs_air_pull_pct_points_above_median = models.FloatField(blank=True, null=True)
+    hs_sprint_speed_percentile = models.FloatField(blank=True, null=True)
+    hs_sprint_speed_points_above_median = models.FloatField(blank=True, null=True)
+    hs_bat_speed_percentile = models.FloatField(blank=True, null=True)
+    hs_bat_speed_points_above_median = models.FloatField(blank=True, null=True)
+    hs_avg_rot_acc_percentile = models.FloatField(blank=True, null=True)
+    hs_avg_rot_acc_points_above_median = models.FloatField(blank=True, null=True)
+    hs_peak_hand_speed_percentile = models.FloatField(blank=True, null=True)
+    hs_peak_hand_speed_points_above_median = models.FloatField(blank=True, null=True)
+    hs_force_plate_explosiveness_percentile = models.FloatField(blank=True, null=True)
+    hs_force_plate_explosiveness_points_above_median = models.FloatField(blank=True, null=True)
+
+    confidence = models.IntegerField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ['player', 'year', 'level']
+        ordering = ['-year', 'player__name']
+        verbose_name = "Player Stat Season"
+        verbose_name_plural = "Player Stat Seasons"
+
+    def __unicode__(self):
+        return f"{self.player.name} {self.level} {self.year}"
+
 class Article(BaseModel):
     ARTICLE_TYPE_CHOICES = (
         ("breaking news", "breaking news"),
