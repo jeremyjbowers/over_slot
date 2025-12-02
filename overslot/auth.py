@@ -22,6 +22,24 @@ from .security import (
 )
 import re
 
+# Default substrings that indicate a likely bot or non-human name when present
+# in first/last name fields. Chosen to avoid collisions with common human names.
+DEFAULT_SUSPICIOUS_NAME_SUBSTRINGS = [
+    "blogspot",
+    "wordpress",
+    "tumblr",
+    "substack",
+    "medium",
+    "weebly",
+    "wixsite",
+    "squarespace",
+    "blogger",
+    "sites.google",
+    "linktr.ee",
+    "gumroad",
+    "onlyfans",
+]
+
 class MailgunEmailer:
     @staticmethod
     def send_email(to_email, subject, html_content, text_content=None):
@@ -50,6 +68,20 @@ def _is_name_suspicious(name: str, max_len: int = 60) -> bool:
     if not name:
         return False
     return len(name.strip()) > max_len
+
+def _name_contains_disallowed_substring(first_name: str | None, last_name: str | None) -> bool:
+    """
+    Return True if either name contains obviously non-human, domain-like substrings.
+    The list can be overridden via settings.SUSPICIOUS_NAME_SUBSTRINGS.
+    """
+    terms = getattr(settings, 'SUSPICIOUS_NAME_SUBSTRINGS', DEFAULT_SUSPICIOUS_NAME_SUBSTRINGS)
+    fn = (first_name or '').lower()
+    ln = (last_name or '').lower()
+    for term in terms:
+        t = term.lower()
+        if t and (t in fn or t in ln):
+            return True
+    return False
 
 def validate_email_with_mailgun(email: str) -> bool:
     """
@@ -115,6 +147,11 @@ def send_magic_link(request, email, is_signup=False, first_name=None, last_name=
             messages.success(request, "We've sent you a magic link! Check your email to continue.")
             return redirect('account_login')
         if _is_name_suspicious(first_name or '') or _is_name_suspicious(last_name or ''):
+            messages.success(request, "We've sent you a magic link! Check your email to continue.")
+            return redirect('account_login')
+        # New rule: silently block signups whose first/last name include domain-like substrings
+        if _name_contains_disallowed_substring(first_name, last_name):
+            # Do not create a user or send an email, but report success to avoid leaking signals to bots
             messages.success(request, "We've sent you a magic link! Check your email to continue.")
             return redirect('account_login')
 

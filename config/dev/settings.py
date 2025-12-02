@@ -313,3 +313,25 @@ BLOCKED_EMAIL_DOMAINS = [
     "spamgourmet.com",
     "generator.email",
 ]
+
+# Substrings that indicate likely bot/non-human names in first/last name fields.
+# Keep terms specific enough to avoid collisions with real names.
+SUSPICIOUS_NAME_SUBSTRINGS = [
+    # Blogging/platforms
+    "blogspot", "wordpress", "tumblr", "substack", "medium", "blogger",
+    # Site builders/hosts
+    "weebly", "wixsite", "squarespace", "sites.google", "webnode", "strikingly", "jimdo", "site123",
+    # Bio/link hubs
+    "linktree", "linktr.ee", "lnk.bio", "linkin.bio", "bio.link", "carrd", "about.me",
+    "beacons.ai", "flow.page", "solo.to", "taplink", "tap.bio",
+    # URL shorteners
+    "bitly", "tinyurl", "t.co", "goo.gl", "t.ly", "rebrand.ly", "shor.by",
+    # Social/media platforms (safe, uncommon as human names)
+    "youtube", "tiktok", "instagram", "facebook", "linkedin", "pinterest", "snapchat", "telegram", "discord", "reddit",
+    # File sharing/storage
+    "dropbox", "drive.google", "wetransfer", "mediafire", "mega.nz", "box.com",
+    # Creator/commerce
+    "patreon", "ko-fi", "kofi", "shopify", "bigcartel", "teespring", "sellfy",
+    # Marketplaces/payment links (subset)
+    "gumroad", "onlyfans",
+]
