@@ -41,7 +41,9 @@ urlpatterns = [
 
     # Hitters lists
     path("hitters/college/", views.college_hitters_list, name="college_hitters_list"),
+    path("hitters/college/<int:year>/", views.college_hitters_year, name="college_hitters_year"),
     path("hitters/high-school/", views.hs_hitters_list, name="hs_hitters_list"),
+    path("hitters/high-school/<int:year>/", views.hs_hitters_year, name="hs_hitters_year"),
 
     path("videos/", views.videos_list, name="videos_list"),
 

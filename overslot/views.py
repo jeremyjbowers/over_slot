@@ -4,7 +4,7 @@ import datetime
 import itertools
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Count, Avg, Sum, Max, Min, Q, Case, When, Value, IntegerField
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import JsonResponse
@@ -537,19 +537,34 @@ def college_hitters_list(request):
     Render a sortable table of college hitters using percentile metrics from the latest available
     published PlayerRanking per player.
     """
+    # New behavior: redirect to the latest available year-specific page
+    latest_year = (
+        models.PlayerStatSeason.objects.filter(active=True, level="College")
+        .values_list("year", flat=True)
+        .distinct()
+        .order_by("-year")
+        .first()
+    )
+    if latest_year:
+        try:
+            return redirect("college_hitters_year", year=int(latest_year))
+        except Exception:
+            # Fallback if year is not numeric; still redirect with string
+            return redirect("college_hitters_year", year=latest_year)
+
     # Define columns: key -> (field on PlayerRanking, display label)
     columns = [
         ("whiff_pct_percentile", "Whiff %"),
-        ("iz_whiff_pct_percentile", "In-Zone Whiff %"),
-        ("ooz_whiff_pct_percentile", "Out-of-Zone Whiff %"),
+        ("iz_whiff_pct_percentile", "IZ Whiff %"),
+        ("ooz_whiff_pct_percentile", "OOZ Whiff %"),
         ("chase_pct_percentile", "Chase %"),
         ("k_pct_percentile", "K %"),
         ("bb_pct_percentile", "BB %"),
-        ("avg_exit_velocity_percentile", "Avg Exit Velocity"),
-        ("ev_90th_percentile", "90th % Exit Velocity"),
+        ("avg_exit_velocity_percentile", "Avg EV"),
+        ("ev_90th_percentile", "90th % EV"),
         ("barrel_pct_percentile", "Barrel %"),
         ("pull_air_pct_percentile", "Pull AIR %"),
-        ("xwoba_percentile", "xWOBA"),
+        ("xwoba_percentile", "xwOBA"),
     ]
 
     # Base queryset: published college rankings, players active, with at least one college hitter percentile present
@@ -597,6 +612,20 @@ def hs_hitters_list(request):
     Render a sortable table of high school hitters using percentile metrics from the latest available
     published PlayerRanking per player.
     """
+    # New behavior: redirect to the latest available year-specific page
+    latest_year = (
+        models.PlayerStatSeason.objects.filter(active=True, level="High School")
+        .values_list("year", flat=True)
+        .distinct()
+        .order_by("-year")
+        .first()
+    )
+    if latest_year:
+        try:
+            return redirect("hs_hitters_year", year=int(latest_year))
+        except Exception:
+            return redirect("hs_hitters_year", year=latest_year)
+
     columns = [
         ("hs_contact_pct_percentile", "Contact%"),
         ("hs_chase_pct_percentile", "Chase%"),
@@ -605,12 +634,12 @@ def hs_hitters_list(request):
         ("hs_k_pct_percentile", "K%"),
         ("hs_gb_pct_percentile", "GB%"),
         ("hs_fb_pct_percentile", "FB%"),
-        ("hs_air_pull_pct_percentile", "Air PULL%"),
-        ("hs_sprint_speed_percentile", "Sprint Speed"),
+        ("hs_air_pull_pct_percentile", "AIR Pull%"),
+        ("hs_sprint_speed_percentile", "Sprint"),
         ("hs_bat_speed_percentile", "Bat Speed"),
-        ("hs_avg_rot_acc_percentile", "Avg Rot. Acc."),
-        ("hs_peak_hand_speed_percentile", "Peak Hand Speed"),
-        ("hs_force_plate_explosiveness_percentile", "Explosiveness"),
+        ("hs_avg_rot_acc_percentile", "Avg Rot Acc"),
+        ("hs_peak_hand_speed_percentile", "Peak Hand"),
+        ("hs_force_plate_explosiveness_percentile", "Explosive"),
     ]
     # Append baseball-card style raw stats when available (not used to filter presence)
     columns += [
@@ -670,5 +699,168 @@ def hs_hitters_list(request):
         "columns": columns,
         "rows": rows,
         "is_college": False,
+    }
+    return render(request, "hitters_list.html", context)
+
+
+@subscription_required
+def college_hitters_year(request, year: int):
+    """
+    Year-specific table for college hitters based on PlayerStatSeason.
+    """
+    # Normalize year to string for filtering against CharField
+    year_str = str(year)
+
+    columns = [
+        ("whiff_pct_percentile", "Whiff%"),
+        ("iz_whiff_pct_percentile", "IZ Whiff%"),
+        ("ooz_whiff_pct_percentile", "OOZ Whiff%"),
+        ("chase_pct_percentile", "Chase%"),
+        ("k_pct_percentile", "K%"),
+        ("bb_pct_percentile", "BB%"),
+        ("avg_exit_velocity_percentile", "Avg EV"),
+        ("ev_90th_percentile", "90th EV"),
+        ("barrel_pct_percentile", "Barrel%"),
+        ("pull_air_pct_percentile", "Pull AIR%"),
+        ("xwoba_percentile", "xWOBA"),
+    ]
+
+    seasons = (
+        models.PlayerStatSeason.objects.filter(
+            active=True, level="College", year=year_str, player__active=True
+        )
+        .select_related("player")
+    )
+
+    # 404 if no data for the requested year
+    if not seasons.exists():
+        return get_object_or_404(models.PlayerStatSeason, level="College", year=year_str)  # raises 404
+
+    # Hard-coded year navigation lists (stable; data changes infrequently)
+    college_years = [2025, 2024]
+    hs_years = [2025, 2024, 2023, 2022]
+
+    rows = []
+    for s in seasons:
+        row = {
+            "player_name": s.player.name,
+            "player_slug": s.player.slug,
+            "school": s.player.school,
+        }
+        for key, _label in columns:
+            row[key] = getattr(s, key)
+        rows.append(row)
+    
+    # Filter out rows with no percentile data (all percentile values are null)
+    percentile_keys = [key for key, _label in columns if key.endswith("_percentile")]
+    rows = [
+        row for row in rows
+        if any(row.get(key) is not None for key in percentile_keys)
+    ]
+    
+    # Sort by last name (last word in player name)
+    def get_last_name(row):
+        name = row.get("player_name", "").strip()
+        if not name:
+            return ""
+        parts = name.split()
+        return parts[-1].lower() if parts else ""
+    
+    rows.sort(key=get_last_name)
+
+    context = {
+        "page_title": f"College Hitters {year_str}",
+        "columns": columns,
+        "rows": rows,
+        "is_college": True,
+        "year": int(year) if str(year).isdigit() else year_str,
+        "college_years": college_years,
+        "hs_years": hs_years,
+    }
+    return render(request, "hitters_list.html", context)
+
+
+@subscription_required
+def hs_hitters_year(request, year: int):
+    """
+    Year-specific table for high school hitters based on PlayerStatSeason.
+    """
+    year_str = str(year)
+
+    columns = [
+        ("hs_contact_pct_percentile", "Contact%"),
+        ("hs_chase_pct_percentile", "Chase%"),
+        ("hs_iz_contact_pct_percentile", "IZ Contact%"),
+        ("hs_ooz_contact_pct_percentile", "OOZ Contact%"),
+        ("hs_k_pct_percentile", "K%"),
+        ("hs_gb_pct_percentile", "GB%"),
+        ("hs_fb_pct_percentile", "FB%"),
+        ("hs_air_pull_pct_percentile", "Air PULL%"),
+        ("hs_sprint_speed_percentile", "Sprint Speed"),
+        ("hs_bat_speed_percentile", "Bat Speed"),
+        ("hs_avg_rot_acc_percentile", "Avg Rot. Acc."),
+        ("hs_peak_hand_speed_percentile", "Peak Hand Speed"),
+        ("hs_force_plate_explosiveness_percentile", "Explosive"),
+    ]
+    # Include statline columns at end
+    columns += [
+        ("hs_pa", "PA"),
+        ("hs_ba", "BA"),
+        ("hs_obp", "OBP"),
+        ("hs_slg", "SLG"),
+        ("hs_ops", "OPS"),
+        ("hs_iso", "ISO"),
+    ]
+
+    seasons = (
+        models.PlayerStatSeason.objects.filter(
+            active=True, level="High School", year=year_str, player__active=True
+        )
+        .select_related("player")
+    )
+
+    if not seasons.exists():
+        return get_object_or_404(models.PlayerStatSeason, level="High School", year=year_str)  # raises 404
+
+    # Hard-coded year navigation lists (stable; data changes infrequently)
+    college_years = [2025, 2024]
+    hs_years = [2025, 2024, 2023, 2022]
+
+    rows = []
+    for s in seasons:
+        row = {
+            "player_name": s.player.name,
+            "player_slug": s.player.slug,
+            "school": s.player.school,
+        }
+        for key, _label in columns:
+            row[key] = getattr(s, key)
+        rows.append(row)
+    
+    # Filter out rows with no percentile data (all percentile values are null)
+    percentile_keys = [key for key, _label in columns if key.endswith("_percentile")]
+    rows = [
+        row for row in rows
+        if any(row.get(key) is not None for key in percentile_keys)
+    ]
+    
+    # Sort by last name (last word in player name)
+    def get_last_name(row):
+        name = row.get("player_name", "").strip()
+        if not name:
+            return ""
+        parts = name.split()
+        return parts[-1].lower() if parts else ""
+    
+    rows.sort(key=get_last_name)
+
+    context = {
+        "page_title": f"High School Hitters {year_str}",
+        "columns": columns,
+        "rows": rows,
+        "is_college": False,
+        "year": int(year) if str(year).isdigit() else year_str,
+        "college_years": college_years,
+        "hs_years": hs_years,
     }
     return render(request, "hitters_list.html", context)

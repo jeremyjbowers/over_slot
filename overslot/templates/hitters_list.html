@@ -14,6 +14,55 @@
     margin: 0 auto;
     padding: 0 1.5rem;
 }
+.page-hero-nav {
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.nav-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.nav-label {
+    font-size: 0.9rem;
+    color: var(--dark-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.nav-pills {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+.nav-pill {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--dark-border);
+    border-radius: 999px;
+    color: var(--dark-text);
+    text-decoration: none;
+    background: rgba(255,255,255,0.02);
+    font-size: 0.9rem;
+}
+.nav-pill:hover {
+    background: var(--dark-surface);
+    border-color: var(--theme-primary);
+}
+.nav-pill.active {
+    background: var(--theme-primary);
+    color: #0a0a0a;
+    border-color: var(--theme-primary);
+}
+.nav-divider {
+    width: 1px;
+    height: 1.25rem;
+    background: var(--dark-border);
+    margin: 0 0.25rem;
+}
 .page-hero-title {
     font-family: var(--font-sans);
     font-size: var(--text-4xl);
@@ -47,102 +96,59 @@
 
 .table-responsive {
     overflow-x: auto;
-    overflow-y: visible; /* allow sticky header to anchor to viewport */
 }
 
-/* Data table polish for professional, readable appearance */
+/* Clean, simple table design */
 .data-table {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
+    border-collapse: collapse;
     background: var(--dark-surface);
     border: 1px solid var(--dark-border);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
     font-variant-numeric: tabular-nums;
-    /* Sticky column sizing */
-    --first-col-sticky-width: 200px;
-    --second-col-sticky-width: 140px;
-    /* Offset for sticky table header below fixed navbar */
-    --sticky-header-top: 3.5rem;
 }
 
-/* Avoid sticky on thead for better cross-browser behavior; keep th sticky only */
-
 .data-table thead th {
-    position: sticky;
-    top: var(--sticky-header-top); /* account for fixed navbar */
-    z-index: 5; /* ensure it overlays shaded cells below */
     background: var(--dark-surface);
     color: var(--dark-text);
     border-bottom: 2px solid var(--dark-border);
-    padding: 1rem 0.75rem;
+    padding: 0.75rem 0.5rem;
     font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.01em;
     text-align: center;
-    vertical-align: bottom;
-    white-space: nowrap;
+    vertical-align: middle;
+    position: relative;
 }
 
-.data-table thead th .th-text {
-    display: inline-block;
-    line-height: 1.1;
-    white-space: normal; /* Allow stacking when not rotated */
+.data-table thead th.sortable {
+    cursor: pointer;
+    user-select: none;
 }
 
-/* First two columns: keep readable widths and left alignment */
-.data-table thead th:first-child {
-    text-align: left;
-    min-width: var(--first-col-sticky-width);
+.data-table thead th.sortable:hover {
+    background: var(--dark-surface-hover);
 }
+
+/* First two columns: left alignment */
+.data-table thead th:first-child,
 .data-table thead th:nth-child(2) {
     text-align: left;
-    min-width: var(--second-col-sticky-width);
 }
 
-/* Metric columns: compact, optionally angled header labels on wider screens */
+/* Metric columns: compact width */
 .data-table thead th.metric {
-    width: 64px;
-    padding: 1.25rem 0.5rem 0.9rem;
-    height: 96px; /* room for rotated label */
-}
-.data-table thead th.metric .th-text {
-    transform: rotate(-45deg);
-    transform-origin: left bottom;
-    white-space: nowrap;
-}
-
-/* On smaller screens, stack labels instead of rotating */
-@media (max-width: 1024px) {
-    .data-table thead th {
-        font-size: 0.85rem;
-    }
-    .data-table thead th.metric {
-        height: auto;
-        padding: 0.9rem 0.5rem;
-        width: 56px;
-    }
-    .data-table thead th.metric .th-text {
-        transform: none;
-        white-space: normal;
-        line-height: 1.15;
-    }
+    width: 70px;
+    padding: 0.75rem 0.5rem;
 }
 
 .data-table tbody td {
     border-top: 1px solid var(--dark-border);
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 0.5rem;
     font-size: 0.95rem;
     color: var(--dark-text-secondary);
     text-align: center;
 }
-.data-table tbody tr:first-child td {
-    border-top-width: 2px; /* extra separation from sticky header */
-}
-.data-table tbody td.metric-cell {
-    /* Subtle transition for hover and sort resorting */
-    transition: background-color 120ms ease-in-out, color 120ms ease-in-out;
-}
+
 .data-table tbody td:first-child,
 .data-table tbody td:nth-child(2) {
     text-align: left;
@@ -155,53 +161,6 @@
 }
 .data-table tbody tr:hover {
     background: var(--dark-surface-hover);
-}
-
-/* Sort affordance */
-.sortable {
-    cursor: pointer;
-    user-select: none;
-}
-.sortable.sorted-asc::after,
-.sortable.sorted-desc::after {
-    content: '';
-    display: inline-block;
-    margin-left: 6px;
-    border: 5px solid transparent;
-}
-.sortable.sorted-asc::after {
-    border-bottom-color: var(--theme-primary);
-    margin-top: -2px;
-}
-.sortable.sorted-desc::after {
-    border-top-color: var(--theme-primary);
-    margin-top: 2px;
-}
-
-/* Sticky first column for better horizontal scanning */
-.data-table thead th:first-child,
-.data-table tbody td:first-child {
-    position: sticky;
-    left: 0;
-    background: var(--dark-surface);
-    z-index: 3;
-    box-shadow: inset -1px 0 0 var(--dark-border); /* right divider to avoid color bleed underneath */
-}
-.data-table thead th:first-child {
-    z-index: 6; /* above other sticky cells */
-}
-
-/* Sticky second column (School) aligned just to the right of the first) */
-.data-table thead th:nth-child(2),
-.data-table tbody td:nth-child(2) {
-    position: sticky;
-    left: var(--first-col-sticky-width);
-    background: var(--dark-surface);
-    z-index: 3;
-    box-shadow: inset -1px 0 0 var(--dark-border); /* right divider line */
-}
-.data-table thead th:nth-child(2) {
-    z-index: 6;
 }
 
 /* Percentile shading buckets (0–100) for quick at-a-glance scanning)
@@ -217,6 +176,35 @@
 .metric-cell.bucket-2  { background-color: hsla(7,   85%, 32%, 0.22); color: var(--dark-text); } /* 15–24 */
 .metric-cell.bucket-1  { background-color: hsla(0,   85%, 32%, 0.28); color: var(--dark-text); } /* 5–14  */
 .metric-cell.bucket-0  { background-color: hsla(0,   85%, 32%, 0.34); color: var(--dark-text); } /* 0–4   */
+
+/* Sort indicators - positioned at bottom of header */
+.data-table thead th.sortable {
+    position: relative;
+}
+
+.data-table thead th.sortable::after {
+    content: '';
+    position: absolute;
+    bottom: 0.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.data-table thead th.sortable.sorted-desc::after {
+    border-bottom: 5px solid var(--theme-primary);
+    opacity: 1;
+}
+
+.data-table thead th.sortable.sorted-asc::after {
+    border-top: 5px solid var(--theme-primary);
+    opacity: 1;
+}
 </style>
 {% endblock %}
 
@@ -224,18 +212,49 @@
 <div class="page-hero">
     <div class="container">
         <h1 class="page-hero-title">{{ page_title }}</h1>
+        {% if college_years or hs_years %}
+        <div class="page-hero-nav">
+            <div class="nav-group">
+                <span class="nav-label">College</span>
+                <div class="nav-pills">
+                    {% for y in college_years %}
+                        <a href="{% url 'college_hitters_year' year=y %}"
+                           class="nav-pill {% if is_college and y == year %}active{% endif %}">
+                           {{ y }}
+                        </a>
+                    {% empty %}
+                        <span class="nav-empty">No data</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="nav-divider"></div>
+            <div class="nav-group">
+                <span class="nav-label">High School</span>
+                <div class="nav-pills">
+                    {% for y in hs_years %}
+                        <a href="{% url 'hs_hitters_year' year=y %}"
+                           class="nav-pill {% if not is_college and y == year %}active{% endif %}">
+                           {{ y }}
+                        </a>
+                    {% empty %}
+                        <span class="nav-empty">No data</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 <div class="page-intro">
     <div class="container">
         {% if is_college %}
-            <p>These are 2025 <strong>percentiles (0–100)</strong> for college hitters from TrackMan data. Higher is better unless noted.</p>
+            <p>These are {{ year }} <strong>percentiles (0–100)</strong> for college hitters from TrackMan data. Higher is better unless noted.</p>
             <p class="muted">Whiff %, In‑Zone Whiff %, and Out‑of‑Zone Whiff % capture swing‑and‑miss; Chase % reflects swings outside the zone; K % and BB % summarize outcomes; Avg EV and 90th % EV are batted‑ball quality; Barrel % and Pull AIR % indicate damage contact patterns; xWOBA is an expected run value per plate appearance.</p>
-            <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below. Click any header to sort.</p>
+            <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below.</p>
         {% else %}
-            <p>These are 2025 <strong>percentiles (0–100)</strong> for high school hitters from the summer circuit. Bat speed, average rotational acceleration, and peak hand speed come from <strong>Blast Motion</strong>. “Explosiveness” summarizes athletic and force‑plate testing.</p>
+            <p>These are {{ year }} <strong>percentiles (0–100)</strong> for high school hitters from the summer circuit. Bat speed, average rotational acceleration, and peak hand speed come from <strong>Blast Motion</strong>. “Explosiveness” summarizes athletic and force‑plate testing.</p>
             <p class="muted">Contact %, In‑Zone/Out‑of‑Zone Contact %, and Chase % describe bat‑to‑ball and swing decisions; K % summarizes outcomes; GB % / FB % describe batted‑ball shape; Air PULL % captures pulled balls in the air; Sprint Speed measures straight‑line speed; Bat Speed and rotational metrics capture swing characteristics.</p>
-            <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below. Click any header to sort.</p>
+            <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below.</p>
         {% endif %}
     </div>
 </div>
@@ -251,23 +270,23 @@
                 </div>
                 <div class="info-section-content">
                     <div class="table-responsive">
-                        <table id="hitters-table" class="data-table">
+                        <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th data-key="player_name" class="sortable"><span class="th-text">Player</span></th>
-                                    <th data-key="school" class="sortable"><span class="th-text">School</span></th>
+                                    <th class="sortable" data-key="player_name">Player</th>
+                                    <th class="sortable" data-key="school">School</th>
                                     {% for key, label in columns %}
-                                        <th data-key="{{ key }}" class="sortable metric"><span class="th-text">{{ label }}</span></th>
+                                        <th class="sortable metric" data-key="{{ key }}">{{ label }}</th>
                                     {% endfor %}
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for r in rows %}
                                 <tr>
-                                    <td>
+                                    <td data-value="{{ r.player_name }}">
                                         <a href="{% url 'players_detail' slug=r.player_slug %}">{{ r.player_name }}</a>
                                     </td>
-                                    <td>{{ r.school }}</td>
+                                    <td data-value="{{ r.school|default_if_none:'' }}">{{ r.school }}</td>
                                     {% for key, _label in columns %}
                                         {% with val=r|get_item:key %}
                                             {% if key == "hs_ba" or key == "hs_obp" or key == "hs_slg" or key == "hs_ops" or key == "hs_iso" or key == "hs_pa" %}
@@ -303,14 +322,16 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
 (function() {
     function getCellValue(td, isNumeric) {
         if (!td) return null;
         const raw = td.getAttribute('data-value') ?? td.textContent.trim();
         if (isNumeric) {
-            if (raw === '' || raw === '—') return null;
+            if (raw === '' || raw === '—' || raw === '–') return null;
             const num = Number(raw);
             return isNaN(num) ? null : num;
         }
@@ -318,15 +339,14 @@
     }
 
     function compare(a, b, isNumeric, direction) {
-        const av = a, bv = b;
-        if (av === null && bv === null) return 0;
-        if (av === null) return 1;   // nulls last
-        if (bv === null) return -1;  // nulls last
+        if (a === null && b === null) return 0;
+        if (a === null) return 1;   // nulls last
+        if (b === null) return -1;   // nulls last
         if (isNumeric) {
-            return direction * (av - bv);
+            return direction * (a - b);
         }
-        if (av < bv) return -direction;
-        if (av > bv) return direction;
+        if (a < b) return -direction;
+        if (a > b) return direction;
         return 0;
     }
 
@@ -346,21 +366,28 @@
     }
 
     function setupSorting() {
-        const table = document.getElementById('hitters-table');
+        const table = document.querySelector('.data-table');
         if (!table) return;
 
         const headers = table.querySelectorAll('thead th.sortable');
         headers.forEach((th, idx) => {
-            let asc = false;
+            let sortState = null; // null = unsorted, false = desc, true = asc
             th.addEventListener('click', () => {
                 const key = th.getAttribute('data-key') || '';
                 // Columns: 0=Player, 1=School, rest numeric percentiles
                 const isNumeric = idx >= 2;
-                asc = !asc;
+                
+                // Toggle: null -> desc -> asc -> desc -> ...
+                if (sortState === null || sortState === true) {
+                    sortState = false; // descending first (bigger numbers first)
+                } else {
+                    sortState = true; // ascending second
+                }
+                
                 // Clear active classes
                 headers.forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
-                th.classList.add(asc ? 'sorted-asc' : 'sorted-desc');
-                sortTableByColumn(table, idx, isNumeric, asc);
+                th.classList.add(sortState ? 'sorted-asc' : 'sorted-desc');
+                sortTableByColumn(table, idx, isNumeric, sortState);
             });
         });
     }
