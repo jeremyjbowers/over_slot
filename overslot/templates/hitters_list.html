@@ -275,6 +275,7 @@
                                 <tr>
                                     <th class="sortable" data-key="player_name">Player</th>
                                     <th class="sortable" data-key="school">School</th>
+                                    <th class="sortable" data-key="draft_year">Draft Year</th>
                                     {% for key, label in columns %}
                                         <th class="sortable metric" data-key="{{ key }}">{{ label }}</th>
                                     {% endfor %}
@@ -287,6 +288,7 @@
                                         <a href="{% url 'players_detail' slug=r.player_slug %}">{{ r.player_name }}</a>
                                     </td>
                                     <td data-value="{{ r.school|default_if_none:'' }}">{{ r.school }}</td>
+                                    <td data-value="{{ r.draft_year|default_if_none:'' }}">{{ r.draft_year }}</td>
                                     {% for key, _label in columns %}
                                         {% with val=r|get_item:key %}
                                             {% if key == "hs_ba" or key == "hs_obp" or key == "hs_slg" or key == "hs_ops" or key == "hs_iso" or key == "hs_pa" %}
@@ -374,7 +376,7 @@
             let sortState = null; // null = unsorted, false = desc, true = asc
             th.addEventListener('click', () => {
                 const key = th.getAttribute('data-key') || '';
-                // Columns: 0=Player, 1=School, rest numeric percentiles
+                // Columns: 0=Player, 1=School, 2=Draft Year, rest numeric percentiles
                 const isNumeric = idx >= 2;
                 
                 // Toggle: null -> desc -> asc -> desc -> ...

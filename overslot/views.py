@@ -745,7 +745,8 @@ def college_hitters_year(request, year: int):
         row = {
             "player_name": s.player.name,
             "player_slug": s.player.slug,
-            "school": s.player.school,
+            "school": s.school,  # Use school from PlayerStatSeason, not Player
+            "draft_year": s.draft_year,
         }
         for key, _label in columns:
             row[key] = getattr(s, key)
@@ -831,7 +832,8 @@ def hs_hitters_year(request, year: int):
         row = {
             "player_name": s.player.name,
             "player_slug": s.player.slug,
-            "school": s.player.school,
+            "school": s.school,  # Use school from PlayerStatSeason, not Player
+            "draft_year": s.draft_year,
         }
         for key, _label in columns:
             row[key] = getattr(s, key)

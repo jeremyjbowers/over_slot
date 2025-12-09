@@ -497,6 +497,14 @@ class Command(BaseCommand):
                             season, _created = models.PlayerStatSeason.objects.get_or_create(
                                 player=obj, year=str(year), level="College"
                             )
+                            # Extract draft year and school from row data
+                            draft_year = row.get('Draft Year')
+                            if draft_year:
+                                season.draft_year = str(draft_year).strip()
+                            else:
+                                # If blank, use the year from the tab name (e.g., "2025" from "2025 Hitters")
+                                season.draft_year = str(year)
+                            season.school = row.get('Team')  # Column C for college hitters
                             season.hitter_score = row['hitter_score']
                             season.game_power_score = row['game_power_score']
                             season.raw_power_score = row['raw_power_score']
@@ -633,6 +641,14 @@ class Command(BaseCommand):
                             season, _created = models.PlayerStatSeason.objects.get_or_create(
                                 player=obj, year=str(year), level="College"
                             )
+                            # Extract draft year and school from row data
+                            draft_year = row.get('Draft Year')
+                            if draft_year:
+                                season.draft_year = str(draft_year).strip()
+                            else:
+                                # If blank, use the year from the tab name (e.g., "2025" from "2025 Fourseam")
+                                season.draft_year = str(year)
+                            season.school = row.get('School')  # Column B for college pitchers
                             if tab_type == "Fourseam":
                                 season.fourseam_percentile = row['fourseam_percentile']
                                 season.fourseam_score = row['fourseam_score']
@@ -780,16 +796,22 @@ class Command(BaseCommand):
                     continue
                 # infer stats year from tab label after the dash if present, else fallback to first token
                 stats_year = None
+                draft_year = None
                 if " - " in hs_tab:
                     try:
-                        stats_year = hs_tab.split(" - ", 1)[1].strip()
+                        parts = hs_tab.split(" - ", 1)
+                        draft_year = parts[0].split()[0].strip()  # First token is draft year (e.g., "2027" from "2027 HS Hitters")
+                        stats_year = parts[1].strip()
                     except Exception:
                         stats_year = None
                 if not stats_year:
                     # Fallback: last token
                     stats_year = hs_tab.split()[-1]
+                if not draft_year:
+                    # Fallback: first token
+                    draft_year = hs_tab.split()[0].strip()
                 if debug:
-                    self.stdout.write(f"[hs_hitters] Saving PlayerStatSeason for '{obj.name}' year={stats_year}")
+                    self.stdout.write(f"[hs_hitters] Saving PlayerStatSeason for '{obj.name}' year={stats_year} draft_year={draft_year}")
 
                 # Prepare computed values for this row
                 computed = {}
@@ -821,6 +843,10 @@ class Command(BaseCommand):
                 season, _created = models.PlayerStatSeason.objects.get_or_create(
                     player=obj, year=str(stats_year), level="High School"
                 )
+                # Extract draft year and school
+                if draft_year:
+                    season.draft_year = str(draft_year).strip()
+                season.school = row.get('School')  # Column C for high school hitters
                 # Actuals
                 season.hs_pa = computed.get('hs_pa')
                 season.hs_ba = computed.get('hs_ba')

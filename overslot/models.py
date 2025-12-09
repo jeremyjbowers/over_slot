@@ -557,6 +557,8 @@ class PlayerStatSeason(BaseModel):
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="stat_seasons")
     year = models.CharField(max_length=10, help_text="Season year for these stats (e.g., 2025)")
     level = models.CharField(max_length=25, choices=LEVEL_CHOICES, help_text="High School or College")
+    draft_year = models.CharField(max_length=10, blank=True, null=True, help_text="Draft year for this player (e.g., 2025)")
+    school = models.CharField(max_length=255, blank=True, null=True, help_text="School/Team name for this stat season")
 
     # Composite hitter metrics (percentiles and scores)
     hitter_percentile = models.FloatField(blank=True, null=True)
