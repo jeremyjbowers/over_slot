@@ -1,0 +1,46 @@
+{% extends "admin/duplicate_base.html" %}
+{% block title %}Data Status{% endblock %}
+
+{% block breadcrumb %}
+    <span class="breadcrumb-separator">›</span>
+    <span>Data Status</span>
+{% endblock %}
+
+{% block content %}
+    <h1 class="page-title">Data Status</h1>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">PlayerStatSeason Counts by Stat Year</div>
+            <div class="meta-text">Totals across all levels, plus breakdowns</div>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Stat Year</th>
+                        <th>Total Seasons</th>
+                        <th>High School</th>
+                        <th>College</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in by_year %}
+                    <tr>
+                        <td>{{ row.year }}</td>
+                        <td>{{ row.total }}</td>
+                        <td>{{ row.high_school }}</td>
+                        <td>{{ row.college }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">No PlayerStatSeason data found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+

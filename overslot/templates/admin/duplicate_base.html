@@ -434,6 +434,33 @@
             margin-bottom: 2rem;
         }
         
+        /* Sub-navigation */
+        .section-subnav {
+            display: flex;
+            gap: 0.75rem;
+            margin: 0 0 1.25rem 0;
+        }
+        .subnav-link {
+            display: inline-block;
+            padding: 0.5rem 0.9rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            color: #4a5568;
+            text-decoration: none;
+            background: #ffffff;
+            transition: all 0.2s ease;
+        }
+        .subnav-link:hover {
+            color: #2b6cb0;
+            border-color: #2b6cb0;
+            background: #f7fafc;
+        }
+        .subnav-link.is-active {
+            color: #2b6cb0;
+            border-color: #2b6cb0;
+            background: #ebf8ff;
+        }
+        
         .section-title {
             font-size: 1.5rem;
             font-weight: 600;
@@ -477,6 +504,12 @@
             <a href="{% url 'duplicate_dashboard' %}">Duplicate Management</a>
             {% block breadcrumb %}{% endblock %}
         </nav>
+        
+        <!-- Section Nav (cross-links) -->
+        <div class="section-subnav">
+            <a href="{% url 'duplicate_dashboard' %}" class="subnav-link {% if request.path|slice:':18' == '/admin/duplicates' %}is-active{% endif %}">Duplicate Management</a>
+            <a href="{% url 'data_status' %}" class="subnav-link {% if request.path == '/admin/data-status/' %}is-active{% endif %}">Data Status</a>
+        </div>
         
         <!-- Messages -->
         {% if messages %}

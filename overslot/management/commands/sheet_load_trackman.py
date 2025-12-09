@@ -246,7 +246,8 @@ class Command(BaseCommand):
                 return None
             return score / total_weight
 
-        years = ['2025']
+        # Load current and prior college seasons named like "{YEAR} Hitters"
+        years = ['2025', '2024']
         all_tab_types = ["Hitters", "Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeup/Splitters"]
 
         group = options.get('group', 'all')
@@ -666,16 +667,19 @@ class Command(BaseCommand):
         #   "{DRAFT_YEAR} HS Hitters - {STATS_YEAR}"
         #   "{DRAFT_YEAR} HS Hitters {STATS_YEAR}"
         # The stat season should be STATS_YEAR.
-        hs_pairs = [
-            ("2026", "2025"),
-            ("2025", "2024"),
-            ("2024", "2023"),
-            ("2023", "2022"),
-            ("2026", "2024"),
-        ]
+        # Discover all HS Hitters tabs across the requested ranges.
+        # Draft years: 2027-2023; Data years: 2025-2022; constraint: draft > data.
+        draft_years = [str(y) for y in range(2027, 2022, -1)]
+        data_years = [str(y) for y in range(2025, 2021, -1)]
         hs_tabs = []
-        for draft_year, stats_year in hs_pairs:
-            hs_tabs.append(f"{draft_year} HS Hitters - {stats_year}")
+        for draft_year in draft_years:
+            for stats_year in data_years:
+                if int(draft_year) > int(stats_year):
+                    # Only support dash-separated naming pattern created by editor
+                    hs_tabs.append(f"{draft_year} HS Hitters - {stats_year}")
+        # De-duplicate while preserving order
+        seen = set()
+        hs_tabs = [t for t in hs_tabs if not (t in seen or seen.add(t))]
 
         for hs_tab in hs_tabs:
             sheet = None

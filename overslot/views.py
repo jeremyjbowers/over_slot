@@ -302,48 +302,29 @@ def players_detail(request, slug):
     # Only show active rankings from published rankings
     context['rankings'] = models.PlayerRanking.objects.filter(player=context['player'], ranking__publish=True, active=True)
     
-    # Prefer the latest non-mock ranking for chart data (mock drafts don't carry metrics)
-    rankings_qs = context['rankings']
-    latest_ranking = rankings_qs.filter(ranking__is_mock_draft=False).order_by('-ranking__year', '-created').first() or \
-                     rankings_qs.order_by('-ranking__year', '-created').first()
-    
-    if latest_ranking:
-        # Determine if this player is a High School player
-        is_high_school = (getattr(latest_ranking, 'level', None) == 'High School')
-
-        # HS stat line table (PA, BA, OBP, SLG, OPS, ISO)
-        context['hs_statline'] = None
-        if is_high_school:
-            hs_stat = {
-                'pa': latest_ranking.hs_pa,
-                'ba': latest_ranking.hs_ba,
-                'obp': latest_ranking.hs_obp,
-                'slg': latest_ranking.hs_slg,
-                'ops': latest_ranking.hs_ops,
-                'iso': latest_ranking.hs_iso,
-            }
-            # Only set if any value exists
-            if any(v is not None for v in hs_stat.values()):
-                context['hs_statline'] = hs_stat
-
-        # Build hitter metric chart data
+    # Build charts from PlayerStatSeason across all available stat years (most recent first)
+    season_qs = models.PlayerStatSeason.objects.filter(player=context['player']).order_by('-year')
+    season_charts = []
+    for s in season_qs:
+        # Hitter payloads
+        hitter_payload = None
+        hs_statline = None
         hitter_items = []
-        if is_high_school:
-            # HS metrics: percentiles (0-100) + raw amount above/below median (delta)
+        if s.level == "High School":
             hs_metric_specs = [
-                ("Contact%", latest_ranking.hs_contact_pct_percentile, latest_ranking.hs_contact_pct_points_above_median),
-                ("Chase%", latest_ranking.hs_chase_pct_percentile, latest_ranking.hs_chase_pct_points_above_median),
-                ("IZ Contact%", latest_ranking.hs_iz_contact_pct_percentile, latest_ranking.hs_iz_contact_pct_points_above_median),
-                ("OOZ Contact%", latest_ranking.hs_ooz_contact_pct_percentile, latest_ranking.hs_ooz_contact_pct_points_above_median),
-                ("K%", latest_ranking.hs_k_pct_percentile, latest_ranking.hs_k_pct_points_above_median),
-                ("GB%", latest_ranking.hs_gb_pct_percentile, latest_ranking.hs_gb_pct_points_above_median),
-                ("FB%", latest_ranking.hs_fb_pct_percentile, latest_ranking.hs_fb_pct_points_above_median),
-                ("Air PULL%", latest_ranking.hs_air_pull_pct_percentile, latest_ranking.hs_air_pull_pct_points_above_median),
-                ("Sprint Speed", latest_ranking.hs_sprint_speed_percentile, latest_ranking.hs_sprint_speed_points_above_median),
-                ("Bat Speed", latest_ranking.hs_bat_speed_percentile, latest_ranking.hs_bat_speed_points_above_median),
-                ("Avg Rot. Acc.", latest_ranking.hs_avg_rot_acc_percentile, latest_ranking.hs_avg_rot_acc_points_above_median),
-                ("Peak Hand Speed", latest_ranking.hs_peak_hand_speed_percentile, latest_ranking.hs_peak_hand_speed_points_above_median),
-                ("Explosiveness", latest_ranking.hs_force_plate_explosiveness_percentile, latest_ranking.hs_force_plate_explosiveness_points_above_median),
+                ("Contact%", s.hs_contact_pct_percentile, s.hs_contact_pct_points_above_median),
+                ("Chase%", s.hs_chase_pct_percentile, s.hs_chase_pct_points_above_median),
+                ("IZ Contact%", s.hs_iz_contact_pct_percentile, s.hs_iz_contact_pct_points_above_median),
+                ("OOZ Contact%", s.hs_ooz_contact_pct_percentile, s.hs_ooz_contact_pct_points_above_median),
+                ("K%", s.hs_k_pct_percentile, s.hs_k_pct_points_above_median),
+                ("GB%", s.hs_gb_pct_percentile, s.hs_gb_pct_points_above_median),
+                ("FB%", s.hs_fb_pct_percentile, s.hs_fb_pct_points_above_median),
+                ("Air PULL%", s.hs_air_pull_pct_percentile, s.hs_air_pull_pct_points_above_median),
+                ("Sprint Speed", s.hs_sprint_speed_percentile, s.hs_sprint_speed_points_above_median),
+                ("Bat Speed", s.hs_bat_speed_percentile, s.hs_bat_speed_points_above_median),
+                ("Avg Rot. Acc.", s.hs_avg_rot_acc_percentile, s.hs_avg_rot_acc_points_above_median),
+                ("Peak Hand Speed", s.hs_peak_hand_speed_percentile, s.hs_peak_hand_speed_points_above_median),
+                ("Explosiveness", s.hs_force_plate_explosiveness_percentile, s.hs_force_plate_explosiveness_points_above_median),
             ]
             for axis, percentile_value, delta_value in hs_metric_specs:
                 if percentile_value is not None:
@@ -352,74 +333,73 @@ def players_detail(request, slug):
                         score_value = None if delta_value is None else float(delta_value)
                     except Exception:
                         score_value = None
-                    hitter_items.append({
-                        'axis': axis,
-                        'value': normalized,
-                        'score': score_value,
-                    })
-            context['hitter_metric_chart_data'] = json.dumps({
-                'items': hitter_items,
-                'confidence': latest_ranking.confidence,
-                'hs_mode': True,
-            }) if hitter_items else None
+                    hitter_items.append({'axis': axis, 'value': normalized, 'score': score_value})
+            if hitter_items:
+                hitter_payload = json.dumps({'items': hitter_items, 'confidence': s.confidence, 'hs_mode': True})
+            # HS statline if present
+            stat = {
+                'pa': s.hs_pa, 'ba': s.hs_ba, 'obp': s.hs_obp, 'slg': s.hs_slg, 'ops': s.hs_ops, 'iso': s.hs_iso,
+            }
+            if any(v is not None for v in stat.values()):
+                hs_statline = stat
         else:
-            # College/Pro metrics: percentiles (0-100) + raw values where applicable
+            # College hitters payload (percentiles 0-100 + raw values)
             metric_specs = [
-                ("Whiff %", latest_ranking.whiff_pct, latest_ranking.whiff_pct_percentile),
-                ("In-Zone Whiff %", latest_ranking.iz_whiff_pct, latest_ranking.iz_whiff_pct_percentile),
-                ("Out-of-Zone Whiff %", latest_ranking.ooz_whiff_pct, latest_ranking.ooz_whiff_pct_percentile),
-                ("Chase %", latest_ranking.chase_pct, latest_ranking.chase_pct_percentile),
-                ("K %", latest_ranking.k_pct, latest_ranking.k_pct_percentile),
-                ("BB %", latest_ranking.bb_pct, latest_ranking.bb_pct_percentile),
-                ("Avg Exit Velocity", latest_ranking.avg_exit_velocity, latest_ranking.avg_exit_velocity_percentile),
-                ("90th % Exit Velocity", latest_ranking.ev_90th, latest_ranking.ev_90th_percentile),
-                ("Barrel %", latest_ranking.barrel_pct, latest_ranking.barrel_pct_percentile),
-                ("Pull AIR %", latest_ranking.pull_air_pct, latest_ranking.pull_air_pct_percentile),
-                ("xWOBA", latest_ranking.xwoba, latest_ranking.xwoba_percentile),
+                ("Whiff %", s.whiff_pct, s.whiff_pct_percentile),
+                ("In-Zone Whiff %", s.iz_whiff_pct, s.iz_whiff_pct_percentile),
+                ("Out-of-Zone Whiff %", s.ooz_whiff_pct, s.ooz_whiff_pct_percentile),
+                ("Chase %", s.chase_pct, s.chase_pct_percentile),
+                ("K %", s.k_pct, s.k_pct_percentile),
+                ("BB %", s.bb_pct, s.bb_pct_percentile),
+                ("Avg Exit Velocity", s.avg_exit_velocity, s.avg_exit_velocity_percentile),
+                ("90th % Exit Velocity", s.ev_90th, s.ev_90th_percentile),
+                ("Barrel %", s.barrel_pct, s.barrel_pct_percentile),
+                ("Pull AIR %", s.pull_air_pct, s.pull_air_pct_percentile),
+                ("xWOBA", s.xwoba, s.xwoba_percentile),
             ]
             for axis, raw_value, percentile_value in metric_specs:
-                if percentile_value is not None and raw_value is not None:
+                if percentile_value is not None:
                     normalized = max(0.0, min(1.0, float(percentile_value) / 100.0))
+                    score_value = None
                     try:
-                        score_value = float(raw_value)
+                        score_value = None if raw_value is None else float(raw_value)
                     except Exception:
                         score_value = None
-                    hitter_items.append({
-                        'axis': axis,
-                        'value': normalized,
-                        'score': score_value,
-                    })
-            context['hitter_metric_chart_data'] = json.dumps({
-                'items': hitter_items,
-                'confidence': latest_ranking.confidence,
-            }) if hitter_items else None
-
-        # Pitcher chart data - only include pitches where data exists
-        pitcher_data = {}
-        if latest_ranking.fourseam_percentile is not None:
-            pitcher_data['fourseam_percentile'] = latest_ranking.fourseam_percentile
-            pitcher_data['fourseam_score'] = latest_ranking.fourseam_score
-        if latest_ranking.sinker_percentile is not None:
-            pitcher_data['sinker_percentile'] = latest_ranking.sinker_percentile
-            pitcher_data['sinker_score'] = latest_ranking.sinker_score
-        if latest_ranking.slider_percentile is not None:
-            pitcher_data['slider_percentile'] = latest_ranking.slider_percentile
-            pitcher_data['slider_score'] = latest_ranking.slider_score
-        if latest_ranking.sweeper_percentile is not None:
-            pitcher_data['sweeper_percentile'] = latest_ranking.sweeper_percentile
-            pitcher_data['sweeper_score'] = latest_ranking.sweeper_score
-        if latest_ranking.curveball_percentile is not None:
-            pitcher_data['curveball_percentile'] = latest_ranking.curveball_percentile
-            pitcher_data['curveball_score'] = latest_ranking.curveball_score
-        if latest_ranking.changeup_percentile is not None:
-            pitcher_data['changeup_percentile'] = latest_ranking.changeup_percentile
-            pitcher_data['changeup_score'] = latest_ranking.changeup_score
+                    hitter_items.append({'axis': axis, 'value': normalized, 'score': score_value})
+            if hitter_items:
+                hitter_payload = json.dumps({'items': hitter_items, 'confidence': s.confidence})
         
-        if pitcher_data:
-            pitcher_data['confidence'] = latest_ranking.confidence
-            context['pitcher_chart_data'] = json.dumps(pitcher_data)
-        else:
-            context['pitcher_chart_data'] = None
+        # Pitcher payload (percentiles already 0-1)
+        pitcher_data = {}
+        if s.fourseam_percentile is not None:
+            pitcher_data['fourseam_percentile'] = s.fourseam_percentile
+            pitcher_data['fourseam_score'] = s.fourseam_score
+        if s.sinker_percentile is not None:
+            pitcher_data['sinker_percentile'] = s.sinker_percentile
+            pitcher_data['sinker_score'] = s.sinker_score
+        if s.slider_percentile is not None:
+            pitcher_data['slider_percentile'] = s.slider_percentile
+            pitcher_data['slider_score'] = s.slider_score
+        if s.sweeper_percentile is not None:
+            pitcher_data['sweeper_percentile'] = s.sweeper_percentile
+            pitcher_data['sweeper_score'] = s.sweeper_score
+        if s.curveball_percentile is not None:
+            pitcher_data['curveball_percentile'] = s.curveball_percentile
+            pitcher_data['curveball_score'] = s.curveball_score
+        if s.changeup_percentile is not None:
+            pitcher_data['changeup_percentile'] = s.changeup_percentile
+            pitcher_data['changeup_score'] = s.changeup_score
+        pitcher_payload = json.dumps({**pitcher_data, 'confidence': s.confidence}) if pitcher_data else None
+        
+        if hitter_payload or pitcher_payload:
+            season_charts.append({
+                'year': s.year,
+                'level': s.level,
+                'hitter_json': hitter_payload,
+                'pitcher_json': pitcher_payload,
+                'hs_statline': hs_statline,
+            })
+    context['season_charts'] = season_charts
 
     # Only show published articles
     context['articles'] = models.Article.objects.filter(players=context['player'], publish=True)

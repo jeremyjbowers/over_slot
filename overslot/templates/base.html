@@ -482,6 +482,14 @@
             .text-gray-600 {
                 color: var(--dark-text-secondary) !important;
             }
+            /* Global override: grey text classes are hard to read on dark theme */
+            .has-text-grey,
+            .has-text-grey-dark,
+            .has-text-grey-darker,
+            .has-text-grey-light,
+            .has-text-grey-lighter {
+                color: #ffffff !important;
+            }
 
             .border-gray-200,
             .border-blue-200,

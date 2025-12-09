@@ -619,6 +619,40 @@ body {
     margin: 0;
 }
 
+/* Season tabs (player charts) */
+#season-tabs {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+#season-tabs li {
+    margin: 0;
+}
+#season-tabs li a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.85rem;
+    border: 1px solid var(--dark-border);
+    border-radius: 999px;
+    background: var(--dark-surface);
+    color: #ffffff;
+    transition: all 0.15s ease;
+}
+#season-tabs li a:hover {
+    background: var(--dark-surface-hover);
+    color: #ffffff;
+}
+#season-tabs li.is-active a {
+    border-color: var(--theme-primary);
+    background: var(--theme-primary);
+    color: #ffffff;
+    font-weight: 700;
+}
+#season-tabs .is-size-7 { color: #ffffff; opacity: 1; }
+#season-tabs li a span { color: #ffffff; }
+#season-tabs .tab-level { color: #ffffff; opacity: 1; font-weight: 700; }
+
 @media screen and (max-width: 768px) {
     .subscription-card {
         padding: 1.5rem;
@@ -657,7 +691,7 @@ body {
 </div>
 
 <div class="player-info-section">
-    <div class="player-info-grid {% if hitter_metric_chart_data and not preview_mode or pitcher_chart_data and not preview_mode %}with-chart{% endif %}">
+    <div class="player-info-grid {% if season_charts and not preview_mode %}with-chart{% endif %}">
         <!-- Photo column -->
         <div class="player-photo-card">
             <div class="player-photo-wrapper">
@@ -730,92 +764,62 @@ body {
         </div>
 
 
-        {% if hitter_metric_chart_data and not preview_mode %}
+        {% if season_charts and not preview_mode %}
         <div id="lollipop-chart-container">
-            <div class="info-section">
-                 <div class="info-section-header">
-                    <span class="icon">
-                        <i class="fas fa-bullseye"></i>
-                    </span>
-                    <h3 class="info-section-title">2025 Hitter Performance</h3>
-                </div>
-                <div class="info-section-content">
-                    {% if hs_statline %}
-                    <span class="info-section-subtitle">Summer circuit performance metrics. Bat speed, average rotational acceleration, and peak hand speed provided by Blast Motion.</span>
-                    <span class="info-section-subtitle">“Explosiveness” is a composite score based on general athletic testing and force plate outputs.</span>
-                    <span class="info-section-subtitle">High school deltas show actual points vs median (±).</span>
-                        <span class="info-section-subtitle">“Visuals are built exclusively on data from high school players draft-eligible in 2026.”</span>
-                    {% elif rankings.0.level == "College" %}
-                    <span class="info-section-subtitle">Percentile ranks and raw values based on Trackman hitter metrics.</span>
-                    {% endif %}
-                </div>
-                {% if hs_statline %}
-                <div class="info-section-content">
-                    <div class="info-grid" style="grid-template-columns: repeat(6, minmax(80px, 1fr));">
-                        <div class="info-item">
-                            <div class="info-label">PA</div>
-                            <div class="info-value">{{ hs_statline.pa|floatformat:0 }}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">BA</div>
-                            <div class="info-value">
-                                {% if hs_statline.ba %}{{ hs_statline.ba|format_avg3 }}{% endif %}
-                            </div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">OBP</div>
-                            <div class="info-value">
-                                {% if hs_statline.obp %}{{ hs_statline.obp|format_avg3 }}{% endif %}
-                            </div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">SLG</div>
-                            <div class="info-value">
-                                {% if hs_statline.slg %}{{ hs_statline.slg|format_avg3 }}{% endif %}
-                            </div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">OPS</div>
-                            <div class="info-value">
-                                {% if hs_statline.ops %}{{ hs_statline.ops|format_avg3 }}{% endif %}
-                            </div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">ISO</div>
-                            <div class="info-value">
-                                {% if hs_statline.iso %}{{ hs_statline.iso|format_avg3 }}{% endif %}
-                            </div>
+            <!-- Tabs -->
+            {% if season_charts|length > 1 %}
+            <div class="tabs is-toggle is-small" style="margin: 0.75rem 1rem 1.25rem;">
+                <ul id="season-tabs">
+                    {% for sc in season_charts %}
+                    <li class="{% if forloop.first %}is-active{% endif %}">
+                        <a href="#" data-target="season-{{ forloop.counter }}">
+                            <span>{{ sc.year }}</span>
+                            <span class="is-size-7 tab-level" style="margin-left: 6px;">{{ sc.level }}</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% for sc in season_charts %}
+            <div id="season-{{ forloop.counter }}" class="season-panel" style="{% if not forloop.first %}display:none{% endif %}">
+                <div class="info-section">
+                    <div class="info-section-header">
+                        <h3 class="info-section-title">
+                            {{ sc.year }} {% if sc.hitter_json %}Hitter{% else %}Pitcher{% endif %} Performance ({{ sc.level }})
+                        </h3>
+                    </div>
+                    <div class="info-section-content">
+                        {% if sc.hitter_json and sc.level == "High School" %}
+                        <span class="info-section-subtitle">Summer circuit performance metrics. Bat speed, average rotational acceleration, and peak hand speed provided by Blast Motion.</span>
+                        <span class="info-section-subtitle">“Explosiveness” is a composite score based on general athletic testing and force plate outputs.</span>
+                        <span class="info-section-subtitle">High school deltas show actual points vs median (±).</span>
+                        {% elif sc.hitter_json %}
+                        <span class="info-section-subtitle">Percentile ranks and raw values based on Trackman hitter metrics.</span>
+                        {% else %}
+                        <span class="info-section-subtitle">Percentile ranks based on modeled pitch performance.</span>
+                        {% endif %}
+                    </div>
+                    {% if sc.hs_statline %}
+                    <div class="info-section-content">
+                        <div class="info-grid" style="grid-template-columns: repeat(6, minmax(80px, 1fr));">
+                            <div class="info-item"><div class="info-label">PA</div><div class="info-value">{{ sc.hs_statline.pa|floatformat:0 }}</div></div>
+                            <div class="info-item"><div class="info-label">BA</div><div class="info-value">{% if sc.hs_statline.ba %}{{ sc.hs_statline.ba|format_avg3 }}{% endif %}</div></div>
+                            <div class="info-item"><div class="info-label">OBP</div><div class="info-value">{% if sc.hs_statline.obp %}{{ sc.hs_statline.obp|format_avg3 }}{% endif %}</div></div>
+                            <div class="info-item"><div class="info-label">SLG</div><div class="info-value">{% if sc.hs_statline.slg %}{{ sc.hs_statline.slg|format_avg3 }}{% endif %}</div></div>
+                            <div class="info-item"><div class="info-label">OPS</div><div class="info-value">{% if sc.hs_statline.ops %}{{ sc.hs_statline.ops|format_avg3 }}{% endif %}</div></div>
+                            <div class="info-item"><div class="info-label">ISO</div><div class="info-value">{% if sc.hs_statline.iso %}{{ sc.hs_statline.iso|format_avg3 }}{% endif %}</div></div>
                         </div>
                     </div>
-                </div>
-                {% endif %}
-                <div id="lollipop-chart"></div>
-            </div>
-        </div>
-        {% elif pitcher_chart_data and not preview_mode %}
-        <div id="lollipop-chart-container">
-            <div class="info-section">
-                 <div class="info-section-header">
-                    <span class="icon">
-                        <i class="fas fa-baseball-ball"></i>
-                    </span>
-                    <h3 class="info-section-title">2025 Pitcher Performance</h3>
-                </div>
-                <div class="info-section-content">
-                    <span class="info-section-subtitle">Percentile ranks based on modeled pitch performance. Players with fewer than 100 pitches per pitch type in 2025 are not included.</span>
-                </div>
-                <div id="pitcher-lollipop-chart"></div>
-                <div class="info-section-content">
-                    <span class="info-section-subtitle"><ul>
-                        <li style="font-size: 12px; color: #fff;"><strong style="color: #fff;">Four-seam:</strong> A weighted model including strike rate, chase rate, and whiff rate.</li>
-                        <li style="font-size: 12px; color: #fff;"><strong style="color: #fff;">Sinker:</strong> A weighted model including strike rate, chase rate, and whiff rate.</li>
-                        <li style="font-size: 12px; color: #fff;"><strong style="color: #fff;">Slider:</strong> A weighted model including strike rate, chase rate, and whiff rate.</li>
-                        <li style="font-size: 12px; color: #fff;"><strong style="color: #fff;">Sweeper:</strong> A weighted model including strike rate, chase rate, and whiff rate.</li>
-                        <li style="font-size: 12px; color: #fff;"><strong style="color: #fff;">Curveball:</strong> A weighted model including strike rate, chase rate, and contact rate where lower contact is better.</li>
-                        <li style="font-size: 12px; color: #fff;"><strong style="color: #fff;">Changeup:</strong> A weighted model including strike rate, chase rate, and whiff rate.</li>
-                    </ul></span>
+                    {% endif %}
+                    {% if sc.hitter_json %}
+                    <div id="lollipop-chart-{{ forloop.counter }}"></div>
+                    {% elif sc.pitcher_json %}
+                    <div id="pitcher-lollipop-chart-{{ forloop.counter }}"></div>
+                    {% endif %}
                 </div>
             </div>
+            {% endfor %}
         </div>
         {% endif %}
     </div>
@@ -1042,8 +1046,30 @@ function toggleReport(button) {
     buttonText.textContent = isExpanded ? 'Show more' : 'Show less';
 }
 
-{% if hitter_metric_chart_data and not preview_mode %}
-const hitterChartPayload = {{ hitter_metric_chart_data|safe }};
+{% if season_charts and not preview_mode %}
+// Tabs behavior
+(function(){
+    const tabs = document.querySelectorAll('#season-tabs li a');
+    if (tabs.length) {
+        tabs.forEach(a => {
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = a.getAttribute('data-target');
+                // activate tab
+                document.querySelectorAll('#season-tabs li').forEach(li => li.classList.remove('is-active'));
+                a.parentElement.classList.add('is-active');
+                // show panel
+                document.querySelectorAll('.season-panel').forEach(p => p.style.display = 'none');
+                const panel = document.getElementById(target);
+                if (panel) panel.style.display = '';
+            });
+        });
+    }
+})();
+
+// Reusable renderers
+function renderHitterChart(selector, payload) {
+const hitterChartPayload = payload;
 const data = hitterChartPayload.items || [];
 
 const container = d3.select("#lollipop-chart-container");
@@ -1058,7 +1084,7 @@ const chartHeight = Math.max(260, baseHeight + (data.length * rowHeight));
 const width = chartWidth - margin.left - margin.right;
 const height = chartHeight - margin.top - margin.bottom;
 
-const svg = d3.select("#lollipop-chart")
+const svg = d3.select(selector)
     .append("svg")
     .attr("width", chartWidth)
     .attr("height", chartHeight)
@@ -1246,12 +1272,11 @@ svg.selectAll(".score-label")
     .style("fill", "#E2E8F0")
     .style("font-size", "12px")
     .style('font-weight', '600');
+}
 
-{% endif %}
-
-{% if pitcher_chart_data %}
+function renderPitcherChart(selector, payload) {
 // Pitcher Chart JavaScript
-const pitcherLollipopData = JSON.parse('{{ pitcher_chart_data|escapejs }}');
+const pitcherLollipopData = payload;
 
 // Create mapping of data keys to display names
 const pitchDisplayNames = {
@@ -1286,7 +1311,7 @@ const pitcherChartHeight = 220; // Fixed height like hitter chart
 const pitcherWidth = pitcherChartWidth - pitcherMargin.left - pitcherMargin.right;
 const pitcherHeight = pitcherChartHeight - pitcherMargin.top - pitcherMargin.bottom;
 
-const pitcherSvg = d3.select("#pitcher-lollipop-chart")
+const pitcherSvg = d3.select(selector)
     .append("svg")
     .attr("width", pitcherChartWidth)
     .attr("height", pitcherChartHeight)
@@ -1447,7 +1472,16 @@ pitcherSvg.selectAll(".score-label")
     .style("fill", "#E2E8F0")
     .style("font-size", "12px")
     .style('font-weight', '600');
+}
 
+// Render all seasons
+{% for sc in season_charts %}
+{% if sc.hitter_json %}
+renderHitterChart("#lollipop-chart-{{ forloop.counter }}", JSON.parse('{{ sc.hitter_json|escapejs }}'));
+{% elif sc.pitcher_json %}
+renderPitcherChart("#pitcher-lollipop-chart-{{ forloop.counter }}", JSON.parse('{{ sc.pitcher_json|escapejs }}'));
+{% endif %}
+{% endfor %}
 {% endif %}
 </script>
 {% endblock %}

@@ -11,6 +11,8 @@ from . import auth
 from .sitemaps import StaticViewSitemap, ArticleSitemap, RankingSitemap, PlayerSitemap
 
 urlpatterns = [
+    # Internal data status (admin only)
+    path('admin/data-status/', duplicate_views.data_status, name='data_status'),
     # Duplicate Management URLs (admin only)
     path('admin/duplicates/', duplicate_views.duplicate_dashboard, name='duplicate_dashboard'),
     path('admin/duplicates/review/', duplicate_views.review_duplicate, name='review_duplicate'),

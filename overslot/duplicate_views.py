@@ -7,7 +7,7 @@ from django.db import transaction
 from django.core.paginator import Paginator
 from collections import defaultdict
 import difflib
-from overslot.models import Player, DuplicateDecision, PlayerRanking, Article, PotentialDuplicate
+from overslot.models import Player, DuplicateDecision, PlayerRanking, Article, PotentialDuplicate, PlayerStatSeason
 from django.views.decorators.http import require_POST
 
 
@@ -248,6 +248,26 @@ def mark_separate(request, player1_uuid, player2_uuid):
     
     return redirect('duplicate_dashboard')
 
+
+@staff_member_required
+def data_status(request):
+    """
+    Internal status page: shows PlayerStatSeason counts by stat year
+    and level breakdowns. Draft year is intentionally not shown.
+    """
+    by_year = (
+        PlayerStatSeason.objects.values('year')
+        .annotate(
+            total=Count('id'),
+            high_school=Count('id', filter=Q(level="High School")),
+            college=Count('id', filter=Q(level="College")),
+        )
+        .order_by('-year')
+    )
+    context = {
+        'by_year': by_year,
+    }
+    return render(request, 'admin/data_status.html', context)
 
 @staff_member_required
 def duplicate_history(request):
