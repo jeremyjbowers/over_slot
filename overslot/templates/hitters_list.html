@@ -94,6 +94,77 @@
 
 .info-section-header { display: none; } /* Hide small inline title; use page hero above */
 
+/* Inline link that opens the metric explainer modal */
+.metrics-info-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--dark-border);
+    background: rgba(255,255,255,0.02);
+    color: var(--theme-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+.metrics-info-link:hover {
+    background: var(--dark-surface);
+    border-color: var(--theme-primary);
+}
+
+/* Simple centered modal for metric explainer */
+.metrics-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+.metrics-modal-backdrop.is-open {
+    display: flex;
+}
+.metrics-modal {
+    background: var(--dark-surface);
+    border-radius: 0.75rem;
+    border: 1px solid var(--dark-border);
+    max-width: 720px;
+    width: 92%;
+    max-height: 80vh;
+    padding: 1.5rem 1.75rem 1.25rem;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+    overflow-y: auto;
+}
+.metrics-modal h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.15rem;
+}
+.metrics-modal p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin: 0.4rem 0;
+}
+.metrics-modal .muted {
+    color: var(--dark-text-muted);
+}
+.metrics-modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.9rem;
+    border: none;
+    background: transparent;
+    color: var(--dark-text-muted);
+    font-size: 1.3rem;
+    cursor: pointer;
+}
+
+.metrics-inline-description {
+    font-size: 0.85rem;
+    color: var(--dark-text-muted);
+}
+
 .table-responsive {
     overflow-x: auto;
 }
@@ -245,19 +316,7 @@
         {% endif %}
     </div>
 </div>
-<div class="page-intro">
-    <div class="container">
-        {% if is_college %}
-            <p>These are {{ year }} <strong>percentiles (0–100)</strong> for college hitters from TrackMan data. Higher is better unless noted.</p>
-            <p class="muted">Whiff %, In‑Zone Whiff %, and Out‑of‑Zone Whiff % capture swing‑and‑miss; Chase % reflects swings outside the zone; K % and BB % summarize outcomes; Avg EV and 90th % EV are batted‑ball quality; Barrel % and Pull AIR % indicate damage contact patterns; xWOBA is an expected run value per plate appearance.</p>
-            <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below.</p>
-        {% else %}
-            <p>These are {{ year }} <strong>percentiles (0–100)</strong> for high school hitters from the summer circuit. Bat speed, average rotational acceleration, and peak hand speed come from <strong>Blast Motion</strong>. “Explosiveness” summarizes athletic and force‑plate testing.</p>
-            <p class="muted">Contact %, In‑Zone/Out‑of‑Zone Contact %, and Chase % describe bat‑to‑ball and swing decisions; K % summarizes outcomes; GB % / FB % describe batted‑ball shape; Air PULL % captures pulled balls in the air; Sprint Speed measures straight‑line speed; Bat Speed and rotational metrics capture swing characteristics.</p>
-            <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below.</p>
-        {% endif %}
-    </div>
-</div>
+{# Intentionally minimal intro; detailed explanation now lives in the modal #}
 <div class="content-container">
     <div class="grid grid-cols-12 gap-6">
         <div class="col-span-12">
@@ -269,6 +328,17 @@
                     <h3 class="info-section-title">{{ page_title }}</h3>
                 </div>
                 <div class="info-section-content">
+                    <div style="margin-top: 1.0rem; margin-bottom: 1.0rem; margin-left: 1rem; display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
+                        <div style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                            <label for="draft-year-filter" style="color: var(--dark-text-muted); font-size: 0.9rem; font-weight: 500;">Filter by Draft Year:</label>
+                            <select id="draft-year-filter" style="padding: 0.5rem 0.75rem; background: var(--dark-surface); border: 1px solid var(--dark-border); border-radius: 4px; color: var(--dark-text); font-size: 0.9rem; cursor: pointer;">
+                                <option value="">All Years</option>
+                            </select>
+                        </div>
+                        <button type="button" class="metrics-info-link" id="metrics-info-open">
+                            How to read these hitter metrics
+                        </button>
+                    </div>
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead>
@@ -283,7 +353,7 @@
                             </thead>
                             <tbody>
                                 {% for r in rows %}
-                                <tr>
+                                <tr data-draft-year="{{ r.draft_year|default_if_none:'' }}">
                                     <td data-value="{{ r.player_name }}">
                                         <a href="{% url 'players_detail' slug=r.player_slug %}">{{ r.player_name }}</a>
                                     </td>
@@ -322,6 +392,22 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+{# Metric explainer modal #}
+<div id="metrics-info-modal" class="metrics-modal-backdrop" aria-hidden="true">
+    <div class="metrics-modal" role="dialog" aria-modal="true" aria-labelledby="metrics-modal-title">
+        <button type="button" class="metrics-modal-close" aria-label="Close metric explainer">&times;</button>
+        <h2 id="metrics-modal-title">How to read these hitter metrics</h2>
+        {% if is_college %}
+            <p>These are {{ year }} <strong>percentiles (0–100)</strong> for college hitters from TrackMan data. Higher is better unless noted.</p>
+            <p class="muted">Whiff %, In‑Zone Whiff %, and Out‑of‑Zone Whiff % capture swing‑and‑miss; Chase % reflects swings outside the zone; K % and BB % summarize outcomes; Avg EV and 90th % EV are batted‑ball quality; Barrel % and Pull AIR % indicate damage contact patterns; xWOBA is an expected run value per plate appearance.</p>
+            <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below.</p>
+        {% else %}
+            <p>These are {{ year }} <strong>percentiles (0–100)</strong> for high school hitters from the summer circuit. Bat speed, average rotational acceleration, and peak hand speed come from <strong>Blast Motion</strong>. “Explosiveness” summarizes athletic and force‑plate testing.</p>
+            <p class="muted">Contact %, In‑Zone/Out‑of‑Zone Contact %, and Chase % describe bat‑to‑ball and swing decisions; K % summarizes outcomes; GB % / FB % describe batted‑ball shape; Air PULL % captures pulled balls in the air; Sprint Speed measures straight‑line speed; Bat Speed and rotational metrics capture swing characteristics.</p>
+            <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below.</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
@@ -394,10 +480,96 @@
         });
     }
 
+    function setupDraftYearFilter() {
+        const table = document.querySelector('.data-table');
+        const filterSelect = document.getElementById('draft-year-filter');
+        if (!table || !filterSelect) return;
+
+        // Collect unique draft years from table rows
+        const rows = table.querySelectorAll('tbody tr');
+        const draftYears = new Set();
+        rows.forEach(row => {
+            const draftYear = row.getAttribute('data-draft-year');
+            if (draftYear && draftYear.trim() !== '') {
+                draftYears.add(draftYear.trim());
+            }
+        });
+
+        // Sort draft years descending and populate dropdown
+        const sortedYears = Array.from(draftYears).sort((a, b) => {
+            const numA = parseInt(a);
+            const numB = parseInt(b);
+            if (!isNaN(numA) && !isNaN(numB)) {
+                return numB - numA; // Descending order
+            }
+            return a.localeCompare(b);
+        });
+
+        sortedYears.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            filterSelect.appendChild(option);
+        });
+
+        // Filter rows when selection changes
+        filterSelect.addEventListener('change', function() {
+            const selectedYear = this.value;
+            rows.forEach(row => {
+                const rowDraftYear = row.getAttribute('data-draft-year');
+                if (selectedYear === '' || rowDraftYear === selectedYear) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    function setupMetricsModal() {
+        const openBtn = document.getElementById('metrics-info-open');
+        const backdrop = document.getElementById('metrics-info-modal');
+        if (!openBtn || !backdrop) return;
+
+        const modal = backdrop.querySelector('.metrics-modal');
+        const closeBtn = backdrop.querySelector('.metrics-modal-close');
+
+        function openModal() {
+            backdrop.classList.add('is-open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            backdrop.classList.remove('is-open');
+            document.body.style.overflow = '';
+        }
+
+        openBtn.addEventListener('click', openModal);
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeModal);
+        }
+        backdrop.addEventListener('click', function(evt) {
+            if (evt.target === backdrop) {
+                closeModal();
+            }
+        });
+        document.addEventListener('keydown', function(evt) {
+            if (evt.key === 'Escape') {
+                closeModal();
+            }
+        });
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupSorting);
+        document.addEventListener('DOMContentLoaded', function() {
+            setupSorting();
+            setupDraftYearFilter();
+            setupMetricsModal();
+        });
     } else {
         setupSorting();
+        setupDraftYearFilter();
+        setupMetricsModal();
     }
 })();
 </script>
