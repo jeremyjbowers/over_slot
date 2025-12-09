@@ -34,10 +34,17 @@
                     Rankings
                 </a>
                 <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
+                   href="/hitters/college/"
+                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
+                    Data
+                </a>
+                {% if has_published_mock_drafts %}
+                <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
                    href="/mock-drafts/"
                    style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
-                    Mock Drafts
+                    Draft
                 </a>
+                {% endif %}
                 <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
                    href="/videos/"
                    style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
@@ -505,9 +512,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             <a href="/articles/${article.slug}/" class="search-item">
                                 <div class="search-item-title">
                                     ${article.headline}
-                                    <a href="${window.subscriptionUrl}" class="premium-badge icon-only" title="Subscribe for Premium Content" onclick="event.stopPropagation();">
-                                        <i class="fas fa-crown"></i>
-                                    </a>
                                 </div>
                                 <div class="search-item-meta">${article.created}</div>
                             </a>
@@ -521,9 +525,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             <a href="${rankingHref}" class="search-item">
                                 <div class="search-item-title">
                                     ${ranking.headline}
-                                    <a href="${window.subscriptionUrl}" class="premium-badge icon-only" title="Subscribe for Premium Content" onclick="event.stopPropagation();">
-                                        <i class="fas fa-crown"></i>
-                                    </a>
                                 </div>
                                 <div class="search-item-meta">
                                     ${ranking.year}
@@ -539,9 +540,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             <a href="/players/${player.slug}/" class="search-item">
                                 <div class="search-item-title">
                                     ${player.name}
-                                    <a href="${window.subscriptionUrl}" class="premium-badge icon-only" title="Subscribe for Premium Content" onclick="event.stopPropagation();">
-                                        <i class="fas fa-crown"></i>
-                                    </a>
                                 </div>
                                 <div class="search-item-meta">${player.position} | ${player.school}</div>
                             </a>
