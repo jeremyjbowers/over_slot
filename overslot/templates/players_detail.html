@@ -1460,18 +1460,7 @@ pitcherSvg.selectAll(".end-text")
     .style("font-size", "12px")
     .style("font-weight", "700");
 
-// Raw score labels on far right
-pitcherSvg.selectAll(".score-label")
-  .data(pitcherData)
-  .enter()
-  .append("text")
-    .attr("y", d => pitcherY(d.axis) + pitcherY.bandwidth()/2)
-    .attr("x", pitcherWidth + 12)
-    .text(d => d.score != null ? d.score.toFixed(1) : "")
-    .attr("alignment-baseline", "middle")
-    .style("fill", "#E2E8F0")
-    .style("font-size", "12px")
-    .style('font-weight', '600');
+// Omit raw score labels on the right for pitcher charts (keep for hitter charts only)
 }
 
 // Render all seasons
