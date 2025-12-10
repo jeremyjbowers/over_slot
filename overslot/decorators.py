@@ -46,6 +46,10 @@ def subscription_required(view_func):
             'articles_detail': 'articles_detail.html',
             'rankings_detail': 'rankings_detail.html', 
             'players_detail': 'players_detail.html',
+            'college_hitters_list': 'hitters_list.html',
+            'hs_hitters_list': 'hitters_list.html',
+            'college_hitters_year': 'hitters_list.html',
+            'hs_hitters_year': 'hitters_list.html',
         }
         
         # Call the view to get the context (but ignore its response)
@@ -68,6 +72,9 @@ def subscription_required(view_func):
                 context['player'] = player
                 context['rankings'] = PlayerRanking.objects.filter(player=player, ranking__publish=True, active=True)
                 context['articles'] = Article.objects.filter(players=player, publish=True)
+            # For hitters views, the context is already extracted from TemplateResponse above
+            # If it's not a TemplateResponse, we'll need to call the view logic
+            # But since these views use render(), they should return TemplateResponse
         
         # Add preview mode flags
         context['preview_mode'] = True

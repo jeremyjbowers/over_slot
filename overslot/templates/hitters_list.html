@@ -276,6 +276,130 @@
     border-top: 5px solid var(--theme-primary);
     opacity: 1;
 }
+
+/* Subscription Banner Styles */
+.subscription-banner {
+    position: relative;
+    margin: 2rem 0;
+    z-index: 10;
+}
+
+.subscription-overlay {
+    position: absolute;
+    top: -4rem;
+    left: 0;
+    right: 0;
+    height: 6rem;
+    background: linear-gradient(transparent, var(--dark-bg));
+    pointer-events: none;
+    z-index: 1;
+}
+
+.subscription-content {
+    position: relative;
+    z-index: 2;
+}
+
+.subscription-card {
+    background: var(--dark-surface);
+    border: 2px solid var(--theme-primary);
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.subscription-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.subscription-icon {
+    width: 2rem;
+    height: 2rem;
+    color: var(--theme-primary);
+}
+
+.subscription-header h3 {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--dark-text);
+    margin: 0;
+}
+
+.subscription-description {
+    font-size: var(--text-lg);
+    color: var(--dark-text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: var(--leading-relaxed);
+}
+
+.subscription-price {
+    margin-bottom: 2rem;
+}
+
+.price-amount {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--dark-text);
+}
+
+.price-period {
+    font-size: var(--text-lg);
+    color: var(--dark-text-muted);
+    font-weight: 500;
+}
+
+.subscription-actions {
+    margin-bottom: 1rem;
+}
+
+.btn-subscribe {
+    display: inline-block;
+    background: var(--theme-primary);
+    color: var(--dark-text);
+    padding: 1rem 2rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: var(--text-lg);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-subscribe:hover {
+    background: var(--theme-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(var(--theme-primary-rgb), 0.2);
+}
+
+.subscription-note {
+    font-size: var(--text-sm);
+    color: var(--dark-text-muted);
+    margin: 0;
+}
+
+@media screen and (max-width: 768px) {
+    .subscription-card {
+        padding: 1.5rem;
+    }
+    
+    .subscription-header h3 {
+        font-size: var(--text-xl);
+    }
+    
+    .price-amount {
+        font-size: 2.5rem;
+    }
+    
+    .btn-subscribe {
+        padding: 0.875rem 1.5rem;
+        font-size: var(--text-base);
+    }
+}
 </style>
 {% endblock %}
 
@@ -325,9 +449,68 @@
                     <span class="icon">
                         <i class="fas fa-list"></i>
                     </span>
-                    <h3 class="info-section-title">{{ page_title }}</h3>
+                    <h3 class="info-section-title">{% if preview_mode %}Preview: {{ page_title }}{% else %}{{ page_title }}{% endif %}</h3>
                 </div>
                 <div class="info-section-content">
+                    {% if preview_mode %}
+                    <!-- Preview Mode: Show limited rows -->
+                    <div style="margin-top: 1.0rem; margin-bottom: 1.0rem; margin-left: 1rem; display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
+                        <button type="button" class="metrics-info-link" id="metrics-info-open">
+                            How to read these hitter metrics
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-key="player_name">Player</th>
+                                    <th class="sortable" data-key="school">School</th>
+                                    <th class="sortable" data-key="draft_year">Draft Year</th>
+                                    {% for key, label in columns %}
+                                        <th class="sortable metric" data-key="{{ key }}">{{ label }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in rows|slice:":10" %}
+                                <tr data-draft-year="{{ r.draft_year|default_if_none:'' }}">
+                                    <td data-value="{{ r.player_name }}">
+                                        <a href="{% url 'players_detail' slug=r.player_slug %}">{{ r.player_name }}</a>
+                                    </td>
+                                    <td data-value="{{ r.school|default_if_none:'' }}">{{ r.school }}</td>
+                                    <td data-value="{{ r.draft_year|default_if_none:'' }}">{{ r.draft_year }}</td>
+                                    {% for key, _label in columns %}
+                                        {% with val=r|get_item:key %}
+                                            {% if key == "hs_ba" or key == "hs_obp" or key == "hs_slg" or key == "hs_ops" or key == "hs_iso" or key == "hs_pa" %}
+                                                <td data-value="{{ val|default_if_none:'' }}">
+                                                    {% if val is not None %}
+                                                        {% if key == "hs_ba" or key == "hs_obp" or key == "hs_slg" or key == "hs_ops" or key == "hs_iso" %}
+                                                            {{ val|format_avg3 }}
+                                                        {% else %}
+                                                            {{ val|floatformat:0 }}
+                                                        {% endif %}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+                                            {% else %}
+                                                <td data-value="{{ val|default_if_none:'' }}" class="metric-cell {% if val is not None %}{% if val >= 95 %}bucket-10{% elif val >= 85 %}bucket-9{% elif val >= 75 %}bucket-8{% elif val >= 65 %}bucket-7{% elif val >= 55 %}bucket-6{% elif val >= 45 %}bucket-5{% elif val >= 35 %}bucket-4{% elif val >= 25 %}bucket-3{% elif val >= 15 %}bucket-2{% elif val >= 5 %}bucket-1{% else %}bucket-0{% endif %}{% endif %}">
+                                                    {% if val is not None %}
+                                                        {{ val|floatformat:0 }}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <!-- Full Content for Subscribers -->
                     <div style="margin-top: 1.0rem; margin-bottom: 1.0rem; margin-left: 1rem; display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;">
                         <div style="display: inline-flex; align-items: center; gap: 0.5rem;">
                             <label for="draft-year-filter" style="color: var(--dark-text-muted); font-size: 0.9rem; font-weight: 500;">Filter by Draft Year:</label>
@@ -389,22 +572,60 @@
                             </tbody>
                         </table>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+{% if preview_mode %}
+<!-- Subscription Banner -->
+{% load overslot_tags %}
+<div class="subscription-banner">
+    <div class="subscription-overlay"></div>
+    <div class="subscription-content">
+        <div class="subscription-card">
+            <div class="subscription-header">
+                <svg class="subscription-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                <h3>See Full Data Tables</h3>
+            </div>
+            <p class="subscription-description">
+                Access complete hitter data tables with sortable metrics, filters, and comprehensive player statistics.
+            </p>
+            <div class="subscription-price">
+                <span class="price-amount">${{ settings.SUBSCRIPTION_PRICE_MONTHLY|floatformat:2 }}</span>
+                <span class="price-period">/month</span>
+            </div>
+            <div class="subscription-actions">
+                {% if user_authenticated %}
+                    <a href="{% url 'subscription_dashboard' %}" class="btn-subscribe">
+                        Subscribe Now
+                    </a>
+                {% else %}
+                    <a href="{% url 'account_login' %}?next={{ request.get_full_path }}" class="btn-subscribe">
+                        Log In to Subscribe
+                    </a>
+                {% endif %}
+            </div>
+            <p class="subscription-note">Cancel anytime • No long-term commitment</p>
+        </div>
+    </div>
+</div>
+{% endif %}
 {# Metric explainer modal #}
 <div id="metrics-info-modal" class="metrics-modal-backdrop" aria-hidden="true">
     <div class="metrics-modal" role="dialog" aria-modal="true" aria-labelledby="metrics-modal-title">
         <button type="button" class="metrics-modal-close" aria-label="Close metric explainer">&times;</button>
         <h2 id="metrics-modal-title">How to read these hitter metrics</h2>
         {% if is_college %}
-            <p>These are {{ year }} <strong>percentiles (0–100)</strong> for college hitters from TrackMan data. Higher is better unless noted.</p>
+            <p>These are {% if year %}{% if year %}{{ year }}{% else %}latest available{% endif %}{% else %}latest available{% endif %} <strong>percentiles (0–100)</strong> for college hitters from TrackMan data. Higher is better unless noted.</p>
             <p class="muted">Whiff %, In‑Zone Whiff %, and Out‑of‑Zone Whiff % capture swing‑and‑miss; Chase % reflects swings outside the zone; K % and BB % summarize outcomes; Avg EV and 90th % EV are batted‑ball quality; Barrel % and Pull AIR % indicate damage contact patterns; xWOBA is an expected run value per plate appearance.</p>
             <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below.</p>
         {% else %}
-            <p>These are {{ year }} <strong>percentiles (0–100)</strong> for high school hitters from the summer circuit. Bat speed, average rotational acceleration, and peak hand speed come from <strong>Blast Motion</strong>. “Explosiveness” summarizes athletic and force‑plate testing.</p>
+            <p>These are {% if year %}{{ year }}{% else %}latest available{% endif %} <strong>percentiles (0–100)</strong> for high school hitters from the summer circuit. Bat speed, average rotational acceleration, and peak hand speed come from <strong>Blast Motion</strong>. “Explosiveness” summarizes athletic and force‑plate testing.</p>
             <p class="muted">Contact %, In‑Zone/Out‑of‑Zone Contact %, and Chase % describe bat‑to‑ball and swing decisions; K % summarizes outcomes; GB % / FB % describe batted‑ball shape; Air PULL % captures pulled balls in the air; Sprint Speed measures straight‑line speed; Bat Speed and rotational metrics capture swing characteristics.</p>
             <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below.</p>
         {% endif %}
