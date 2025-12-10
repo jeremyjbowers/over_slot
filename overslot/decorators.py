@@ -46,8 +46,7 @@ def subscription_required(view_func):
             'articles_detail': 'articles_detail.html',
             'rankings_detail': 'rankings_detail.html', 
             'players_detail': 'players_detail.html',
-            'college_hitters_list': 'hitters_list.html',
-            'hs_hitters_list': 'hitters_list.html',
+            # Hitters data tables (year-specific views only)
             'college_hitters_year': 'hitters_list.html',
             'hs_hitters_year': 'hitters_list.html',
         }

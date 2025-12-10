@@ -12,6 +12,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from decimal import *
 from django.utils.timezone import template_localtime
+from django.template.response import TemplateResponse
 import json
 
 from overslot import models, utils
@@ -603,7 +604,7 @@ def college_hitters_list(request):
         "rows": rows,
         "is_college": True,
     }
-    return render(request, "hitters_list.html", context)
+    return TemplateResponse(request, "hitters_list.html", context)
 
 
 @subscription_required
@@ -700,7 +701,7 @@ def hs_hitters_list(request):
         "rows": rows,
         "is_college": False,
     }
-    return render(request, "hitters_list.html", context)
+    return TemplateResponse(request, "hitters_list.html", context)
 
 
 @subscription_required
@@ -778,7 +779,7 @@ def college_hitters_year(request, year: int):
         "college_years": college_years,
         "hs_years": hs_years,
     }
-    return render(request, "hitters_list.html", context)
+    return TemplateResponse(request, "hitters_list.html", context)
 
 
 @subscription_required
@@ -865,4 +866,4 @@ def hs_hitters_year(request, year: int):
         "college_years": college_years,
         "hs_years": hs_years,
     }
-    return render(request, "hitters_list.html", context)
+    return TemplateResponse(request, "hitters_list.html", context)
