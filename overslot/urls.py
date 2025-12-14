@@ -47,6 +47,8 @@ urlpatterns = [
 
     path("videos/", views.videos_list, name="videos_list"),
 
+    path("about-us/", views.about_us, name="about_us"),
+
     path("", views.index, name="index"),
 
     # SEO

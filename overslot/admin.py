@@ -143,12 +143,68 @@ from overslot.models import (
 
 
 @admin.register(Author, site=admin_site)
-class AuthorAdmin(admin.ModelAdmin):
+class AuthorAdmin(SummernoteModelAdmin):
     model = Author
-    list_display = ["name", "user", "email", "twitter", "bluesky"]
+    list_display = ["name", "user", "display_email_column", "founder", "twitter", "bluesky"]
+    list_filter = ["founder"]
+    list_editable = ["founder"]
     search_fields = ["name", "user__username", "user__email", "email", "bio", "twitter", "bluesky"]
     autocomplete_fields = ["user"]
-    readonly_fields = ["created", "last_modified"]
+    readonly_fields = ["created", "last_modified", "display_email_readonly"]
+    summernote_fields = ()  # Removed bio from rich text editor
+    
+    def display_email_column(self, obj):
+        """Display the computed email (public email or user email)"""
+        email = obj.display_email
+        if email:
+            if obj.email:
+                return f"{email} (public)"
+            return f"{email} (from user)"
+        return "-"
+    display_email_column.short_description = "Email"
+    
+    def display_email_readonly(self, obj):
+        """Show computed email in readonly field"""
+        email = obj.display_email
+        if email:
+            source = "public email" if obj.email else "user email"
+            return f"{email} (from {source})"
+        return "No email available"
+    display_email_readonly.short_description = "Display Email"
+    
+    fieldsets = (
+        (
+            "Basic Information",
+            {
+                "fields": (
+                    "name",
+                    "display_name",
+                    "user",
+                    "email",
+                    "display_email_readonly",
+                    "founder",
+                )
+            },
+        ),
+        (
+            "Profile",
+            {
+                "fields": (
+                    "photo_url",
+                    "bio",
+                )
+            },
+        ),
+        (
+            "Social Media",
+            {
+                "fields": (
+                    "twitter",
+                    "bluesky",
+                )
+            },
+        ),
+    )
 
 
 @admin.register(Article, site=admin_site)
@@ -161,12 +217,14 @@ class ArticleAdmin(SummernoteModelAdmin):
         "publish",
         "article_type",
         "is_carousel",
+        "is_free",
         "last_modified",
     ]
-    list_editable = ["publish", "is_carousel", "article_type"]
+    list_editable = ["publish", "is_carousel", "is_free", "article_type"]
     list_filter = [
         "publish",
         "is_carousel",
+        "is_free",
         "article_type",
         "authors",
     ]
@@ -213,6 +271,7 @@ class ArticleAdmin(SummernoteModelAdmin):
                 "fields": (
                     "publish",
                     "is_carousel",
+                    "is_free",
                 )
             },
         ),

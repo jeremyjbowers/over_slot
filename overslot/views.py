@@ -476,6 +476,50 @@ def robots_txt(request):
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 
+def about_us(request):
+    """
+    Display the about-us page with authors, their bios, photos, and recent articles.
+    Founders are displayed in hero-sized boxes, other authors in card layout.
+    """
+    from django.db.models import Prefetch
+    
+    context = {}
+    
+    # Prefetch published articles for each author
+    published_articles = models.Article.objects.filter(
+        publish=True, active=True
+    ).order_by('-created')
+    
+    articles_prefetch = Prefetch(
+        'articles',
+        queryset=published_articles,
+        to_attr='recent_articles_prefetch'
+    )
+    
+    # Get all active authors with prefetched articles
+    authors_qs = models.Author.objects.filter(active=True).prefetch_related(
+        articles_prefetch
+    )
+    
+    # Separate founders from regular authors
+    founders = []
+    regular_authors = []
+    
+    for author in authors_qs:
+        # Get the 3 most recent articles from prefetched list
+        author.recent_articles = getattr(author, 'recent_articles_prefetch', [])[:3]
+        
+        if author.founder:
+            founders.append(author)
+        else:
+            regular_authors.append(author)
+    
+    context['founders'] = founders
+    context['regular_authors'] = regular_authors
+    
+    return render(request, "about_us.html", context)
+
+
 def api_players(request):
     """Return all Player records as JSON or CSV with all fields, including IDs."""
     # API key check via query param against environment variable

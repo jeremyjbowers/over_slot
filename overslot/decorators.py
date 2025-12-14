@@ -33,6 +33,17 @@ def subscription_required(view_func):
             except Subscription.DoesNotExist:
                 pass
         
+        # Check if this is an article detail view and if the article is free
+        view_name = view_func.__name__
+        if view_name == 'articles_detail':
+            try:
+                article = Article.objects.get(slug=kwargs.get('slug'), publish=True)
+                if article.is_free:
+                    # Free articles don't require subscription
+                    return view_func(request, *args, **kwargs)
+            except Article.DoesNotExist:
+                pass
+        
         # If user has subscription, show full content
         if user_has_subscription:
             return view_func(request, *args, **kwargs)
@@ -41,7 +52,6 @@ def subscription_required(view_func):
         # We need to call the view function directly and extract its template logic
         # Since we can't easily extract template names from HttpResponse, 
         # we'll map view function names to their templates
-        view_name = view_func.__name__
         template_mapping = {
             'articles_detail': 'articles_detail.html',
             'rankings_detail': 'rankings_detail.html', 

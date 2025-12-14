@@ -374,14 +374,43 @@ class Author(BaseModel):
     display_name = models.CharField(max_length=255, help_text="Name to display on articles", blank=True, null=True)
     # Backwards-compat: tests create Author with 'name'. Map to existing 'display_name' column.
     name = models.CharField(max_length=255, help_text="Name to display on articles", blank=True, null=True)
-    email = models.EmailField(help_text="Public contact email (if different from login email)")
+    email = models.EmailField(blank=True, null=True, help_text="Public contact email (if different from login email). If not set, uses user's email.")
     bio = models.TextField(blank=True, null=True, help_text="Author biography")
+    founder = models.BooleanField(default=False, help_text="Mark this author as a founder")
     twitter = models.CharField(max_length=255, blank=True, null=True, help_text="Twitter handle (without @)")
     bluesky = models.CharField(max_length=255, blank=True, null=True, help_text="Bluesky handle (with or without @)")
     photo_url = models.CharField(max_length=255, blank=True, null=True)
 
     def __unicode__(self):
         return getattr(self, 'name', None) or self.user.get_full_name() or self.user.username
+
+    @property
+    def display_email(self):
+        """
+        Returns the public email if set, otherwise falls back to the user's email.
+        """
+        if self.email:
+            return self.email
+        if self.user and self.user.email:
+            return self.user.email
+        return None
+
+    @property
+    def first_name(self):
+        """
+        Returns the first name from display_name, name, or user's first name.
+        """
+        name = self.display_name or self.name
+        if name:
+            parts = name.split()
+            if parts:
+                return parts[0]
+        if self.user and self.user.first_name:
+            return self.user.first_name
+        if self.user:
+            # Fallback to username if no first name
+            return self.user.username
+        return "Author"
 
     @property
     def bluesky_url(self):
@@ -692,6 +721,7 @@ class Article(BaseModel):
 
     publish = models.BooleanField(default=False)
     is_carousel = models.BooleanField(default=False, help_text="Display in homepage carousel")
+    is_free = models.BooleanField(default=False, help_text="Make this article free to view without subscription")
 
     class Meta:
         ordering = ["-created"]

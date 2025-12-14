@@ -1,0 +1,525 @@
+{% extends "base.html" %}
+
+{% block title %}About Us - Over Slot{% endblock %}
+{% block meta_description %}Meet the team behind Over Slot - baseball prospect analysts and scouts covering the future stars of the game.{% endblock %}
+{% block og_title %}About Us - Over Slot{% endblock %}
+{% block og_description %}Meet the team behind Over Slot - baseball prospect analysts and scouts covering the future stars of the game.{% endblock %}
+
+{% block content %}
+<style>
+/* About Us Page Styles */
+.about-us-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+
+.page-header {
+    margin-bottom: 3rem;
+    text-align: center;
+}
+
+.page-header h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    color: var(--dark-text);
+    font-family: 'Aleo', serif;
+}
+
+.page-header p {
+    font-size: 1.25rem;
+    color: var(--dark-text-muted);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Founder Hero Boxes */
+.founders-section {
+    margin-bottom: 4rem;
+}
+
+.founders-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+.founder-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 8px;
+    padding: 3rem;
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 2.5rem;
+    align-items: start;
+}
+
+.founder-image {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--theme-primary);
+}
+
+.founder-content h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    color: var(--dark-text);
+    font-family: 'Aleo', serif;
+}
+
+.founder-badge {
+    display: inline-block;
+    background: var(--theme-primary);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.founder-bio {
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--dark-text);
+    margin-bottom: 1.5rem;
+}
+
+.founder-bio p {
+    color: var(--dark-text) !important;
+    margin-bottom: 1rem;
+    margin-top: 0;
+}
+
+.founder-bio p:last-child {
+    margin-bottom: 0;
+}
+
+.founder-bio div,
+.founder-bio span,
+.founder-bio a {
+    color: var(--dark-text) !important;
+}
+
+.founder-email {
+    margin-bottom: 1.5rem;
+}
+
+.founder-email a {
+    color: var(--theme-primary);
+    text-decoration: none;
+    font-size: 1rem;
+    transition: color 0.2s ease;
+}
+
+.founder-email a:hover {
+    color: var(--theme-primary-hover);
+    text-decoration: underline;
+}
+
+.founder-social {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.founder-social a {
+    color: var(--dark-text-muted);
+    font-size: 1.5rem;
+    transition: color 0.2s ease;
+}
+
+.founder-social a:hover {
+    color: var(--theme-primary);
+}
+
+.founder-articles h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--dark-text);
+}
+
+.founder-articles-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.founder-articles-list li {
+    margin-bottom: 0.75rem;
+    padding-left: 0;
+}
+
+.founder-articles-list a {
+    color: var(--theme-primary);
+    text-decoration: none;
+    font-size: 1rem;
+    transition: color 0.2s ease;
+}
+
+.founder-articles-list a:hover {
+    color: var(--theme-primary-hover);
+    text-decoration: underline;
+}
+
+.founder-articles-list .article-date {
+    color: var(--dark-text-muted);
+    font-size: 0.875rem;
+    margin-left: 0.5rem;
+}
+
+/* Regular Authors Section */
+.authors-section {
+    margin-top: 4rem;
+}
+
+.section-header {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+    color: var(--dark-text);
+    font-family: 'Aleo', serif;
+}
+
+.authors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.author-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 8px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.author-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.author-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--theme-primary);
+    margin: 0 auto 1.5rem;
+}
+
+.author-content h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    color: var(--dark-text);
+}
+
+.author-bio {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+    flex-grow: 1;
+}
+
+.author-bio p,
+.author-bio div,
+.author-bio span,
+.author-bio a {
+    color: var(--dark-text) !important;
+}
+
+.author-email {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.author-email a {
+    color: var(--theme-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+}
+
+.author-email a:hover {
+    color: var(--theme-primary-hover);
+    text-decoration: underline;
+}
+
+.author-social {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.author-social a {
+    color: var(--dark-text-muted);
+    font-size: 1.25rem;
+    transition: color 0.2s ease;
+}
+
+.author-social a:hover {
+    color: var(--theme-primary);
+}
+
+.author-articles h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--dark-text);
+    border-top: 1px solid var(--dark-border);
+    padding-top: 1rem;
+}
+
+.author-articles-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.author-articles-list li {
+    margin-bottom: 0.5rem;
+}
+
+.author-articles-list a {
+    color: var(--theme-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+}
+
+.author-articles-list a:hover {
+    color: var(--theme-primary-hover);
+    text-decoration: underline;
+}
+
+.author-articles-list .article-date {
+    color: var(--dark-text-muted);
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+.no-articles {
+    color: var(--dark-text-muted);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.no-image-placeholder {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: var(--dark-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dark-text-muted);
+    font-size: 3rem;
+    border: 3px solid var(--theme-primary);
+}
+
+.author-no-image-placeholder {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: var(--dark-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dark-text-muted);
+    font-size: 2rem;
+    border: 2px solid var(--theme-primary);
+    margin: 0 auto 1.5rem;
+}
+
+/* Mobile Responsive */
+@media screen and (max-width: 768px) {
+    .about-us-container {
+        padding: 2rem 1rem;
+    }
+
+    .page-header h1 {
+        font-size: 2rem;
+    }
+
+    .page-header p {
+        font-size: 1rem;
+    }
+
+    .founder-card {
+        grid-template-columns: 1fr;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .founder-image,
+    .no-image-placeholder {
+        margin: 0 auto;
+    }
+
+    .authors-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .founder-content h2 {
+        font-size: 1.5rem;
+    }
+}
+
+@media screen and (min-width: 769px) and (max-width: 1200px) {
+    .authors-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media screen and (min-width: 1201px) {
+    .authors-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+</style>
+
+<div class="about-us-container">
+    <div class="page-header">
+        <h1>About Us</h1>
+        <p>Meet the team behind Over Slot - dedicated baseball prospect analysts and scouts covering the future stars of the game.</p>
+    </div>
+
+    {% if founders %}
+    <section class="founders-section">
+        <div class="founders-grid">
+            {% for founder in founders %}
+            <div class="founder-card">
+                <div>
+                    {% if founder.photo_url %}
+                        <img src="{{ founder.photo_url }}" alt="{{ founder.display_name|default:founder.name|default:'Founder' }}" class="founder-image">
+                    {% else %}
+                        <div class="no-image-placeholder">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="founder-content">
+                    <span class="founder-badge">Founder</span>
+                    <h2>{{ founder.display_name|default:founder.name|default:'Founder' }}</h2>
+                    {% if founder.bio %}
+                    <div class="founder-bio">
+                        {{ founder.bio|striptags|linebreaks }}
+                    </div>
+                    {% endif %}
+                    {% if founder.display_email %}
+                    <div class="founder-email">
+                        <a href="mailto:{{ founder.display_email }}">Email {{ founder.first_name }}</a>
+                    </div>
+                    {% endif %}
+                    {% if founder.twitter or founder.bluesky %}
+                    <div class="founder-social">
+                        {% if founder.bluesky %}
+                        <a href="{{ founder.bluesky_url }}" title="Bluesky" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-cloud"></i>
+                        </a>
+                        {% endif %}
+                        {% if founder.twitter %}
+                        <a href="https://twitter.com/{{ founder.twitter }}" title="Twitter" target="_blank" rel="noopener noreferrer">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% if founder.recent_articles %}
+                    <div class="founder-articles">
+                        <h3>Recent Articles</h3>
+                        <ul class="founder-articles-list">
+                            {% for article in founder.recent_articles %}
+                            <li>
+                                <a href="/articles/{{ article.slug }}/">{{ article.headline }}</a>
+                                <span class="article-date">{{ article.created|date:"M j, Y" }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if regular_authors %}
+    <section class="authors-section">
+        <h2 class="section-header">Contributors</h2>
+        <div class="authors-grid">
+            {% for author in regular_authors %}
+            <div class="author-card">
+                <div>
+                    {% if author.photo_url %}
+                        <img src="{{ author.photo_url }}" alt="{{ author.display_name|default:author.name|default:'Author' }}" class="author-image">
+                    {% else %}
+                        <div class="author-no-image-placeholder">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <h3>{{ author.display_name|default:author.name|default:'Author' }}</h3>
+                {% if author.bio %}
+                <div class="author-bio">
+                    {{ author.bio|striptags|linebreaks }}
+                </div>
+                {% endif %}
+                {% if author.display_email %}
+                <div class="author-email">
+                    <a href="mailto:{{ author.display_email }}">Email {{ author.first_name }}</a>
+                </div>
+                {% endif %}
+                {% if author.twitter or author.bluesky %}
+                <div class="author-social">
+                    {% if author.bluesky %}
+                    <a href="{{ author.bluesky_url }}" title="Bluesky" target="_blank" rel="noopener noreferrer">
+                        <i class="fas fa-cloud"></i>
+                    </a>
+                    {% endif %}
+                    {% if author.twitter %}
+                    <a href="https://twitter.com/{{ author.twitter }}" title="Twitter" target="_blank" rel="noopener noreferrer">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if author.recent_articles %}
+                <div class="author-articles">
+                    <h4>Recent Articles</h4>
+                    <ul class="author-articles-list">
+                        {% for article in author.recent_articles %}
+                        <li>
+                            <a href="/articles/{{ article.slug }}/">{{ article.headline }}</a>
+                            <span class="article-date">{{ article.created|date:"M j, Y" }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% else %}
+                <div class="author-articles">
+                    <h4>Recent Articles</h4>
+                    <p class="no-articles">No articles yet</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
