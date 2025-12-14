@@ -23,50 +23,38 @@
 
         <div id="navMenu" class="navbar-menu" style="background: var(--dark-surface); padding: 0;">
             <div class="navbar-start">
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
-                   href="/articles/"
-                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
+                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
+                   href="/articles/">
                     News
                 </a>
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
-                   href="/rankings/"
-                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
+                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
+                   href="/rankings/">
                     Rankings
                 </a>
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
-                   href="/hitters/college/"
-                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
+                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
+                   href="/hitters/college/">
                     Data
                 </a>
                 {% if has_published_mock_drafts %}
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
-                   href="/mock-drafts/"
-                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
+                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
+                   href="/mock-drafts/">
                     Mock Drafts
                 </a>
                 {% endif %}
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
-                   href="/videos/"
-                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
+                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
+                   href="/videos/">
                     Videos
                 </a>
-                <!-- <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
-                   href="/mock-drafts/"
-                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
-                    Mock Drafts
-                </a> -->
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
+                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
                    href="https://patreon.com/overslot"
                    target="_blank"
-                   rel="noopener noreferrer"
-                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
+                   rel="noopener noreferrer">
                     Podcast
                 </a>
-                <!-- <a class="navbar-item has-text-grey-lighter has-text-weight-medium is-size-5" 
-                   href="/about/"
-                   style="padding: 0.75rem 1rem; display: flex; align-items: center; height: 100%; transition: all 0.2s ease;">
+                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
+                   href="/about-us/">
                     About
-                </a> -->
+                </a>
             </div>
 
             <div class="navbar-end">
@@ -179,7 +167,7 @@
 
 .logo-text {
     font-family: 'Aleo', serif;
-    font-size: var(--text-3xl);
+    font-size: var(--text-2xl);
     font-weight: 900;
     color: var(--dark-text);
     letter-spacing: -0.02em;
@@ -267,12 +255,43 @@
     }
 }
 
+/* Nav link styles */
+.nav-link {
+    padding: 0.75rem 0.75rem !important;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
 /* Search styles */
 .search-container {
     position: relative;
-    min-width: 400px;
-    max-width: 600px;
+    min-width: 250px;
+    max-width: 400px;
     flex-grow: 1;
+}
+
+@media screen and (min-width: 1024px) and (max-width: 1400px) {
+    .search-container {
+        min-width: 200px;
+        max-width: 300px;
+    }
+    
+    .nav-link {
+        padding: 0.75rem 0.5rem !important;
+        font-size: 0.9rem;
+    }
+    
+    .logo-text {
+        font-size: var(--text-xl);
+    }
+    
+    .navbar-item.logo {
+        padding: 0 1rem;
+    }
 }
 
 .search-wrapper {
