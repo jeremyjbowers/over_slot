@@ -1,3 +1,13 @@
+"""
+DEPRECATED: This command has been split into three separate loaders:
+- load_college_hitters: Load college hitters data
+- load_pitchers: Load pitchers data  
+- load_hs_hitters: Load high school hitters data
+
+This file is kept for backward compatibility but should not be used for new cron jobs.
+Use the individual loaders instead for better maintenance and separate scheduling.
+"""
+
 import numpy as np
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
@@ -9,7 +19,7 @@ from overslot import models, utils
 
 
 class Command(BaseCommand):
-    help = 'Load Trackman data from Google Sheets'
+    help = 'Load Trackman data from Google Sheets (DEPRECATED - use load_college_hitters, load_pitchers, or load_hs_hitters instead)'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -612,25 +622,41 @@ class Command(BaseCommand):
                             progress = ((original_index + 1) / total_rows) * 100
                             print(f"Processing {tab_type.lower()}: {progress:.1f}% complete ({original_index + 1}/{total_rows})")
                         
+                        # Extract break data (x,y coordinates)
+                        vert_break = _parse_value(row.get('Induced Vertical Break'))
+                        horiz_break = _parse_value(row.get('Horizontal Break'))
+                        
                         # Store the composite score for this pitch type
                         if tab_type == "Fourseam":
                             row['fourseam_percentile'] = pitch_percentile
                             row['fourseam_score'] = pitch_percentile
+                            row['fourseam_vert_break'] = vert_break
+                            row['fourseam_horiz_break'] = horiz_break
                         elif tab_type == "Sinkers":
                             row['sinker_percentile'] = pitch_percentile
                             row['sinker_score'] = pitch_percentile
+                            row['sinker_vert_break'] = vert_break
+                            row['sinker_horiz_break'] = horiz_break
                         elif tab_type == "Sliders":
                             row['slider_percentile'] = pitch_percentile
                             row['slider_score'] = pitch_percentile
+                            row['slider_vert_break'] = vert_break
+                            row['slider_horiz_break'] = horiz_break
                         elif tab_type == "Sweepers":
                             row['sweeper_percentile'] = pitch_percentile
                             row['sweeper_score'] = pitch_percentile
+                            row['sweeper_vert_break'] = vert_break
+                            row['sweeper_horiz_break'] = horiz_break
                         elif tab_type == "Curveballs":
                             row['curveball_percentile'] = pitch_percentile
                             row['curveball_score'] = pitch_percentile
+                            row['curveball_vert_break'] = vert_break
+                            row['curveball_horiz_break'] = horiz_break
                         elif tab_type == "Changeup/Splitters":
                             row['changeup_percentile'] = pitch_percentile
                             row['changeup_score'] = pitch_percentile
+                            row['changeup_vert_break'] = vert_break
+                            row['changeup_horiz_break'] = horiz_break
 
                         if row.get('Name'):
                             obj = self._fuzzy_find_player(row['Name'], debug=debug)
@@ -652,21 +678,33 @@ class Command(BaseCommand):
                             if tab_type == "Fourseam":
                                 season.fourseam_percentile = row['fourseam_percentile']
                                 season.fourseam_score = row['fourseam_score']
+                                season.fourseam_vert_break = row.get('fourseam_vert_break')
+                                season.fourseam_horiz_break = row.get('fourseam_horiz_break')
                             elif tab_type == "Sinkers":
                                 season.sinker_percentile = row['sinker_percentile']
                                 season.sinker_score = row['sinker_score']
+                                season.sinker_vert_break = row.get('sinker_vert_break')
+                                season.sinker_horiz_break = row.get('sinker_horiz_break')
                             elif tab_type == "Sliders":
                                 season.slider_percentile = row['slider_percentile']
                                 season.slider_score = row['slider_score']
+                                season.slider_vert_break = row.get('slider_vert_break')
+                                season.slider_horiz_break = row.get('slider_horiz_break')
                             elif tab_type == "Sweepers":
                                 season.sweeper_percentile = row['sweeper_percentile']
                                 season.sweeper_score = row['sweeper_score']
+                                season.sweeper_vert_break = row.get('sweeper_vert_break')
+                                season.sweeper_horiz_break = row.get('sweeper_horiz_break')
                             elif tab_type == "Curveballs":
                                 season.curveball_percentile = row['curveball_percentile']
                                 season.curveball_score = row['curveball_score']
+                                season.curveball_vert_break = row.get('curveball_vert_break')
+                                season.curveball_horiz_break = row.get('curveball_horiz_break')
                             elif tab_type == "Changeup/Splitters":
                                 season.changeup_percentile = row['changeup_percentile']
                                 season.changeup_score = row['changeup_score']
+                                season.changeup_vert_break = row.get('changeup_vert_break')
+                                season.changeup_horiz_break = row.get('changeup_horiz_break')
 
                             season.confidence = 10
                             season.save()
@@ -678,74 +716,75 @@ class Command(BaseCommand):
                 
                 print(f"Completed processing {total_rows} players for {tab}")
 
-        # Additional processing for High School Hitters tabs
-        # Supported patterns:
-        #   "{DRAFT_YEAR} HS Hitters - {STATS_YEAR}"
-        #   "{DRAFT_YEAR} HS Hitters {STATS_YEAR}"
-        # The stat season should be STATS_YEAR.
-        # Discover all HS Hitters tabs across the requested ranges.
-        # Draft years: 2027-2023; Data years: 2025-2022; constraint: draft > data.
-        draft_years = [str(y) for y in range(2027, 2022, -1)]
-        data_years = [str(y) for y in range(2025, 2021, -1)]
-        hs_tabs = []
-        for draft_year in draft_years:
-            for stats_year in data_years:
-                if int(draft_year) > int(stats_year):
-                    # Only support dash-separated naming pattern created by editor
-                    hs_tabs.append(f"{draft_year} HS Hitters - {stats_year}")
-        # De-duplicate while preserving order
-        seen = set()
-        hs_tabs = [t for t in hs_tabs if not (t in seen or seen.add(t))]
+        # Additional processing for High School Hitters tabs (skip if only loading pitchers)
+        if group != 'pitchers':
+            # Supported patterns:
+            #   "{DRAFT_YEAR} HS Hitters - {STATS_YEAR}"
+            #   "{DRAFT_YEAR} HS Hitters {STATS_YEAR}"
+            # The stat season should be STATS_YEAR.
+            # Discover all HS Hitters tabs across the requested ranges.
+            # Draft years: 2027-2023; Data years: 2025-2022; constraint: draft > data.
+            draft_years = [str(y) for y in range(2027, 2022, -1)]
+            data_years = [str(y) for y in range(2025, 2021, -1)]
+            hs_tabs = []
+            for draft_year in draft_years:
+                for stats_year in data_years:
+                    if int(draft_year) > int(stats_year):
+                        # Only support dash-separated naming pattern created by editor
+                        hs_tabs.append(f"{draft_year} HS Hitters - {stats_year}")
+            # De-duplicate while preserving order
+            seen = set()
+            hs_tabs = [t for t in hs_tabs if not (t in seen or seen.add(t))]
 
-        for hs_tab in hs_tabs:
-            sheet = None
-            try:
-                print(f"[load] Reading tab: {hs_tab}")
-                sheet = utils.get_sheet("1KJwXOxOKZvk50bP186klB_YXUdWVylJwEHvHUBorULA", f"{hs_tab}!A:AZ", value_cutoff=None)
-            except Exception as e:
-                print(e)
+            for hs_tab in hs_tabs:
+                sheet = None
+                try:
+                    print(f"[load] Reading tab: {hs_tab}")
+                    sheet = utils.get_sheet("1KJwXOxOKZvk50bP186klB_YXUdWVylJwEHvHUBorULA", f"{hs_tab}!A:AZ", value_cutoff=None)
+                except Exception as e:
+                    print(e)
 
-            if sheet is None:
-                print(f"No sheet found for {hs_tab}")
-                continue
+                if sheet is None:
+                    print(f"No sheet found for {hs_tab}")
+                    continue
 
-            rows = [self.fix_blanks(row) for row in sheet]
-            debug = options.get('debug', False)
+                rows = [self.fix_blanks(row) for row in sheet]
+                debug = options.get('debug', False)
 
-            # Helpers
-            def pct_or_number(val):
-                v = _parse_value(val)
-                if v is None:
-                    return None
-                # If value seems like a proportion (0-1), scale to percent space for deltas
-                return v * 100.0 if 0.0 <= v <= 1.0 else v
+                # Helpers
+                def pct_or_number(val):
+                    v = _parse_value(val)
+                    if v is None:
+                        return None
+                    # If value seems like a proportion (0-1), scale to percent space for deltas
+                    return v * 100.0 if 0.0 <= v <= 1.0 else v
 
-            def collect_values(rows, keys):
-                collected = []
-                for r in rows:
+                def collect_values(rows, keys):
+                    collected = []
+                    for r in rows:
+                        for k in keys:
+                            if k in r and r.get(k) is not None:
+                                parsed = pct_or_number(r.get(k))
+                                if parsed is not None:
+                                    collected.append(parsed)
+                                break
+                    return collected
+
+                def row_value(row, keys):
                     for k in keys:
-                        if k in r and r.get(k) is not None:
-                            parsed = pct_or_number(r.get(k))
-                            if parsed is not None:
-                                collected.append(parsed)
-                            break
-                return collected
+                        if k in row and row.get(k) is not None:
+                            return pct_or_number(row.get(k))
+                    return None
 
-            def row_value(row, keys):
-                for k in keys:
-                    if k in row and row.get(k) is not None:
-                        return pct_or_number(row.get(k))
-                return None
+                # Raw numeric (no percent scaling) — for BA/OBP/SLG/OPS/ISO actuals
+                def row_value_raw(row, keys):
+                    for k in keys:
+                        if k in row and row.get(k) is not None:
+                            return _parse_value(row.get(k))
+                    return None
 
-            # Raw numeric (no percent scaling) — for BA/OBP/SLG/OPS/ISO actuals
-            def row_value_raw(row, keys):
-                for k in keys:
-                    if k in row and row.get(k) is not None:
-                        return _parse_value(row.get(k))
-                return None
-
-            # Define metric mappings: ([possible header names], invert_percentile, percentile_field, points_delta_field)
-            metric_map = [
+                # Define metric mappings: ([possible header names], invert_percentile, percentile_field, points_delta_field)
+                metric_map = [
                 (["Contact%", "Contact %"], False, "hs_contact_pct_percentile", "hs_contact_pct_points_above_median"),
                 (["Chase%", "Chase %"], True, "hs_chase_pct_percentile", "hs_chase_pct_points_above_median"),
                 (["IZ Contact%", "Contact% IZ", "In-Zone Contact%"], False, "hs_iz_contact_pct_percentile", "hs_iz_contact_pct_points_above_median"),
@@ -759,131 +798,131 @@ class Command(BaseCommand):
                 (["Avg Rot. Acc.", "Average Rot. Acc.", "Avg Rot Acc"], False, "hs_avg_rot_acc_percentile", "hs_avg_rot_acc_points_above_median"),
                 (["Peak Hand Speed", "Peak HandSpeed"], False, "hs_peak_hand_speed_percentile", "hs_peak_hand_speed_points_above_median"),
                 (["Peak Power"], False, "hs_force_plate_explosiveness_percentile", "hs_force_plate_explosiveness_points_above_median"),
-            ]
+                ]
 
-            # Build distributions and medians
-            distributions = {}
-            medians = {}
-            for keys, invert, _, _ in metric_map:
-                values = collect_values(rows, keys)
-                if values:
-                    distributions[tuple(keys)] = {
-                        'distribution': np.percentile(values, np.arange(101)),
-                        'invert': invert,
-                    }
-                    medians[tuple(keys)] = float(np.median(values))
-                else:
-                    distributions[tuple(keys)] = {'distribution': None, 'invert': invert}
-                    medians[tuple(keys)] = None
-
-            # Actual stat columns for HS hitters
-            actual_map = {
-                'hs_pa': ["PA"],
-                'hs_ba': ["BA"],
-                'hs_obp': ["OBP"],
-                'hs_slg': ["SLG"],
-                'hs_ops': ["OPS"],
-                'hs_iso': ["ISO"],
-            }
-
-            total_rows = len(rows)
-            for idx, row in enumerate(rows):
-                # Find player
-                obj = self._fuzzy_find_player(row.get('Name') or row.get('Player') or row.get('Player Name') or "", debug=debug)
-                if not obj:
-                    if debug and (row.get('Name') or row.get('Player') or row.get('Player Name')):
-                        self.stdout.write(f"[hs_hitters] No Player match for '{row.get('Name') or row.get('Player') or row.get('Player Name')}' — skipping updates")
-                    continue
-                # infer stats year from tab label after the dash if present, else fallback to first token
-                stats_year = None
-                draft_year = None
-                if " - " in hs_tab:
-                    try:
-                        parts = hs_tab.split(" - ", 1)
-                        draft_year = parts[0].split()[0].strip()  # First token is draft year (e.g., "2027" from "2027 HS Hitters")
-                        stats_year = parts[1].strip()
-                    except Exception:
-                        stats_year = None
-                if not stats_year:
-                    # Fallback: last token
-                    stats_year = hs_tab.split()[-1]
-                if not draft_year:
-                    # Fallback: first token
-                    draft_year = hs_tab.split()[0].strip()
-                if debug:
-                    self.stdout.write(f"[hs_hitters] Saving PlayerStatSeason for '{obj.name}' year={stats_year} draft_year={draft_year}")
-
-                # Prepare computed values for this row
-                computed = {}
-                for keys, _, percentile_field, delta_field in metric_map:
-                    dist = distributions.get(tuple(keys), {}).get('distribution')
-                    invert = distributions.get(tuple(keys), {}).get('invert')
-                    median_val = medians.get(tuple(keys))
-                    raw_val = row_value(row, keys)
-                    if raw_val is not None and dist is not None:
-                        prc = _get_percentile_rank(raw_val if (not (keys == ["PG 60 Yard", "60 Yard", "60 yd", "PG 60yd"])) else raw_val, dist, invert=invert)
-                        computed[percentile_field] = None if prc is None else prc * 100.0
+                # Build distributions and medians
+                distributions = {}
+                medians = {}
+                for keys, invert, _, _ in metric_map:
+                    values = collect_values(rows, keys)
+                    if values:
+                        distributions[tuple(keys)] = {
+                            'distribution': np.percentile(values, np.arange(101)),
+                            'invert': invert,
+                        }
+                        medians[tuple(keys)] = float(np.median(values))
                     else:
-                        computed[percentile_field] = None
-                    computed[delta_field] = None if (raw_val is None or median_val is None) else (raw_val - median_val)
+                        distributions[tuple(keys)] = {'distribution': None, 'invert': invert}
+                        medians[tuple(keys)] = None
 
-                # Actuals
-                for field_name, keys in actual_map.items():
-                    # Keep actual statline values as decimals (e.g., 0.247).
-                    # If sheet provides percent-style numbers (e.g., 24.7), normalize to decimal.
-                    val = row_value_raw(row, keys)
-                    # Never normalize PA; it is a raw count
-                    # For SLG and OPS, values may legitimately exceed 1.000 — do not scale.
-                    # Only normalize BA/OBP/ISO if someone entered percent-style numbers.
-                    if field_name in ('hs_ba', 'hs_obp', 'hs_iso') and val is not None and val > 1.0:
-                        val = val / 100.0
-                    computed[field_name] = val
+                # Actual stat columns for HS hitters
+                actual_map = {
+                    'hs_pa': ["PA"],
+                    'hs_ba': ["BA"],
+                    'hs_obp': ["OBP"],
+                    'hs_slg': ["SLG"],
+                    'hs_ops': ["OPS"],
+                    'hs_iso': ["ISO"],
+                }
 
-                # Save onto PlayerStatSeason for this player/year at High School level
-                season, _created = models.PlayerStatSeason.objects.get_or_create(
-                    player=obj, year=str(stats_year), level="High School"
-                )
-                # Extract draft year and school
-                if draft_year:
-                    season.draft_year = str(draft_year).strip()
-                season.school = row.get('School')  # Column C for high school hitters
-                # Actuals
-                season.hs_pa = computed.get('hs_pa')
-                season.hs_ba = computed.get('hs_ba')
-                season.hs_obp = computed.get('hs_obp')
-                season.hs_slg = computed.get('hs_slg')
-                season.hs_ops = computed.get('hs_ops')
-                season.hs_iso = computed.get('hs_iso')
+                total_rows = len(rows)
+                for idx, row in enumerate(rows):
+                    # Find player
+                    obj = self._fuzzy_find_player(row.get('Name') or row.get('Player') or row.get('Player Name') or "", debug=debug)
+                    if not obj:
+                        if debug and (row.get('Name') or row.get('Player') or row.get('Player Name')):
+                            self.stdout.write(f"[hs_hitters] No Player match for '{row.get('Name') or row.get('Player') or row.get('Player Name')}' — skipping updates")
+                        continue
+                    # infer stats year from tab label after the dash if present, else fallback to first token
+                    stats_year = None
+                    draft_year = None
+                    if " - " in hs_tab:
+                        try:
+                            parts = hs_tab.split(" - ", 1)
+                            draft_year = parts[0].split()[0].strip()  # First token is draft year (e.g., "2027" from "2027 HS Hitters")
+                            stats_year = parts[1].strip()
+                        except Exception:
+                            stats_year = None
+                    if not stats_year:
+                        # Fallback: last token
+                        stats_year = hs_tab.split()[-1]
+                    if not draft_year:
+                        # Fallback: first token
+                        draft_year = hs_tab.split()[0].strip()
+                    if debug:
+                        self.stdout.write(f"[hs_hitters] Saving PlayerStatSeason for '{obj.name}' year={stats_year} draft_year={draft_year}")
 
-                # Percentiles and above-median deltas
-                season.hs_contact_pct_percentile = computed.get('hs_contact_pct_percentile')
-                season.hs_contact_pct_points_above_median = computed.get('hs_contact_pct_points_above_median')
-                season.hs_chase_pct_percentile = computed.get('hs_chase_pct_percentile')
-                season.hs_chase_pct_points_above_median = computed.get('hs_chase_pct_points_above_median')
-                season.hs_iz_contact_pct_percentile = computed.get('hs_iz_contact_pct_percentile')
-                season.hs_iz_contact_pct_points_above_median = computed.get('hs_iz_contact_pct_points_above_median')
-                season.hs_ooz_contact_pct_percentile = computed.get('hs_ooz_contact_pct_percentile')
-                season.hs_ooz_contact_pct_points_above_median = computed.get('hs_ooz_contact_pct_points_above_median')
-                season.hs_k_pct_percentile = computed.get('hs_k_pct_percentile')
-                season.hs_k_pct_points_above_median = computed.get('hs_k_pct_points_above_median')
-                season.hs_gb_pct_percentile = computed.get('hs_gb_pct_percentile')
-                season.hs_gb_pct_points_above_median = computed.get('hs_gb_pct_points_above_median')
-                season.hs_fb_pct_percentile = computed.get('hs_fb_pct_percentile')
-                season.hs_fb_pct_points_above_median = computed.get('hs_fb_pct_points_above_median')
-                season.hs_air_pull_pct_percentile = computed.get('hs_air_pull_pct_percentile')
-                season.hs_air_pull_pct_points_above_median = computed.get('hs_air_pull_pct_points_above_median')
-                season.hs_sprint_speed_percentile = computed.get('hs_sprint_speed_percentile')
-                season.hs_sprint_speed_points_above_median = computed.get('hs_sprint_speed_points_above_median')
-                season.hs_bat_speed_percentile = computed.get('hs_bat_speed_percentile')
-                season.hs_bat_speed_points_above_median = computed.get('hs_bat_speed_points_above_median')
-                season.hs_avg_rot_acc_percentile = computed.get('hs_avg_rot_acc_percentile')
-                season.hs_avg_rot_acc_points_above_median = computed.get('hs_avg_rot_acc_points_above_median')
-                season.hs_peak_hand_speed_percentile = computed.get('hs_peak_hand_speed_percentile')
-                season.hs_peak_hand_speed_points_above_median = computed.get('hs_peak_hand_speed_points_above_median')
-                season.hs_force_plate_explosiveness_percentile = computed.get('hs_force_plate_explosiveness_percentile')
-                season.hs_force_plate_explosiveness_points_above_median = computed.get('hs_force_plate_explosiveness_points_above_median')
+                    # Prepare computed values for this row
+                    computed = {}
+                    for keys, _, percentile_field, delta_field in metric_map:
+                        dist = distributions.get(tuple(keys), {}).get('distribution')
+                        invert = distributions.get(tuple(keys), {}).get('invert')
+                        median_val = medians.get(tuple(keys))
+                        raw_val = row_value(row, keys)
+                        if raw_val is not None and dist is not None:
+                            prc = _get_percentile_rank(raw_val if (not (keys == ["PG 60 Yard", "60 Yard", "60 yd", "PG 60yd"])) else raw_val, dist, invert=invert)
+                            computed[percentile_field] = None if prc is None else prc * 100.0
+                        else:
+                            computed[percentile_field] = None
+                        computed[delta_field] = None if (raw_val is None or median_val is None) else (raw_val - median_val)
 
-                season.confidence = 10
-                season.save()
-                if debug:
-                    self.stdout.write(f"[hs_hitters] Saved PlayerStatSeason {season.year} High School for '{obj.name}' from '{hs_tab}'")
+                    # Actuals
+                    for field_name, keys in actual_map.items():
+                        # Keep actual statline values as decimals (e.g., 0.247).
+                        # If sheet provides percent-style numbers (e.g., 24.7), normalize to decimal.
+                        val = row_value_raw(row, keys)
+                        # Never normalize PA; it is a raw count
+                        # For SLG and OPS, values may legitimately exceed 1.000 — do not scale.
+                        # Only normalize BA/OBP/ISO if someone entered percent-style numbers.
+                        if field_name in ('hs_ba', 'hs_obp', 'hs_iso') and val is not None and val > 1.0:
+                            val = val / 100.0
+                        computed[field_name] = val
+
+                    # Save onto PlayerStatSeason for this player/year at High School level
+                    season, _created = models.PlayerStatSeason.objects.get_or_create(
+                        player=obj, year=str(stats_year), level="High School"
+                    )
+                    # Extract draft year and school
+                    if draft_year:
+                        season.draft_year = str(draft_year).strip()
+                    season.school = row.get('School')  # Column C for high school hitters
+                    # Actuals
+                    season.hs_pa = computed.get('hs_pa')
+                    season.hs_ba = computed.get('hs_ba')
+                    season.hs_obp = computed.get('hs_obp')
+                    season.hs_slg = computed.get('hs_slg')
+                    season.hs_ops = computed.get('hs_ops')
+                    season.hs_iso = computed.get('hs_iso')
+
+                    # Percentiles and above-median deltas
+                    season.hs_contact_pct_percentile = computed.get('hs_contact_pct_percentile')
+                    season.hs_contact_pct_points_above_median = computed.get('hs_contact_pct_points_above_median')
+                    season.hs_chase_pct_percentile = computed.get('hs_chase_pct_percentile')
+                    season.hs_chase_pct_points_above_median = computed.get('hs_chase_pct_points_above_median')
+                    season.hs_iz_contact_pct_percentile = computed.get('hs_iz_contact_pct_percentile')
+                    season.hs_iz_contact_pct_points_above_median = computed.get('hs_iz_contact_pct_points_above_median')
+                    season.hs_ooz_contact_pct_percentile = computed.get('hs_ooz_contact_pct_percentile')
+                    season.hs_ooz_contact_pct_points_above_median = computed.get('hs_ooz_contact_pct_points_above_median')
+                    season.hs_k_pct_percentile = computed.get('hs_k_pct_percentile')
+                    season.hs_k_pct_points_above_median = computed.get('hs_k_pct_points_above_median')
+                    season.hs_gb_pct_percentile = computed.get('hs_gb_pct_percentile')
+                    season.hs_gb_pct_points_above_median = computed.get('hs_gb_pct_points_above_median')
+                    season.hs_fb_pct_percentile = computed.get('hs_fb_pct_percentile')
+                    season.hs_fb_pct_points_above_median = computed.get('hs_fb_pct_points_above_median')
+                    season.hs_air_pull_pct_percentile = computed.get('hs_air_pull_pct_percentile')
+                    season.hs_air_pull_pct_points_above_median = computed.get('hs_air_pull_pct_points_above_median')
+                    season.hs_sprint_speed_percentile = computed.get('hs_sprint_speed_percentile')
+                    season.hs_sprint_speed_points_above_median = computed.get('hs_sprint_speed_points_above_median')
+                    season.hs_bat_speed_percentile = computed.get('hs_bat_speed_percentile')
+                    season.hs_bat_speed_points_above_median = computed.get('hs_bat_speed_points_above_median')
+                    season.hs_avg_rot_acc_percentile = computed.get('hs_avg_rot_acc_percentile')
+                    season.hs_avg_rot_acc_points_above_median = computed.get('hs_avg_rot_acc_points_above_median')
+                    season.hs_peak_hand_speed_percentile = computed.get('hs_peak_hand_speed_percentile')
+                    season.hs_peak_hand_speed_points_above_median = computed.get('hs_peak_hand_speed_points_above_median')
+                    season.hs_force_plate_explosiveness_percentile = computed.get('hs_force_plate_explosiveness_percentile')
+                    season.hs_force_plate_explosiveness_points_above_median = computed.get('hs_force_plate_explosiveness_points_above_median')
+
+                    season.confidence = 10
+                    season.save()
+                    if debug:
+                        self.stdout.write(f"[hs_hitters] Saved PlayerStatSeason {season.year} High School for '{obj.name}' from '{hs_tab}'")

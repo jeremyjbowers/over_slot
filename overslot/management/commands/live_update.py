@@ -9,7 +9,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         call_command('generate_duplicates')
         call_command('sheet_load_rankings')
-        call_command('sheet_load_trackman')
+        call_command('load_college_hitters')
+        call_command('load_college_pitchers')
+        call_command('load_hs_hitters')
         call_command('generate_duplicates')
         # call_command('sheet_load_mocks')
         call_command('load_podcast_episodes')

@@ -649,6 +649,20 @@ class PlayerStatSeason(BaseModel):
     curveball_score = models.FloatField(blank=True, null=True)
     changeup_score = models.FloatField(blank=True, null=True)
 
+    # Pitcher pitch-type break data (x,y coordinates)
+    fourseam_vert_break = models.FloatField(blank=True, null=True, help_text="Induced Vertical Break for fourseam")
+    fourseam_horiz_break = models.FloatField(blank=True, null=True, help_text="Horizontal Break for fourseam")
+    sinker_vert_break = models.FloatField(blank=True, null=True, help_text="Induced Vertical Break for sinker")
+    sinker_horiz_break = models.FloatField(blank=True, null=True, help_text="Horizontal Break for sinker")
+    slider_vert_break = models.FloatField(blank=True, null=True, help_text="Induced Vertical Break for slider")
+    slider_horiz_break = models.FloatField(blank=True, null=True, help_text="Horizontal Break for slider")
+    sweeper_vert_break = models.FloatField(blank=True, null=True, help_text="Induced Vertical Break for sweeper")
+    sweeper_horiz_break = models.FloatField(blank=True, null=True, help_text="Horizontal Break for sweeper")
+    curveball_vert_break = models.FloatField(blank=True, null=True, help_text="Induced Vertical Break for curveball")
+    curveball_horiz_break = models.FloatField(blank=True, null=True, help_text="Horizontal Break for curveball")
+    changeup_vert_break = models.FloatField(blank=True, null=True, help_text="Induced Vertical Break for changeup/splitter")
+    changeup_horiz_break = models.FloatField(blank=True, null=True, help_text="Horizontal Break for changeup/splitter")
+
     # High school statline actuals
     hs_pa = models.FloatField(blank=True, null=True)
     hs_ba = models.FloatField(blank=True, null=True)
