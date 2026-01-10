@@ -13,22 +13,53 @@ class Command(BaseCommand):
             action='store_true',
             help='Enable verbose logging for player matching and saves'
         )
+        parser.add_argument(
+            '--tab',
+            type=str,
+            default=None,
+            help='Load a specific tab name (e.g., "2025 Fourseam" or "2024 Changeups/Splitters"). If not specified, loads all tabs.'
+        )
 
     def handle(self, *args, **options):
         """
         Load college pitchers data from sheets named like "{YEAR} {PITCH_TYPE}"
-        Pitch types: Fourseam, Sinkers, Sliders, Sweepers, Curveballs, Changeup/Splitters
+        Pitch types: Fourseam, Sinkers, Sliders, Sweepers, Curveballs, Changeups/Splitters
         """
         debug = options.get('debug', False)
-        years = ['2025', '2024']
-        tab_types = ["Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeup/Splitters"]
+        specific_tab = options.get('tab')
+        
+        # If a specific tab is requested, load only that tab
+        if specific_tab:
+            # Determine year and tab_type from the tab name for processing
+            import re
+            match = re.match(r'(\d{4})\s+(.+)', specific_tab)
+            if match:
+                year = match.group(1)
+                tab_type_raw = match.group(2).strip()
+                # Map to internal tab_type
+                if 'Changeup' in tab_type_raw or 'Splitter' in tab_type_raw:
+                    tab_type = "Changeups/Splitters"
+                else:
+                    tab_type = tab_type_raw.split()[0] if tab_type_raw.split() else tab_type_raw
+            else:
+                self.stdout.write(self.style.ERROR(f"Could not parse tab name '{specific_tab}'. Expected format: '2025 Fourseam' or '2024 Changeups/Splitters'"))
+                return
+            
+            # Process just this one tab
+            years = [year]
+            tab_types = [tab_type]
+        else:
+            years = ['2025', '2024']
+            tab_types = ["Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeups/Splitters"]
 
         for year in years:
             for tab_type in tab_types:
-                # Handle inconsistent naming: try both "Changeup" and "Changeups" for Changeup/Splitters
-                if tab_type == "Changeup/Splitters":
-                    # Try both singular and plural forms
-                    tab_candidates = [f"{year} Changeup", f"{year} Changeups"]
+                # Handle Changeups/Splitters tab name
+                if specific_tab:
+                    # Use the exact tab name provided
+                    tab_candidates = [specific_tab]
+                elif tab_type == "Changeups/Splitters":
+                    tab_candidates = [f"{year} Changeups/Splitters"]
                 else:
                     tab_candidates = [f"{year} {tab_type}"]
 
@@ -37,7 +68,7 @@ class Command(BaseCommand):
                 for candidate_tab in tab_candidates:
                     print(f"[load] Reading tab: {candidate_tab}")
                     try:
-                        sheet = utils.get_sheet("1KJwXOxOKZvk50bP186klB_YXUdWVylJwEHvHUBorULA", f"{candidate_tab}!A:AB", value_cutoff=None)
+                        sheet = utils.get_sheet("1KJwXOxOKZvk50bP186klB_YXUdWVylJwEHvHUBorULA", f"{candidate_tab}!A:Z", value_cutoff=None)
                         if sheet:
                             tab = candidate_tab
                             break
@@ -147,7 +178,7 @@ class Command(BaseCommand):
                         row['curveball_score'] = pitch_percentile
                         row['curveball_vert_break'] = vert_break
                         row['curveball_horiz_break'] = horiz_break
-                    elif tab_type == "Changeup/Splitters":
+                    elif tab_type == "Changeups/Splitters":
                         row['changeup_percentile'] = pitch_percentile
                         row['changeup_score'] = pitch_percentile
                         row['changeup_vert_break'] = vert_break
@@ -195,7 +226,7 @@ class Command(BaseCommand):
                             season.curveball_score = row['curveball_score']
                             season.curveball_vert_break = row.get('curveball_vert_break')
                             season.curveball_horiz_break = row.get('curveball_horiz_break')
-                        elif tab_type == "Changeup/Splitters":
+                        elif tab_type == "Changeups/Splitters":
                             season.changeup_percentile = row['changeup_percentile']
                             season.changeup_score = row['changeup_score']
                             season.changeup_vert_break = row.get('changeup_vert_break')

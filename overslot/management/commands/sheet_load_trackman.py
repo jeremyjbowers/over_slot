@@ -258,13 +258,13 @@ class Command(BaseCommand):
 
         # Load current and prior college seasons named like "{YEAR} Hitters"
         years = ['2025', '2024']
-        all_tab_types = ["Hitters", "Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeup/Splitters"]
+        all_tab_types = ["Hitters", "Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeups/Splitters"]
 
         group = options.get('group', 'all')
         if group == 'hitters':
             tab_types = ["Hitters"]
         elif group == 'pitchers':
-            tab_types = ["Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeup/Splitters"]
+            tab_types = ["Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeups/Splitters"]
         else:
             tab_types = all_tab_types
 
@@ -272,20 +272,48 @@ class Command(BaseCommand):
 
         for year in years:
             for tab_type in tab_types:
-                tab = f"{year} {tab_type}"
-
+                # Handle Changeups/Splitters tab name
+                if tab_type == "Changeups/Splitters":
+                    tab_candidates = [f"{year} Changeups/Splitters"]
+                else:
+                    tab_candidates = [f"{year} {tab_type}"]
+                
                 sheet = None
-                print(f"[load] Reading tab: {tab}")
-
-                try:
-                    # Include AB to capture K % column as requested
-                    sheet = utils.get_sheet("1KJwXOxOKZvk50bP186klB_YXUdWVylJwEHvHUBorULA", f"{tab}!A:AB", value_cutoff=None)
-                except Exception as e:
-                    print(e)
-
+                tab = None
+                for candidate_tab in tab_candidates:
+                    print(f"[load] Reading tab: {candidate_tab}")
+                    try:
+                        # Quote tab name if it contains spaces or special characters
+                        if ' ' in candidate_tab or '/' in candidate_tab:
+                            range_str = f"'{candidate_tab}'!A:Z"
+                        else:
+                            range_str = f"{candidate_tab}!A:Z"
+                        # For hitters, use A:AB to capture K % column; for pitchers use A:Z
+                        if tab_type == "Hitters":
+                            range_str = range_str.replace('!A:Z', '!A:AB')
+                        sheet = utils.get_sheet("1KJwXOxOKZvk50bP186klB_YXUdWVylJwEHvHUBorULA", range_str, value_cutoff=None)
+                        if sheet:
+                            tab = candidate_tab
+                            break
+                    except HttpError as e:
+                        # 400 error means the sheet tab doesn't exist, try next candidate
+                        if e.resp.status == 400:
+                            print(f"Tab '{candidate_tab}' not found (400 error), trying next option...")
+                            continue
+                        else:
+                            # Re-raise other HTTP errors
+                            raise
+                    except Exception as e:
+                        print(f"Error reading tab '{candidate_tab}': {e}")
+                        continue
+                
                 if sheet is None:
-                    print(f"No sheet found for {tab}")
+                    print(f"No sheet found for any of: {', '.join(tab_candidates)}")
                     continue
+                
+                # Use the found tab name for the rest of the processing
+                if tab is None:
+                    tab = tab_candidates[0]  # Fallback, though this shouldn't happen
 
                 # Different minimum pitches for hitters vs pitchers
                 min_pitches = 250 if tab_type == "Hitters" else 100
@@ -652,7 +680,7 @@ class Command(BaseCommand):
                             row['curveball_score'] = pitch_percentile
                             row['curveball_vert_break'] = vert_break
                             row['curveball_horiz_break'] = horiz_break
-                        elif tab_type == "Changeup/Splitters":
+                        elif tab_type == "Changeups/Splitters":
                             row['changeup_percentile'] = pitch_percentile
                             row['changeup_score'] = pitch_percentile
                             row['changeup_vert_break'] = vert_break
@@ -700,7 +728,7 @@ class Command(BaseCommand):
                                 season.curveball_score = row['curveball_score']
                                 season.curveball_vert_break = row.get('curveball_vert_break')
                                 season.curveball_horiz_break = row.get('curveball_horiz_break')
-                            elif tab_type == "Changeup/Splitters":
+                            elif tab_type == "Changeups/Splitters":
                                 season.changeup_percentile = row['changeup_percentile']
                                 season.changeup_score = row['changeup_score']
                                 season.changeup_vert_break = row.get('changeup_vert_break')

@@ -514,6 +514,61 @@
 
             /* Improve contrast for green text labels */
             .text-green-800 { color: var(--dark-text) !important; }
+
+            /* Reusable Chart Tabs Component */
+            /* Override Bulma tabs styles completely for our custom pill-shaped tabs */
+            .chart-tabs-wrapper {
+                margin: 0.75rem 1rem 1.25rem;
+            }
+            .chart-tabs-wrapper .tabs {
+                margin-bottom: 0 !important;
+            }
+            .chart-tabs-wrapper .tabs ul {
+                display: flex !important;
+                gap: 0.5rem !important;
+                align-items: center !important;
+                border-bottom: none !important;
+            }
+            .chart-tabs-wrapper .tabs li {
+                margin: 0 !important;
+                margin-bottom: 0 !important;
+            }
+            .chart-tabs-wrapper .tabs li a {
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 0.35rem !important;
+                padding: 0.4rem 0.85rem !important;
+                border: 1px solid var(--dark-border) !important;
+                border-radius: 999px !important;
+                background: var(--dark-surface) !important;
+                color: #ffffff !important;
+                transition: all 0.15s ease !important;
+                border-bottom: none !important;
+                text-decoration: none !important;
+            }
+            .chart-tabs-wrapper .tabs li a:hover {
+                background: var(--dark-surface-hover) !important;
+                color: #ffffff !important;
+                border-color: var(--dark-border) !important;
+            }
+            .chart-tabs-wrapper .tabs li.is-active a {
+                border-color: var(--theme-primary) !important;
+                background: var(--theme-primary) !important;
+                color: #ffffff !important;
+                font-weight: 700 !important;
+            }
+            .chart-tabs-wrapper .tabs .is-size-7 {
+                color: #ffffff !important;
+                opacity: 1 !important;
+            }
+            .chart-tabs-wrapper .tabs li a span {
+                color: #ffffff !important;
+            }
+            .chart-tabs-wrapper .tabs .tab-level {
+                color: #ffffff !important;
+                opacity: 1 !important;
+                font-weight: 700 !important;
+            }
         </style>
         {% block extra_css %}{% endblock %}
     </head>

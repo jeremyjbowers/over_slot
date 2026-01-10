@@ -619,39 +619,7 @@ body {
     margin: 0;
 }
 
-/* Season tabs (player charts) */
-#season-tabs {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-#season-tabs li {
-    margin: 0;
-}
-#season-tabs li a {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.4rem 0.85rem;
-    border: 1px solid var(--dark-border);
-    border-radius: 999px;
-    background: var(--dark-surface);
-    color: #ffffff;
-    transition: all 0.15s ease;
-}
-#season-tabs li a:hover {
-    background: var(--dark-surface-hover);
-    color: #ffffff;
-}
-#season-tabs li.is-active a {
-    border-color: var(--theme-primary);
-    background: var(--theme-primary);
-    color: #ffffff;
-    font-weight: 700;
-}
-#season-tabs .is-size-7 { color: #ffffff; opacity: 1; }
-#season-tabs li a span { color: #ffffff; }
-#season-tabs .tab-level { color: #ffffff; opacity: 1; font-weight: 700; }
+/* Chart tabs now use reusable styles from base.html */
 
 @media screen and (max-width: 768px) {
     .subscription-card {
@@ -766,60 +734,139 @@ body {
 
         {% if season_charts and not preview_mode %}
         <div id="lollipop-chart-container">
-            <!-- Tabs -->
-            {% if season_charts|length > 1 %}
-            <div class="tabs is-toggle is-small" style="margin: 0.75rem 1rem 1.25rem;">
-                <ul id="season-tabs">
-                    {% for sc in season_charts %}
-                    <li class="{% if forloop.first %}is-active{% endif %}">
-                        <a href="#" data-target="season-{{ forloop.counter }}">
-                            <span>{{ sc.year }}</span>
-                            <span class="is-size-7 tab-level" style="margin-left: 6px;">{{ sc.level }}</span>
-                        </a>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
-            {% for sc in season_charts %}
-            <div id="season-{{ forloop.counter }}" class="season-panel" style="{% if not forloop.first %}display:none{% endif %}">
-                <div class="info-section">
-                    <div class="info-section-header">
-                        <h3 class="info-section-title">
-                            {{ sc.year }} {% if sc.hitter_json %}Hitter{% else %}Pitcher{% endif %} Performance ({{ sc.level }})
-                        </h3>
+            {% if pitcher_seasons_by_year %}
+                {# Pitcher charts with nested tabs #}
+                <!-- Year tabs for pitchers -->
+                {% if pitcher_seasons_by_year|length > 1 %}
+                <div class="chart-tabs-wrapper">
+                    <div class="tabs is-toggle is-small">
+                        <ul id="pitcher-year-tabs">
+                            {% for year, seasons in pitcher_seasons_by_year.items %}
+                            <li class="{% if forloop.first %}is-active{% endif %}">
+                                <a href="#" data-target="pitcher-year-{{ year }}">
+                                    <span>{{ year }}</span>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
                     </div>
-                    <div class="info-section-content">
-                        {% if sc.hitter_json and sc.level == "High School" %}
-                        <span class="info-section-subtitle">Summer circuit performance metrics. Bat speed, average rotational acceleration, and peak hand speed provided by Blast Motion.</span>
-                        <span class="info-section-subtitle">“Explosiveness” is a composite score based on general athletic testing and force plate outputs.</span>
-                        <span class="info-section-subtitle">High school deltas show actual points vs median (±).</span>
-                        {% elif sc.hitter_json %}
-                        <span class="info-section-subtitle">Percentile ranks and raw values based on Trackman hitter metrics.</span>
-                        {% else %}
-                        <span class="info-section-subtitle">Percentile ranks based on modeled pitch performance.</span>
-                        {% endif %}
+                </div>
+                {% endif %}
+                {% for year, seasons in pitcher_seasons_by_year.items %}
+                <div id="pitcher-year-{{ year }}" class="pitcher-year-panel" style="{% if not forloop.first %}display:none{% endif %}">
+                    {% with sc=seasons|first %}
+                    <!-- Sub-tabs for Location and Quality -->
+                    <div class="chart-tabs-wrapper">
+                        <div class="tabs is-toggle is-small">
+                            <ul class="pitcher-chart-tabs" data-year="{{ year }}">
+                                {% if sc.pitcher_movement_json and sc.level == "College" %}
+                                <li class="is-active">
+                                    <a href="#" data-target="pitcher-location-{{ year }}">
+                                        <span>{{ year }} Pitch Location</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                                <li {% if not sc.pitcher_movement_json or sc.level != "College" %}class="is-active"{% endif %}>
+                                    <a href="#" data-target="pitcher-quality-{{ year }}">
+                                        <span>{{ year }} Pitch Quality</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                    {% if sc.hs_statline %}
-                    <div class="info-section-content">
-                        <div class="info-grid" style="grid-template-columns: repeat(6, minmax(80px, 1fr));">
-                            <div class="info-item"><div class="info-label">PA</div><div class="info-value">{{ sc.hs_statline.pa|floatformat:0 }}</div></div>
-                            <div class="info-item"><div class="info-label">BA</div><div class="info-value">{% if sc.hs_statline.ba %}{{ sc.hs_statline.ba|format_avg3 }}{% endif %}</div></div>
-                            <div class="info-item"><div class="info-label">OBP</div><div class="info-value">{% if sc.hs_statline.obp %}{{ sc.hs_statline.obp|format_avg3 }}{% endif %}</div></div>
-                            <div class="info-item"><div class="info-label">SLG</div><div class="info-value">{% if sc.hs_statline.slg %}{{ sc.hs_statline.slg|format_avg3 }}{% endif %}</div></div>
-                            <div class="info-item"><div class="info-label">OPS</div><div class="info-value">{% if sc.hs_statline.ops %}{{ sc.hs_statline.ops|format_avg3 }}{% endif %}</div></div>
-                            <div class="info-item"><div class="info-label">ISO</div><div class="info-value">{% if sc.hs_statline.iso %}{{ sc.hs_statline.iso|format_avg3 }}{% endif %}</div></div>
+                    <!-- Location panel (default if available) -->
+                    {% if sc.pitcher_movement_json and sc.level == "College" %}
+                    <div id="pitcher-location-{{ year }}" class="pitcher-chart-panel">
+                        <div class="info-section">
+                            <div class="info-section-header">
+                                <h3 class="info-section-title">
+                                    {{ year }} Pitch Location ({{ sc.level }})
+                                </h3>
+                            </div>
+                            <div class="info-section-content">
+                                <span class="info-section-subtitle">Pitch movement visualization showing this pitcher's movement profile compared to all pitchers.</span>
+                            </div>
+                            {% for sc in seasons %}
+                            {% if sc.pitcher_movement_json %}
+                            <div id="pitch-movement-chart-{{ sc.chart_index }}"></div>
+                            {% endif %}
+                            {% endfor %}
                         </div>
                     </div>
                     {% endif %}
-                    {% if sc.hitter_json %}
-                    <div id="lollipop-chart-{{ forloop.counter }}"></div>
-                    {% elif sc.pitcher_json %}
-                    <div id="pitcher-lollipop-chart-{{ forloop.counter }}"></div>
-                    {% endif %}
+                    <!-- Quality panel -->
+                    <div id="pitcher-quality-{{ year }}" class="pitcher-chart-panel" {% if sc.pitcher_movement_json and sc.level == "College" %}style="display:none"{% endif %}>
+                        <div class="info-section">
+                            <div class="info-section-header">
+                                <h3 class="info-section-title">
+                                    {{ year }} Pitch Quality ({{ sc.level }})
+                                </h3>
+                            </div>
+                            <div class="info-section-content">
+                                <span class="info-section-subtitle">Percentile ranks based on modeled pitch performance.</span>
+                            </div>
+                            {% for sc in seasons %}
+                            <div id="pitcher-lollipop-chart-{{ sc.chart_index }}"></div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endwith %}
                 </div>
-            </div>
-            {% endfor %}
+                {% endfor %}
+            {% endif %}
+            {% if hitter_seasons %}
+                {# Hitter charts (existing structure) #}
+                <!-- Tabs -->
+                {% if hitter_seasons|length > 1 %}
+                <div class="chart-tabs-wrapper">
+                    <div class="tabs is-toggle is-small">
+                        <ul id="season-tabs">
+                            {% for sc in hitter_seasons %}
+                            <li class="{% if forloop.first %}is-active{% endif %}">
+                                <a href="#" data-target="season-{{ sc.chart_index }}">
+                                    <span>{{ sc.year }}</span>
+                                    <span class="is-size-7 tab-level" style="margin-left: 6px;">{{ sc.level }}</span>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+                {% for sc in hitter_seasons %}
+                <div id="season-{{ sc.chart_index }}" class="season-panel" style="{% if not forloop.first %}display:none{% endif %}">
+                    <div class="info-section">
+                        <div class="info-section-header">
+                            <h3 class="info-section-title">
+                                {{ sc.year }} Hitter Performance ({{ sc.level }})
+                            </h3>
+                        </div>
+                        <div class="info-section-content">
+                            {% if sc.level == "High School" %}
+                            <span class="info-section-subtitle">Summer circuit performance metrics. Bat speed, average rotational acceleration, and peak hand speed provided by Blast Motion.</span>
+                            <span class="info-section-subtitle">"Explosiveness" is a composite score based on general athletic testing and force plate outputs.</span>
+                            <span class="info-section-subtitle">High school deltas show actual points vs median (±).</span>
+                            {% else %}
+                            <span class="info-section-subtitle">Percentile ranks and raw values based on Trackman hitter metrics.</span>
+                            {% endif %}
+                        </div>
+                        {% if sc.hs_statline %}
+                        <div class="info-section-content">
+                            <div class="info-grid" style="grid-template-columns: repeat(6, minmax(80px, 1fr));">
+                                <div class="info-item"><div class="info-label">PA</div><div class="info-value">{{ sc.hs_statline.pa|floatformat:0 }}</div></div>
+                                <div class="info-item"><div class="info-label">BA</div><div class="info-value">{% if sc.hs_statline.ba %}{{ sc.hs_statline.ba|format_avg3 }}{% endif %}</div></div>
+                                <div class="info-item"><div class="info-label">OBP</div><div class="info-value">{% if sc.hs_statline.obp %}{{ sc.hs_statline.obp|format_avg3 }}{% endif %}</div></div>
+                                <div class="info-item"><div class="info-label">SLG</div><div class="info-value">{% if sc.hs_statline.slg %}{{ sc.hs_statline.slg|format_avg3 }}{% endif %}</div></div>
+                                <div class="info-item"><div class="info-label">OPS</div><div class="info-value">{% if sc.hs_statline.ops %}{{ sc.hs_statline.ops|format_avg3 }}{% endif %}</div></div>
+                                <div class="info-item"><div class="info-label">ISO</div><div class="info-value">{% if sc.hs_statline.iso %}{{ sc.hs_statline.iso|format_avg3 }}{% endif %}</div></div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div id="lollipop-chart-{{ sc.chart_index }}"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
         </div>
         {% endif %}
     </div>
@@ -1049,9 +1096,10 @@ function toggleReport(button) {
 {% if season_charts and not preview_mode %}
 // Tabs behavior
 (function(){
-    const tabs = document.querySelectorAll('#season-tabs li a');
-    if (tabs.length) {
-        tabs.forEach(a => {
+    // Hitter season tabs
+    const hitterTabs = document.querySelectorAll('#season-tabs li a');
+    if (hitterTabs.length) {
+        hitterTabs.forEach(a => {
             a.addEventListener('click', (e) => {
                 e.preventDefault();
                 const target = a.getAttribute('data-target');
@@ -1062,6 +1110,47 @@ function toggleReport(button) {
                 document.querySelectorAll('.season-panel').forEach(p => p.style.display = 'none');
                 const panel = document.getElementById(target);
                 if (panel) panel.style.display = '';
+            });
+        });
+    }
+    
+    // Pitcher year tabs
+    const pitcherYearTabs = document.querySelectorAll('#pitcher-year-tabs li a');
+    if (pitcherYearTabs.length) {
+        pitcherYearTabs.forEach(a => {
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = a.getAttribute('data-target');
+                // activate tab
+                document.querySelectorAll('#pitcher-year-tabs li').forEach(li => li.classList.remove('is-active'));
+                a.parentElement.classList.add('is-active');
+                // show panel
+                document.querySelectorAll('.pitcher-year-panel').forEach(p => p.style.display = 'none');
+                const panel = document.getElementById(target);
+                if (panel) panel.style.display = '';
+            });
+        });
+    }
+    
+    // Pitcher chart sub-tabs (Location/Quality)
+    const pitcherChartTabs = document.querySelectorAll('.pitcher-chart-tabs li a');
+    if (pitcherChartTabs.length) {
+        pitcherChartTabs.forEach(a => {
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = a.getAttribute('data-target');
+                const year = a.closest('.pitcher-chart-tabs').getAttribute('data-year');
+                // activate tab within this year's tab group
+                const tabGroup = a.closest('.pitcher-chart-tabs');
+                tabGroup.querySelectorAll('li').forEach(li => li.classList.remove('is-active'));
+                a.parentElement.classList.add('is-active');
+                // show panel within this year's panel
+                const yearPanel = document.getElementById('pitcher-year-' + year);
+                if (yearPanel) {
+                    yearPanel.querySelectorAll('.pitcher-chart-panel').forEach(p => p.style.display = 'none');
+                    const panel = document.getElementById(target);
+                    if (panel) panel.style.display = '';
+                }
             });
         });
     }
@@ -1463,12 +1552,322 @@ pitcherSvg.selectAll(".end-text")
 // Omit raw score labels on the right for pitcher charts (keep for hitter charts only)
 }
 
+function renderPitchMovementChart(selector, movementData, year, handedness) {
+    // Pitch type to color mapping
+    const pitchColors = {
+        'fourseam': '#FF6B6B',      // Red
+        'sinker': '#4ECDC4',        // Teal
+        'slider': '#45B7D1',        // Blue
+        'sweeper': '#96CEB4',       // Green
+        'curveball': '#FFEAA7',     // Yellow
+        'changeup': '#DDA0DD'        // Plum
+    };
+    
+    // Pitch type to filename mapping (for JSON URLs)
+    const pitchTypeToFilename = {
+        'fourseam': 'fourseam',
+        'sinker': 'sinkers',
+        'slider': 'sliders',
+        'sweeper': 'sweepers',
+        'curveball': 'curveballs',
+        'changeup': 'changeup_splitters'
+    };
+    
+    // Get pitch types this pitcher throws
+    const pitchTypes = Object.keys(movementData);
+    if (pitchTypes.length === 0) return;
+    
+    const container = d3.select(selector);
+    if (container.empty()) return;
+    
+    // Wait for container to have width
+    const containerNode = container.node();
+    if (!containerNode) return;
+    
+    let containerWidth = containerNode.getBoundingClientRect().width;
+    
+    function renderChart() {
+        // Re-check width if needed
+        if (!containerWidth || containerWidth === 0) {
+            containerWidth = containerNode.getBoundingClientRect().width || 800;
+        }
+        
+        // Only proceed if handedness is specified (lh or rh)
+        if (!handedness || (handedness !== 'lh' && handedness !== 'rh')) {
+            container.selectAll("*").remove();
+            container.append("div")
+                .style("padding", "2rem")
+                .style("text-align", "center")
+                .style("color", "#E2E8F0")
+                .text("Handedness data not available");
+            return;
+        }
+        
+        const margin = {top: 40, right: 140, bottom: 60, left: 60};
+        const width = containerWidth - margin.left - margin.right;
+        const height = 500 - margin.top - margin.bottom;
+        
+        // Clear any existing content
+        container.selectAll("*").remove();
+        
+        // Create SVG
+        const svg = container
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+        
+        // Load all pitch type data and render (filtered by handedness)
+        const handednessPrefix = `${handedness}_`;
+        const promises = pitchTypes.map(pitchType => {
+            const filename = pitchTypeToFilename[pitchType];
+            const url = `https://nyc3.digitaloceanspaces.com/the-over-slot/static/${year}_${handednessPrefix}${filename}.json`;
+            return d3.json(url).then(data => ({ pitchType, data })).catch(() => ({ pitchType, data: null }));
+        });
+        
+        Promise.all(promises).then(results => {
+            // Collect all data points to determine domain
+            let allVertBreaks = [];
+            let allHorizBreaks = [];
+            
+            results.forEach(({ data }) => {
+                if (data && Array.isArray(data)) {
+                    data.forEach(d => {
+                        if (d.vert_break != null && !isNaN(d.vert_break)) allVertBreaks.push(d.vert_break);
+                        if (d.horiz_break != null && !isNaN(d.horiz_break)) allHorizBreaks.push(d.horiz_break);
+                    });
+                }
+            });
+            
+            // Add this pitcher's data to domain calculation
+            pitchTypes.forEach(pitchType => {
+                const pitcherData = movementData[pitchType];
+                if (pitcherData && pitcherData.vert_break != null && !isNaN(pitcherData.vert_break)) {
+                    allVertBreaks.push(pitcherData.vert_break);
+                }
+                if (pitcherData && pitcherData.horiz_break != null && !isNaN(pitcherData.horiz_break)) {
+                    allHorizBreaks.push(pitcherData.horiz_break);
+                }
+            });
+            
+            // Handle empty data case
+            if (allVertBreaks.length === 0 || allHorizBreaks.length === 0) {
+                svg.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", height / 2)
+                    .style("text-anchor", "middle")
+                    .style("fill", "#E2E8F0")
+                    .style("font-size", "14px")
+                    .text("No movement data available");
+                return;
+            }
+            
+            // Calculate domains with padding, ensuring 0 is included for center lines
+            const vertMin = Math.min(...allVertBreaks);
+            const vertMax = Math.max(...allVertBreaks);
+            const horizMin = Math.min(...allHorizBreaks);
+            const horizMax = Math.max(...allHorizBreaks);
+            
+            const vertRange = vertMax - vertMin;
+            const horizRange = horizMax - horizMin;
+            const vertPadding = vertRange * 0.1 || 5;
+            const horizPadding = horizRange * 0.1 || 5;
+            
+            // Ensure domain includes 0 and is symmetric around 0 for center lines
+            const maxAbsHoriz = Math.max(Math.abs(horizMin - horizPadding), Math.abs(horizMax + horizPadding), 5);
+            const maxAbsVert = Math.max(Math.abs(vertMin - vertPadding), Math.abs(vertMax + vertPadding), 5);
+            
+            const xScale = d3.scaleLinear()
+                .domain([-maxAbsHoriz, maxAbsHoriz])
+                .range([0, width]);
+            
+            const yScale = d3.scaleLinear()
+                .domain([-maxAbsVert, maxAbsVert])
+                .range([height, 0]);
+            
+            // Draw background pitches FIRST (all pitchers) for each pitch type
+            results.forEach(({ pitchType, data }) => {
+                if (!data || !Array.isArray(data)) return;
+                
+                const color = pitchColors[pitchType] || '#FFFFFF';
+                
+                svg.selectAll(`.background-${pitchType}`)
+                    .data(data)
+                    .enter()
+                    .append("circle")
+                    .attr("class", `background-${pitchType}`)
+                    .attr("cx", d => xScale(d.horiz_break))
+                    .attr("cy", d => yScale(d.vert_break))
+                    .attr("r", 2.5)
+                    .style("fill", "none")
+                    .style("stroke", color)
+                    .style("stroke-width", "0.5px")
+                    .style("opacity", 0.25);
+            });
+            
+            // Center lines at (0,0) - draw before axes so they're behind
+            const centerX = xScale(0);
+            const centerY = yScale(0);
+            
+            // Vertical center line
+            if (centerX >= 0 && centerX <= width) {
+                svg.append("line")
+                    .attr("x1", centerX)
+                    .attr("x2", centerX)
+                    .attr("y1", 0)
+                    .attr("y2", height)
+                    .style("stroke", "#FFFFFF")
+                    .style("stroke-width", "2.5px")
+                    .style("opacity", 0.8);
+            }
+            
+            // Horizontal center line
+            if (centerY >= 0 && centerY <= height) {
+                svg.append("line")
+                    .attr("x1", 0)
+                    .attr("x2", width)
+                    .attr("y1", centerY)
+                    .attr("y2", centerY)
+                    .style("stroke", "#FFFFFF")
+                    .style("stroke-width", "2.5px")
+                    .style("opacity", 0.8);
+            }
+            
+            // Grid lines (light, behind everything)
+            const xAxisGrid = d3.axisBottom(xScale)
+                .tickSize(-height)
+                .tickFormat('');
+            
+            const yAxisGrid = d3.axisLeft(yScale)
+                .tickSize(-width)
+                .tickFormat('');
+            
+            svg.append("g")
+                .attr("class", "grid")
+                .attr("transform", `translate(0,${height})`)
+                .call(xAxisGrid)
+                .selectAll("line")
+                .style("stroke", "rgba(255, 255, 255, 0.1)")
+                .style("stroke-width", "1px");
+            
+            svg.append("g")
+                .attr("class", "grid")
+                .call(yAxisGrid)
+                .selectAll("line")
+                .style("stroke", "rgba(255, 255, 255, 0.1)")
+                .style("stroke-width", "1px");
+            
+            // Remove domain lines from grid
+            svg.selectAll(".grid .domain").remove();
+            
+            // Axis labels (only one set, no duplicates)
+            svg.append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(xScale).tickFormat(d => d.toFixed(1)))
+                .selectAll("text")
+                .style("fill", "#E2E8F0")
+                .style("font-size", "12px");
+            
+            svg.append("g")
+                .attr("class", "y-axis")
+                .call(d3.axisLeft(yScale).tickFormat(d => d.toFixed(1)))
+                .selectAll("text")
+                .style("fill", "#E2E8F0")
+                .style("font-size", "12px");
+            
+            // Remove domain lines from axes
+            svg.selectAll(".x-axis .domain, .y-axis .domain").remove();
+            
+            // Axis titles
+            svg.append("text")
+                .attr("transform", `translate(${width / 2}, ${height + 45})`)
+                .style("text-anchor", "middle")
+                .style("fill", "#E2E8F0")
+                .style("font-size", "14px")
+                .style("font-weight", "500")
+                .text("Horizontal Break (inches)");
+            
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", -45)
+                .attr("x", -height / 2)
+                .style("text-anchor", "middle")
+                .style("fill", "#E2E8F0")
+                .style("font-size", "14px")
+                .style("font-weight", "500")
+                .text("Induced Vertical Break (inches)");
+            
+            // Draw this pitcher's pitches (solid circles)
+            pitchTypes.forEach(pitchType => {
+                const pitcherData = movementData[pitchType];
+                if (!pitcherData || pitcherData.vert_break == null || pitcherData.horiz_break == null) return;
+                
+                const color = pitchColors[pitchType] || '#FFFFFF';
+                
+                svg.append("circle")
+                    .attr("class", `pitcher-pitch-${pitchType}`)
+                    .attr("cx", xScale(pitcherData.horiz_break))
+                    .attr("cy", yScale(pitcherData.vert_break))
+                    .attr("r", 6)
+                    .style("fill", color)
+                    .style("stroke", "#FFFFFF")
+                    .style("stroke-width", "1.5px");
+            });
+            
+            // Legend
+            const legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", `translate(${width - 130}, 20)`);
+            
+            const legendItems = pitchTypes.map((pitchType, i) => ({
+                pitchType: pitchType.charAt(0).toUpperCase() + pitchType.slice(1),
+                color: pitchColors[pitchType] || '#FFFFFF',
+                y: i * 25
+            }));
+            
+            legendItems.forEach(item => {
+                const legendGroup = legend.append("g")
+                    .attr("transform", `translate(0, ${item.y})`);
+                
+                // Background circle (solid)
+                legendGroup.append("circle")
+                    .attr("r", 5)
+                    .style("fill", item.color)
+                    .style("stroke", "#FFFFFF")
+                    .style("stroke-width", "1px");
+                
+                // Label
+                legendGroup.append("text")
+                    .attr("x", 12)
+                    .attr("y", 4)
+                    .style("fill", "#E2E8F0")
+                    .style("font-size", "12px")
+                    .text(item.pitchType);
+            });
+        });
+    }
+    
+    if (!containerWidth || containerWidth === 0) {
+        // Fallback: try again after a short delay
+        setTimeout(() => {
+            renderChart();
+        }, 100);
+    } else {
+        renderChart();
+    }
+}
+
 // Render all seasons
 {% for sc in season_charts %}
 {% if sc.hitter_json %}
-renderHitterChart("#lollipop-chart-{{ forloop.counter }}", JSON.parse('{{ sc.hitter_json|escapejs }}'));
+renderHitterChart("#lollipop-chart-{{ sc.chart_index }}", JSON.parse('{{ sc.hitter_json|escapejs }}'));
 {% elif sc.pitcher_json %}
-renderPitcherChart("#pitcher-lollipop-chart-{{ forloop.counter }}", JSON.parse('{{ sc.pitcher_json|escapejs }}'));
+renderPitcherChart("#pitcher-lollipop-chart-{{ sc.chart_index }}", JSON.parse('{{ sc.pitcher_json|escapejs }}'));
+{% if sc.pitcher_movement_json and sc.level == "College" %}
+renderPitchMovementChart("#pitch-movement-chart-{{ sc.chart_index }}", JSON.parse('{{ sc.pitcher_movement_json|escapejs }}'), '{{ sc.year }}', '{{ sc.pitcher_handedness|default:"" }}');
+{% endif %}
 {% endif %}
 {% endfor %}
 {% endif %}

@@ -372,35 +372,94 @@ def players_detail(request, slug):
         
         # Pitcher payload (percentiles already 0-1)
         pitcher_data = {}
+        pitcher_movement_data = {}
         if s.fourseam_percentile is not None:
             pitcher_data['fourseam_percentile'] = s.fourseam_percentile
             pitcher_data['fourseam_score'] = s.fourseam_score
+            if s.fourseam_vert_break is not None and s.fourseam_horiz_break is not None:
+                pitcher_movement_data['fourseam'] = {
+                    'vert_break': s.fourseam_vert_break,
+                    'horiz_break': s.fourseam_horiz_break
+                }
         if s.sinker_percentile is not None:
             pitcher_data['sinker_percentile'] = s.sinker_percentile
             pitcher_data['sinker_score'] = s.sinker_score
+            if s.sinker_vert_break is not None and s.sinker_horiz_break is not None:
+                pitcher_movement_data['sinker'] = {
+                    'vert_break': s.sinker_vert_break,
+                    'horiz_break': s.sinker_horiz_break
+                }
         if s.slider_percentile is not None:
             pitcher_data['slider_percentile'] = s.slider_percentile
             pitcher_data['slider_score'] = s.slider_score
+            if s.slider_vert_break is not None and s.slider_horiz_break is not None:
+                pitcher_movement_data['slider'] = {
+                    'vert_break': s.slider_vert_break,
+                    'horiz_break': s.slider_horiz_break
+                }
         if s.sweeper_percentile is not None:
             pitcher_data['sweeper_percentile'] = s.sweeper_percentile
             pitcher_data['sweeper_score'] = s.sweeper_score
+            if s.sweeper_vert_break is not None and s.sweeper_horiz_break is not None:
+                pitcher_movement_data['sweeper'] = {
+                    'vert_break': s.sweeper_vert_break,
+                    'horiz_break': s.sweeper_horiz_break
+                }
         if s.curveball_percentile is not None:
             pitcher_data['curveball_percentile'] = s.curveball_percentile
             pitcher_data['curveball_score'] = s.curveball_score
+            if s.curveball_vert_break is not None and s.curveball_horiz_break is not None:
+                pitcher_movement_data['curveball'] = {
+                    'vert_break': s.curveball_vert_break,
+                    'horiz_break': s.curveball_horiz_break
+                }
         if s.changeup_percentile is not None:
             pitcher_data['changeup_percentile'] = s.changeup_percentile
             pitcher_data['changeup_score'] = s.changeup_score
+            if s.changeup_vert_break is not None and s.changeup_horiz_break is not None:
+                pitcher_movement_data['changeup'] = {
+                    'vert_break': s.changeup_vert_break,
+                    'horiz_break': s.changeup_horiz_break
+                }
         pitcher_payload = json.dumps({**pitcher_data, 'confidence': s.confidence}) if pitcher_data else None
+        pitcher_movement_payload = json.dumps(pitcher_movement_data) if pitcher_movement_data else None
         
         if hitter_payload or pitcher_payload:
+            # Determine pitcher handedness for movement chart
+            pitcher_handedness = None
+            if pitcher_payload and context['player'].throws:
+                throws = context['player'].throws.strip().upper()
+                if throws == 'L' or throws == 'LHP' or throws.startswith('L'):
+                    pitcher_handedness = 'lh'
+                elif throws == 'R' or throws == 'RHP' or throws.startswith('R'):
+                    pitcher_handedness = 'rh'
+            
             season_charts.append({
                 'year': s.year,
                 'level': s.level,
                 'hitter_json': hitter_payload,
                 'pitcher_json': pitcher_payload,
+                'pitcher_movement_json': pitcher_movement_payload,
+                'pitcher_handedness': pitcher_handedness,
                 'hs_statline': hs_statline,
+                'chart_index': len(season_charts),  # Track original index for chart rendering
             })
+    
+    # Group pitcher seasons by year for nested tab structure
+    pitcher_seasons_by_year = {}
+    hitter_seasons = []
+    for sc in season_charts:
+        if sc.get('pitcher_json'):
+            year = sc['year']
+            if year not in pitcher_seasons_by_year:
+                pitcher_seasons_by_year[year] = []
+            pitcher_seasons_by_year[year].append(sc)
+        else:
+            hitter_seasons.append(sc)
+    
     context['season_charts'] = season_charts
+    context['pitcher_seasons_by_year'] = pitcher_seasons_by_year
+    context['hitter_seasons'] = hitter_seasons
 
     # Only show published articles
     context['articles'] = models.Article.objects.filter(players=context['player'], publish=True)
