@@ -1792,31 +1792,7 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
             svg.selectAll(".grid .domain").remove();
             
             // Responsive font sizes
-            const axisFontSize = isMobile ? "10px" : "12px";
             const titleFontSize = isMobile ? "11px" : "14px";
-            
-            // Axis labels (only one set, no duplicates)
-            svg.append("g")
-                .attr("class", "x-axis")
-                .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(xScale)
-                    .tickFormat(d => d.toFixed(1))
-                    .ticks(isMobile ? 5 : 10))
-                .selectAll("text")
-                .style("fill", "#E2E8F0")
-                .style("font-size", axisFontSize);
-            
-            svg.append("g")
-                .attr("class", "y-axis")
-                .call(d3.axisLeft(yScale)
-                    .tickFormat(d => d.toFixed(1))
-                    .ticks(isMobile ? 5 : 10))
-                .selectAll("text")
-                .style("fill", "#E2E8F0")
-                .style("font-size", axisFontSize);
-            
-            // Remove domain lines from axes
-            svg.selectAll(".x-axis .domain, .y-axis .domain").remove();
             
             // Axis titles with responsive positioning
             const xTitleY = isMobile ? height + 35 : height + 45;
