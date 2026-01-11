@@ -36,9 +36,6 @@
         </div>
         {% endif %}
         <div class="ranking-content">
-            {% if not ranking.is_mock_draft %}
-            <div class="ranking-meta">{{ ranking.created|date:"F j, Y" }}</div>
-            {% endif %}
             <h3 class="ranking-title">
                 {% if ranking.is_mock_draft %}
                 <a href="/mock-drafts/{{ ranking.slug }}/">{{ ranking }}</a>

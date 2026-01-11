@@ -24,7 +24,7 @@ class Command(BaseCommand):
         Files are named like: {year}_{pitchtype}.json
         """
         years = ['2025', '2024']
-        tab_types = ["Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeups/Splitters"]
+        tab_types = ["Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeups/Splitters", "Cutters"]
         
         # Map tab types to file-safe names
         pitch_type_to_filename = {
@@ -33,7 +33,8 @@ class Command(BaseCommand):
             "Sliders": "sliders",
             "Sweepers": "sweepers",
             "Curveballs": "curveballs",
-            "Changeups/Splitters": "changeup_splitters"
+            "Changeups/Splitters": "changeup_splitters",
+            "Cutters": "cutters"
         }
         
         # Determine output directory

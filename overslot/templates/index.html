@@ -797,7 +797,6 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
                     </div>
                     {% endif %}
                     <div class="ranking-content">
-                        <div class="ranking-meta">{{ ranking.created|date:"F j, Y" }}</div>
                         <h3 class="ranking-title"><a href="/rankings/{{ ranking.slug }}/">{{ ranking }}</a></h3>
                         {% if ranking.get_initial_players %}
                         <ol class="players-list">
@@ -823,7 +822,6 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
                     </div>
                     {% endif %}
                     <div class="ranking-content">
-                        <div class="ranking-meta">Archived · {{ ranking.created|date:"F j, Y" }}</div>
                         <h3 class="ranking-title"><a href="/rankings/{{ ranking.slug }}/">{{ ranking }}</a></h3>
                         {% if ranking.get_initial_players %}
                         <ol class="players-list">
