@@ -50,7 +50,7 @@ class Command(BaseCommand):
             tab_types = [tab_type]
         else:
             years = ['2025', '2024']
-            tab_types = ["Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeups/Splitters"]
+            tab_types = ["Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeups/Splitters", "Cutters"]
 
         for year in years:
             for tab_type in tab_types:
@@ -183,6 +183,11 @@ class Command(BaseCommand):
                         row['changeup_score'] = pitch_percentile
                         row['changeup_vert_break'] = vert_break
                         row['changeup_horiz_break'] = horiz_break
+                    elif tab_type == "Cutters":
+                        row['cutter_percentile'] = pitch_percentile
+                        row['cutter_score'] = pitch_percentile
+                        row['cutter_vert_break'] = vert_break
+                        row['cutter_horiz_break'] = horiz_break
 
                     if row.get('Name'):
                         obj = utils.fuzzy_find_player(row['Name'], debug=debug, stdout=self.stdout)
@@ -231,6 +236,11 @@ class Command(BaseCommand):
                             season.changeup_score = row['changeup_score']
                             season.changeup_vert_break = row.get('changeup_vert_break')
                             season.changeup_horiz_break = row.get('changeup_horiz_break')
+                        elif tab_type == "Cutters":
+                            season.cutter_percentile = row['cutter_percentile']
+                            season.cutter_score = row['cutter_score']
+                            season.cutter_vert_break = row.get('cutter_vert_break')
+                            season.cutter_horiz_break = row.get('cutter_horiz_break')
 
                         season.confidence = 10
                         season.save()

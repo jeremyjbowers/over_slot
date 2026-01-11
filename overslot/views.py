@@ -421,6 +421,14 @@ def players_detail(request, slug):
                     'vert_break': s.changeup_vert_break,
                     'horiz_break': s.changeup_horiz_break
                 }
+        if s.cutter_percentile is not None:
+            pitcher_data['cutter_percentile'] = s.cutter_percentile
+            pitcher_data['cutter_score'] = s.cutter_score
+            if s.cutter_vert_break is not None and s.cutter_horiz_break is not None:
+                pitcher_movement_data['cutter'] = {
+                    'vert_break': s.cutter_vert_break,
+                    'horiz_break': s.cutter_horiz_break
+                }
         pitcher_payload = json.dumps({**pitcher_data, 'confidence': s.confidence}) if pitcher_data else None
         pitcher_movement_payload = json.dumps(pitcher_movement_data) if pitcher_movement_data else None
         

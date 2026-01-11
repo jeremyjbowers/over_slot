@@ -1386,7 +1386,8 @@ const pitchDisplayNames = {
     'slider_percentile': 'Slider',
     'sweeper_percentile': 'Sweeper',
     'curveball_percentile': 'Curveball',
-    'changeup_percentile': 'Offspeed'
+    'changeup_percentile': 'Offspeed',
+    'cutter_percentile': 'Cutter'
 };
 
 // Build data array only for pitches that have data
@@ -1572,7 +1573,8 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
         'slider': '#45B7D1',        // Blue
         'sweeper': '#96CEB4',       // Green
         'curveball': '#FFEAA7',     // Yellow
-        'changeup': '#DDA0DD'        // Plum
+        'changeup': '#DDA0DD',       // Plum
+        'cutter': '#FFA500'          // Orange
     };
     
     // Pitch type to filename mapping (for JSON URLs)
@@ -1582,7 +1584,8 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
         'slider': 'sliders',
         'sweeper': 'sweepers',
         'curveball': 'curveballs',
-        'changeup': 'changeup_splitters'
+        'changeup': 'changeup_splitters',
+        'cutter': 'cutters'
     };
     
     // Get pitch types this pitcher throws
