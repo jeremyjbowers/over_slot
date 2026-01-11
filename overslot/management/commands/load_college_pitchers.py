@@ -89,7 +89,7 @@ class Command(BaseCommand):
                     print(f"No sheet found for any of: {', '.join(tab_candidates)}")
                     continue
 
-                min_pitches = 100
+                min_pitches = 5
                 total_sheet_rows = len(sheet)
                 rows = [utils.fix_blanks(row) for row in sheet if int(row.get('Pitches', 0)) >= min_pitches]
                 if debug:
