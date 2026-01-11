@@ -621,6 +621,18 @@ body {
 
 /* Chart tabs now use reusable styles from base.html */
 
+/* Pitch movement chart responsive styles */
+[id^="pitch-movement-chart-"] {
+    width: 100%;
+    overflow: hidden;
+}
+
+@media screen and (max-width: 768px) {
+    [id^="pitch-movement-chart-"] {
+        padding: 0.5rem 0;
+    }
+}
+
 @media screen and (max-width: 768px) {
     .subscription-card {
         padding: 1.5rem;
@@ -1586,11 +1598,17 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
     
     let containerWidth = containerNode.getBoundingClientRect().width;
     
+    // Store original data for re-rendering on resize
+    const chartData = { selector, movementData, year, handedness };
+    
     function renderChart() {
         // Re-check width if needed
         if (!containerWidth || containerWidth === 0) {
             containerWidth = containerNode.getBoundingClientRect().width || 800;
         }
+        
+        // Detect mobile screen size
+        const isMobile = window.innerWidth < 768;
         
         // Only proceed if handedness is specified (lh or rh)
         if (!handedness || (handedness !== 'lh' && handedness !== 'rh')) {
@@ -1603,18 +1621,25 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
             return;
         }
         
-        const margin = {top: 40, right: 140, bottom: 60, left: 60};
+        // Responsive margins and dimensions
+        const margin = isMobile 
+            ? {top: 30, right: 20, bottom: 50, left: 50}
+            : {top: 40, right: 140, bottom: 60, left: 60};
+        
+        const chartHeight = isMobile ? 400 : 500;
         const width = containerWidth - margin.left - margin.right;
-        const height = 500 - margin.top - margin.bottom;
+        const height = chartHeight - margin.top - margin.bottom;
         
         // Clear any existing content
         container.selectAll("*").remove();
         
-        // Create SVG
+        // Create SVG with responsive viewBox
         const svg = container
             .append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
+            .attr("width", "100%")
+            .attr("height", chartHeight)
+            .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${chartHeight}`)
+            .attr("preserveAspectRatio", "xMidYMid meet")
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
         
@@ -1687,6 +1712,7 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
                 .range([height, 0]);
             
             // Draw background pitches FIRST (all pitchers) for each pitch type
+            const backgroundCircleRadius = isMobile ? 2 : 2.5;
             results.forEach(({ pitchType, data }) => {
                 if (!data || !Array.isArray(data)) return;
                 
@@ -1699,10 +1725,10 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
                     .attr("class", `background-${pitchType}`)
                     .attr("cx", d => xScale(d.horiz_break))
                     .attr("cy", d => yScale(d.vert_break))
-                    .attr("r", 2.5)
+                    .attr("r", backgroundCircleRadius)
                     .style("fill", "none")
                     .style("stroke", color)
-                    .style("stroke-width", "0.5px")
+                    .style("stroke-width", isMobile ? "0.4px" : "0.5px")
                     .style("opacity", 0.25);
             });
             
@@ -1711,6 +1737,7 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
             const centerY = yScale(0);
             
             // Vertical center line
+            const centerLineWidth = isMobile ? "2px" : "2.5px";
             if (centerX >= 0 && centerX <= width) {
                 svg.append("line")
                     .attr("x1", centerX)
@@ -1718,7 +1745,7 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
                     .attr("y1", 0)
                     .attr("y2", height)
                     .style("stroke", "#FFFFFF")
-                    .style("stroke-width", "2.5px")
+                    .style("stroke-width", centerLineWidth)
                     .style("opacity", 0.8);
             }
             
@@ -1730,7 +1757,7 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
                     .attr("y1", centerY)
                     .attr("y2", centerY)
                     .style("stroke", "#FFFFFF")
-                    .style("stroke-width", "2.5px")
+                    .style("stroke-width", centerLineWidth)
                     .style("opacity", 0.8);
             }
             
@@ -1761,45 +1788,57 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
             // Remove domain lines from grid
             svg.selectAll(".grid .domain").remove();
             
+            // Responsive font sizes
+            const axisFontSize = isMobile ? "10px" : "12px";
+            const titleFontSize = isMobile ? "11px" : "14px";
+            
             // Axis labels (only one set, no duplicates)
             svg.append("g")
                 .attr("class", "x-axis")
                 .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(xScale).tickFormat(d => d.toFixed(1)))
+                .call(d3.axisBottom(xScale)
+                    .tickFormat(d => d.toFixed(1))
+                    .ticks(isMobile ? 5 : 10))
                 .selectAll("text")
                 .style("fill", "#E2E8F0")
-                .style("font-size", "12px");
+                .style("font-size", axisFontSize);
             
             svg.append("g")
                 .attr("class", "y-axis")
-                .call(d3.axisLeft(yScale).tickFormat(d => d.toFixed(1)))
+                .call(d3.axisLeft(yScale)
+                    .tickFormat(d => d.toFixed(1))
+                    .ticks(isMobile ? 5 : 10))
                 .selectAll("text")
                 .style("fill", "#E2E8F0")
-                .style("font-size", "12px");
+                .style("font-size", axisFontSize);
             
             // Remove domain lines from axes
             svg.selectAll(".x-axis .domain, .y-axis .domain").remove();
             
-            // Axis titles
+            // Axis titles with responsive positioning
+            const xTitleY = isMobile ? height + 35 : height + 45;
+            const yTitleX = isMobile ? -35 : -45;
+            
             svg.append("text")
-                .attr("transform", `translate(${width / 2}, ${height + 45})`)
+                .attr("transform", `translate(${width / 2}, ${xTitleY})`)
                 .style("text-anchor", "middle")
                 .style("fill", "#E2E8F0")
-                .style("font-size", "14px")
+                .style("font-size", titleFontSize)
                 .style("font-weight", "500")
                 .text("Horizontal Break (inches)");
             
             svg.append("text")
                 .attr("transform", "rotate(-90)")
-                .attr("y", -45)
+                .attr("y", yTitleX)
                 .attr("x", -height / 2)
                 .style("text-anchor", "middle")
                 .style("fill", "#E2E8F0")
-                .style("font-size", "14px")
+                .style("font-size", titleFontSize)
                 .style("font-weight", "500")
                 .text("Induced Vertical Break (inches)");
             
-            // Draw this pitcher's pitches (solid circles)
+            // Draw this pitcher's pitches (solid circles) with responsive size
+            const pitcherCircleRadius = isMobile ? 5 : 6;
             pitchTypes.forEach(pitchType => {
                 const pitcherData = movementData[pitchType];
                 if (!pitcherData || pitcherData.vert_break == null || pitcherData.horiz_break == null) return;
@@ -1810,48 +1849,141 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
                     .attr("class", `pitcher-pitch-${pitchType}`)
                     .attr("cx", xScale(pitcherData.horiz_break))
                     .attr("cy", yScale(pitcherData.vert_break))
-                    .attr("r", 6)
+                    .attr("r", pitcherCircleRadius)
                     .style("fill", color)
                     .style("stroke", "#FFFFFF")
-                    .style("stroke-width", "1.5px");
+                    .style("stroke-width", isMobile ? "1px" : "1.5px");
             });
             
-            // Legend
-            const legend = svg.append("g")
-                .attr("class", "legend")
-                .attr("transform", `translate(${width - 130}, 20)`);
+            // Legend with responsive positioning
+            const legendFontSize = isMobile ? "10px" : "12px";
+            const legendSpacing = isMobile ? 20 : 25;
+            const legendCircleRadius = isMobile ? 4 : 5;
             
-            const legendItems = pitchTypes.map((pitchType, i) => ({
-                pitchType: pitchType.charAt(0).toUpperCase() + pitchType.slice(1),
-                color: pitchColors[pitchType] || '#FFFFFF',
-                y: i * 25
-            }));
-            
-            legendItems.forEach(item => {
-                const legendGroup = legend.append("g")
-                    .attr("transform", `translate(0, ${item.y})`);
+            // Position legend differently on mobile (below chart) vs desktop (top right)
+            let legendX, legendY;
+            if (isMobile) {
+                // On mobile, place legend below the chart, centered
+                // Calculate spacing based on available width
+                const maxLegendWidth = Math.min(width * 0.9, 300);
+                const itemSpacing = Math.min(maxLegendWidth / pitchTypes.length, 70);
+                legendX = width / 2;
+                legendY = height + 20;
                 
-                // Background circle (solid)
-                legendGroup.append("circle")
-                    .attr("r", 5)
-                    .style("fill", item.color)
-                    .style("stroke", "#FFFFFF")
-                    .style("stroke-width", "1px");
+                const legendItems = pitchTypes.map((pitchType, i) => ({
+                    pitchType: pitchType.charAt(0).toUpperCase() + pitchType.slice(1),
+                    color: pitchColors[pitchType] || '#FFFFFF',
+                    y: 0,
+                    x: (i - (pitchTypes.length - 1) / 2) * itemSpacing
+                }));
                 
-                // Label
-                legendGroup.append("text")
-                    .attr("x", 12)
-                    .attr("y", 4)
-                    .style("fill", "#E2E8F0")
-                    .style("font-size", "12px")
-                    .text(item.pitchType);
-            });
+                const legend = svg.append("g")
+                    .attr("class", "legend")
+                    .attr("transform", `translate(${legendX}, ${legendY})`);
+                
+                legendItems.forEach(item => {
+                    const legendGroup = legend.append("g")
+                        .attr("transform", `translate(${item.x}, ${item.y})`);
+                    
+                    // Background circle (solid)
+                    legendGroup.append("circle")
+                        .attr("r", legendCircleRadius)
+                        .style("fill", item.color)
+                        .style("stroke", "#FFFFFF")
+                        .style("stroke-width", "1px");
+                    
+                    // Label
+                    legendGroup.append("text")
+                        .attr("x", 10)
+                        .attr("y", 4)
+                        .style("text-anchor", "start")
+                        .style("fill", "#E2E8F0")
+                        .style("font-size", legendFontSize)
+                        .text(item.pitchType);
+                });
+            } else {
+                // On desktop, place legend pinned to the right edge
+                // Calculate max text width to position legend properly
+                const tempText = svg.append("text")
+                    .style("font-size", legendFontSize)
+                    .style("visibility", "hidden");
+                
+                let maxTextWidth = 0;
+                pitchTypes.forEach(pitchType => {
+                    const displayName = pitchType.charAt(0).toUpperCase() + pitchType.slice(1);
+                    tempText.text(displayName);
+                    const textWidth = tempText.node().getBBox().width;
+                    if (textWidth > maxTextWidth) maxTextWidth = textWidth;
+                });
+                tempText.remove();
+                
+                // Position legend group at the right edge, accounting for circle radius and spacing
+                const textToCircleSpacing = 8; // Space between text and circle
+                // Total width from text end to circle right edge: spacing + 2*radius
+                const circleRightEdge = textToCircleSpacing + (2 * legendCircleRadius);
+                legendX = width - maxTextWidth - circleRightEdge - 10; // 10px padding from right
+                legendY = 20;
+                
+                const legend = svg.append("g")
+                    .attr("class", "legend")
+                    .attr("transform", `translate(${legendX}, ${legendY})`);
+                
+                const legendItems = pitchTypes.map((pitchType, i) => ({
+                    pitchType: pitchType.charAt(0).toUpperCase() + pitchType.slice(1),
+                    color: pitchColors[pitchType] || '#FFFFFF',
+                    y: i * legendSpacing,
+                    textX: maxTextWidth, // Text starts at max width (right-aligned)
+                    circleX: maxTextWidth + textToCircleSpacing + legendCircleRadius // Circle to the right of text with spacing
+                }));
+                
+                legendItems.forEach(item => {
+                    const legendGroup = legend.append("g")
+                        .attr("transform", `translate(0, ${item.y})`);
+                    
+                    // Text first (right-aligned, to the left of circle)
+                    legendGroup.append("text")
+                        .attr("x", item.textX)
+                        .attr("y", 4)
+                        .style("text-anchor", "end") // Right-align text
+                        .style("fill", "#E2E8F0")
+                        .style("font-size", legendFontSize)
+                        .text(item.pitchType);
+                    
+                    // Circle on the far right
+                    legendGroup.append("circle")
+                        .attr("cx", item.circleX)
+                        .attr("cy", 0)
+                        .attr("r", legendCircleRadius)
+                        .style("fill", item.color)
+                        .style("stroke", "#FFFFFF")
+                        .style("stroke-width", "1px");
+                });
+            }
         });
     }
+    
+    // Debounce function for resize events
+    let resizeTimeout;
+    function handleResize() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            containerWidth = containerNode.getBoundingClientRect().width;
+            renderChart();
+        }, 150);
+    }
+    
+    // Add resize listener
+    window.addEventListener('resize', handleResize);
+    
+    // Store cleanup function on container for potential future use
+    container.node()._chartCleanup = () => {
+        window.removeEventListener('resize', handleResize);
+    };
     
     if (!containerWidth || containerWidth === 0) {
         // Fallback: try again after a short delay
         setTimeout(() => {
+            containerWidth = containerNode.getBoundingClientRect().width;
             renderChart();
         }, 100);
     } else {
