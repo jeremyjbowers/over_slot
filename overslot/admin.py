@@ -138,7 +138,11 @@ from overslot.models import (
     UserEmail,
     FeatureFlag,
     SubscriptionPlan,
-    SubscriptionPrice
+    SubscriptionPrice,
+    Team,
+    TeamDuplicateDecision,
+    PotentialTeamDuplicate,
+    Game
 )
 
 
@@ -334,19 +338,20 @@ class PlayerRankingInline(admin.TabularInline):
 class PlayerRankingAdmin(SummernoteModelAdmin):
     summernote_fields = ('scouting_report',)
     model = PlayerRanking
-    list_display = ["ranking", "player", "rank", "age_at_draft"]
+    list_display = ["ranking", "player", "rank", "school", "school_team", "age_at_draft"]
     search_fields = [
         "player__name",
         "player__school",
         "player__position",
         "position",
         "school",
+        "school_team__name",
         "commitment",
         "ranking__year",
         "ranking__draft_level",
     ]
-    list_filter = ["ranking"]
-    autocomplete_fields = ["carrying_tools"]
+    list_filter = ["ranking", "school_team", "level"]
+    autocomplete_fields = ["carrying_tools", "school_team"]
     fieldsets = (
         (
             None,
@@ -354,7 +359,7 @@ class PlayerRankingAdmin(SummernoteModelAdmin):
                 "classes": ("wide",),
                 "fields": (
                     ("rank", "player"),
-                    ("position", "school", 'commitment', 'age_at_draft'),
+                    ("position", "school", "school_team", 'commitment', 'age_at_draft'),
                     ('role', 'risk', 'level'),
                     'scouting_report',
                     'raw_carrying_tools',
@@ -740,3 +745,119 @@ class FeatureFlagAdmin(admin.ModelAdmin):
             total_assigned += flag.assign_rollout_users(replace=True)
         self.message_user(request, f"Assigned rollout cohorts, total users selected across flags: {total_assigned}")
     assign_rollout_users_action.short_description = "Assign rollout users based on percentage (replace current)"
+
+
+@admin.register(Team, site=admin_site)
+class TeamAdmin(admin.ModelAdmin):
+    model = Team
+    list_display = ["name", "abbreviation", "active"]
+    search_fields = ["name", "abbreviation"]
+    list_filter = ["active"]
+
+
+@admin.register(TeamDuplicateDecision, site=admin_site)
+class TeamDuplicateDecisionAdmin(admin.ModelAdmin):
+    model = TeamDuplicateDecision
+    list_display = ["team1", "team2", "decision", "decided_by", "created"]
+    list_filter = ["decision", "created"]
+    search_fields = ["team1__name", "team2__name", "decided_by__username"]
+    autocomplete_fields = ["team1", "team2", "decided_by"]
+    readonly_fields = ["created"]
+    
+    fieldsets = (
+        (
+            "Decision Details",
+            {
+                "fields": (
+                    ("team1", "team2"),
+                    "decision",
+                    "decided_by",
+                    "primary_team",
+                    "notes",
+                ),
+            },
+        ),
+        (
+            "Timestamps",
+            {
+                "classes": ("collapse",),
+                "fields": ("created",),
+            },
+        ),
+    )
+
+
+@admin.register(PotentialTeamDuplicate, site=admin_site)
+class PotentialTeamDuplicateAdmin(admin.ModelAdmin):
+    model = PotentialTeamDuplicate
+    list_display = ["team1_name", "team2_name", "similarity_score", "created"]
+    list_filter = ["created"]
+    search_fields = ["team1_name", "team2_name", "team1_abbreviation", "team2_abbreviation"]
+    readonly_fields = ["team1", "team2", "similarity_score", "match_reasons", "team1_name", "team2_name", "team1_abbreviation", "team2_abbreviation"]
+    ordering = ["-similarity_score"]
+
+
+@admin.register(Game, site=admin_site)
+class GameAdmin(admin.ModelAdmin):
+    model = Game
+    list_display = ["name", "home_team", "away_team", "start_datetime", "status", "is_ncaa"]
+    list_filter = ["status", "is_ncaa", "start_datetime"]
+    search_fields = ["name", "home_team__name", "away_team__name"]
+    readonly_fields = ["espn_id", "created", "last_modified"]
+    date_hierarchy = "start_datetime"
+    
+    fieldsets = (
+        (
+            "Game Information",
+            {
+                "fields": (
+                    "espn_id",
+                    "name",
+                    "short_name",
+                    "home_team",
+                    "away_team",
+                    "players",
+                )
+            },
+        ),
+        (
+            "Timing",
+            {
+                "fields": (
+                    "start_datetime",
+                    "end_datetime",
+                    "short_date",
+                    "status",
+                )
+            },
+        ),
+        (
+            "Streaming & Media",
+            {
+                "fields": (
+                    "streaming_url",
+                    "image_url",
+                )
+            },
+        ),
+        (
+            "Metadata",
+            {
+                "fields": (
+                    "network_name",
+                    "sport_name",
+                    "league_name",
+                    "is_ncaa",
+                )
+            },
+        ),
+        (
+            "System",
+            {
+                "classes": ("collapse",),
+                "fields": ("active", "created", "last_modified"),
+            },
+        ),
+    )
+    
+    filter_horizontal = ["players"]

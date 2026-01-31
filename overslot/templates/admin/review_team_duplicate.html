@@ -1,0 +1,242 @@
+{% extends "admin/duplicate_base.html" %}
+
+{% block title %}Review Team Duplicate{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-separator">›</span>
+<span>Review Duplicate</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-title">Review Potential Duplicate Teams</div>
+
+{% if similarity %}
+<div class="card" style="margin-bottom: 2rem; border-left: 4px solid #2b6cb0;">
+    <div class="card-header" style="background: #ebf8ff;">
+        <div class="card-title" style="color: #2a4365;">Similarity Score: {{ similarity|floatformat:2 }}</div>
+    </div>
+    <div class="card-body">
+        {% if match_reasons %}
+        <div>
+            <strong style="color: #2a4365;">Match Reasons:</strong>
+            <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                {% for reason in match_reasons %}
+                <li style="color: #4a5568; margin-bottom: 0.25rem;">{{ reason }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="grid grid-2" style="margin-bottom: 2rem;">
+    <!-- Team 1 -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">{{ team1.name }}</div>
+        </div>
+        <div class="card-body">
+            <!-- Basic Info -->
+            {% if team1.abbreviation %}
+            <div class="form-group">
+                <label class="form-label">Abbreviation</label>
+                <div style="color: #4a5568; font-weight: 500;">{{ team1.abbreviation }}</div>
+            </div>
+            {% endif %}
+            
+            <div class="form-group">
+                <label class="form-label">Player Rankings</label>
+                <div style="color: #4a5568; font-weight: 500;">{{ team1_player_rankings_count }}</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Games</label>
+                <div style="color: #4a5568; font-weight: 500;">{{ team1_games_count }}</div>
+            </div>
+            
+            <!-- Team ID -->
+            <div class="form-group">
+                <label class="form-label">Team ID</label>
+                <div style="color: #718096; font-size: 0.85rem; font-family: monospace;">{{ team1.pk }}</div>
+            </div>
+            
+            {% if team1_player_rankings %}
+            <div class="form-group">
+                <label class="form-label">Sample Player Rankings ({{ team1_player_rankings|length }})</label>
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    {% for pr in team1_player_rankings %}
+                    <div style="padding: 1rem; border-bottom: 1px solid #e2e8f0;{% if forloop.last %} border-bottom: none;{% endif %}">
+                        <div style="font-weight: 600; color: #2d3748; margin-bottom: 0.25rem;">{{ pr.player.name }}</div>
+                        <div style="font-size: 0.9rem; color: #718096;">{{ pr.ranking.get_computed_title }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="form-group">
+                <label class="form-label">Player Rankings</label>
+                <div style="padding: 1rem; background: #f7fafc; border-radius: 6px; text-align: center; color: #718096;">
+                    No rankings found
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if team1_games %}
+            <div class="form-group">
+                <label class="form-label">Sample Games ({{ team1_games|length }})</label>
+                <div style="max-height: 200px; overflow-y: auto;">
+                    {% for game in team1_games %}
+                    <div style="padding: 0.5rem; background: #f7fafc; border-radius: 6px; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 500; color: #2d3748;">{{ game.home_team.name }} vs {{ game.away_team.name }}</div>
+                        {% if game.date %}
+                        <div style="font-size: 0.9rem; color: #718096;">{{ game.date|date:"M d, Y" }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Team 2 -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">{{ team2.name }}</div>
+        </div>
+        <div class="card-body">
+            <!-- Basic Info -->
+            {% if team2.abbreviation %}
+            <div class="form-group">
+                <label class="form-label">Abbreviation</label>
+                <div style="color: #4a5568; font-weight: 500;">{{ team2.abbreviation }}</div>
+            </div>
+            {% endif %}
+            
+            <div class="form-group">
+                <label class="form-label">Player Rankings</label>
+                <div style="color: #4a5568; font-weight: 500;">{{ team2_player_rankings_count }}</div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Games</label>
+                <div style="color: #4a5568; font-weight: 500;">{{ team2_games_count }}</div>
+            </div>
+            
+            <!-- Team ID -->
+            <div class="form-group">
+                <label class="form-label">Team ID</label>
+                <div style="color: #718096; font-size: 0.85rem; font-family: monospace;">{{ team2.pk }}</div>
+            </div>
+            
+            {% if team2_player_rankings %}
+            <div class="form-group">
+                <label class="form-label">Sample Player Rankings ({{ team2_player_rankings|length }})</label>
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    {% for pr in team2_player_rankings %}
+                    <div style="padding: 1rem; border-bottom: 1px solid #e2e8f0;{% if forloop.last %} border-bottom: none;{% endif %}">
+                        <div style="font-weight: 600; color: #2d3748; margin-bottom: 0.25rem;">{{ pr.player.name }}</div>
+                        <div style="font-size: 0.9rem; color: #718096;">{{ pr.ranking.get_computed_title }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="form-group">
+                <label class="form-label">Player Rankings</label>
+                <div style="padding: 1rem; background: #f7fafc; border-radius: 6px; text-align: center; color: #718096;">
+                    No rankings found
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if team2_games %}
+            <div class="form-group">
+                <label class="form-label">Sample Games ({{ team2_games|length }})</label>
+                <div style="max-height: 200px; overflow-y: auto;">
+                    {% for game in team2_games %}
+                    <div style="padding: 0.5rem; background: #f7fafc; border-radius: 6px; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 500; color: #2d3748;">{{ game.home_team.name }} vs {{ game.away_team.name }}</div>
+                        {% if game.date %}
+                        <div style="font-size: 0.9rem; color: #718096;">{{ game.date|date:"M d, Y" }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Decision Forms -->
+<div class="grid grid-2">
+    <!-- Merge Form -->
+    <div class="card">
+        <div class="card-header" style="background: #f0fff4; border-color: #9ae6b4;">
+            <div class="card-title" style="color: #22543d;">Merge Teams</div>
+        </div>
+        <div class="card-body">
+            <p style="color: #22543d; margin-bottom: 1.5rem;">
+                These are the same team. Merge them into one team record.
+            </p>
+            <p style="color: #2f855a; margin-bottom: 1.5rem; font-size: 0.9rem; padding: 0.75rem; background: #f0fff4; border-radius: 6px;">
+                <strong>Note:</strong> This will update the <code>school_team</code> ForeignKey in PlayerRanking 
+                and Game records, but will <strong>NOT</strong> modify the <code>school</code> CharField in PlayerRanking.
+            </p>
+            <form method="post" action="{% url 'merge_teams' team1_id=team1.pk team2_id=team2.pk %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Primary Team (data will be kept)</label>
+                    <select name="primary_team" class="form-select" required>
+                        <option value="">Choose which team to keep as primary</option>
+                        <option value="{{ team1.pk }}">
+                            {{ team1.name }} (Team 1) - {{ team1_player_rankings_count }} rankings, {{ team1_games_count }} games - ID: {{ team1.pk }}
+                        </option>
+                        <option value="{{ team2.pk }}">
+                            {{ team2.name }} (Team 2) - {{ team2_player_rankings_count }} rankings, {{ team2_games_count }} games - ID: {{ team2.pk }}
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes (optional)</label>
+                    <textarea name="notes" class="form-textarea" placeholder="Add any notes about this merge decision..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-success" style="width: 100%;">
+                    Merge Teams
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Keep Separate Form -->
+    <div class="card">
+        <div class="card-header" style="background: #fed7d7; border-color: #fc8181;">
+            <div class="card-title" style="color: #742a2a;">Keep Separate</div>
+        </div>
+        <div class="card-body">
+            <p style="color: #742a2a; margin-bottom: 1.5rem;">
+                These are different teams. Keep them as separate team records.
+            </p>
+            <form method="post" action="{% url 'mark_teams_separate' team1_id=team1.pk team2_id=team2.pk %}">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Notes (optional)</label>
+                    <textarea name="notes" class="form-textarea" placeholder="Add any notes about why these should remain separate..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-danger" style="width: 100%;">
+                    Keep Separate
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div style="margin-top: 2rem; text-align: center;">
+    <a href="{% url 'team_duplicate_dashboard' %}" class="btn btn-outline">
+        Back to Dashboard
+    </a>
+</div>
+{% endblock %}

@@ -1,5 +1,6 @@
 asgiref==3.9.1
 attrs==25.3.0
+bleach==6.2.0
 boto3==1.38.8
 botocore==1.38.8
 cachetools==5.5.2
@@ -12,9 +13,10 @@ django-allauth==65.8.1
 django-cors-headers==4.4.0
 django-environ==0.12.0
 django-js-asset==3.1.2
-django-summernote==0.8.20.0
+django-prose-editor==0.16.1
 django-sesame==3.2.3
 django-storages==1.14.6
+django-summernote==0.8.20.0
 google-api-core==2.24.2
 google-api-python-client==2.169.0
 google-auth==2.39.0
@@ -43,6 +45,7 @@ pyparsing==3.2.3
 pysocks==1.7.1
 python-dateutil==2.9.0.post0
 python3-openid==3.2.0
+pytz==2025.2
 rapidfuzz==3.13.0
 requests==2.32.3
 requests-oauthlib==2.0.0
@@ -60,5 +63,6 @@ trio-websocket==0.12.2
 typing-extensions==4.13.2
 uritemplate==4.1.1
 urllib3==2.4.0
+webencodings==0.5.1
 websocket-client==1.8.0
 wsproto==1.2.0

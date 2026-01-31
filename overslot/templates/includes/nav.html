@@ -31,6 +31,10 @@
                    href="/rankings/">
                     Rankings
                 </a>
+                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link nav-link-live-games" 
+                   href="/live-games/">
+                    Games
+                </a>
                 <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
                    href="/hitters/college/">
                     Data
@@ -62,7 +66,7 @@
                     <div class="search-wrapper">
                         <input type="text" 
                                class="search-input" 
-                               placeholder="Search news, rankings or players"
+                               placeholder="Search news, rankings, players or teams"
                                id="navSearch"
                                autocomplete="off">
                         <div class="search-icon">
@@ -89,6 +93,12 @@
                                 </h3>
                                 <div class="search-items" id="playerResults"></div>
                             </div>
+                            <div class="search-column">
+                                <h3 class="search-column-title">
+                                    Teams
+                                </h3>
+                                <div class="search-items" id="teamResults"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -112,7 +122,10 @@
                                             Site admin
                                         </a>
                                         <a class="navbar-item" href="{% url 'duplicate_dashboard' %}">
-                                            Duplicate management
+                                            Duplicate players
+                                        </a>
+                                        <a class="navbar-item" href="{% url 'team_duplicate_dashboard' %}">
+                                            Duplicate teams
                                         </a>
                                         <a class="navbar-item" href="{% url 'data_status' %}">
                                             Data status
@@ -266,6 +279,11 @@
     white-space: nowrap;
 }
 
+.nav-link-live-games {
+    /* Styling same as other nav items - red background can be added back later */
+}
+
+
 /* Search styles */
 .search-container {
     position: relative;
@@ -284,6 +302,7 @@
         padding: 0.75rem 0.5rem !important;
         font-size: 0.9rem;
     }
+    
     
     .logo-text {
         font-size: var(--text-xl);
@@ -346,7 +365,7 @@
 
 .search-results-content {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1px;
     background: var(--dark-border);
 }
@@ -504,6 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const articleResults = document.getElementById('articleResults');
     const rankingResults = document.getElementById('rankingResults');
     const playerResults = document.getElementById('playerResults');
+    const teamResults = document.getElementById('teamResults');
     
     let searchTimeout;
 
@@ -524,6 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     articleResults.innerHTML = '';
                     rankingResults.innerHTML = '';
                     playerResults.innerHTML = '';
+                    teamResults.innerHTML = '';
 
                     // Populate articles
                     data.articles.forEach(article => {
@@ -561,6 +582,21 @@ document.addEventListener('DOMContentLoaded', () => {
                                     ${player.name}
                                 </div>
                                 <div class="search-item-meta">${player.position} | ${player.school}</div>
+                            </a>
+                        `;
+                    });
+
+                    // Populate teams
+                    data.teams.forEach(team => {
+                        if (!team.slug) return; // Skip teams without slugs
+                        const rankingText = team.ranking ? `#${team.ranking} ` : '';
+                        const abbreviationText = team.abbreviation ? ` (${team.abbreviation})` : '';
+                        teamResults.innerHTML += `
+                            <a href="/teams/${team.slug}/" class="search-item">
+                                <div class="search-item-title">
+                                    ${rankingText}${team.name}${abbreviationText}
+                                </div>
+                                <div class="search-item-meta">Team</div>
                             </a>
                         `;
                     });

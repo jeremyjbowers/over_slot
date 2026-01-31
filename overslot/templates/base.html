@@ -24,6 +24,10 @@
         <meta name="twitter:description" content="{% block twitter_description %}Over Slot - Comprehensive coverage of baseball's future stars, featuring prospect rankings, scouting reports, and in-depth analysis.{% endblock %}">
         <meta name="twitter:image" content="{% block twitter_image %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endblock %}">
         <meta name="twitter:image:alt" content="{% block twitter_image_alt %}Over Slot - Baseball prospect coverage{% endblock %}">
+        
+        <!-- Extra head content (for page-specific meta tags, etc.) -->
+        {% block extra_head %}{% endblock %}
+        
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
         <!-- Tailwind CSS (needed for subscription pages that use Tailwind utility classes) -->

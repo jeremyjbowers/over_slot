@@ -1,6 +1,6 @@
 {% extends "admin/duplicate_base.html" %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Player Duplicate Dashboard{% endblock %}
 
 {% block content %}
 <div class="page-title">Player Duplicate Management</div>
@@ -156,7 +156,7 @@
             {% if search_query %}
                 No potential duplicates found matching "{{ search_query }}"
             {% else %}
-                No potential duplicates found. Run <code>python manage.py generate_duplicates</code> to find duplicates.
+                No potential duplicates found. Run <code>python manage.py generate_player_duplicates</code> to find duplicates.
             {% endif %}
         </div>
         {% endif %}

@@ -238,4 +238,4 @@ class Command(BaseCommand):
                 except Exception as individual_error:
                     self.stdout.write(
                         self.style.WARNING(f'Error creating duplicate {duplicate}: {individual_error}')
-                    ) 
+                    )

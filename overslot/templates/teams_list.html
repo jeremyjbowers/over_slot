@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}College Baseball Teams - Over Slot{% endblock %}
+
+{% block meta_description %}Browse all college baseball teams. Find team pages with schedules, rankings, and upcoming games for NCAA baseball teams.{% endblock %}
+
+{% block content %}
+<style>
+.teams-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 0;
+}
+
+.teams-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.teams-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--dark-text);
+    margin-bottom: 0.5rem;
+}
+
+.teams-header p {
+    color: var(--dark-text-muted);
+    font-size: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.teams-by-letter {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.letter-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.teams-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem 1rem;
+}
+
+.letter-header {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--dark-text);
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.team-link {
+    color: var(--dark-text);
+    text-decoration: none;
+    font-size: 1rem;
+    transition: color 0.2s ease;
+    display: inline-block;
+}
+
+.team-link:hover {
+    color: var(--theme-primary);
+}
+
+.team-ranking {
+    color: #fff;
+    font-weight: 700;
+    margin-right: 0.5rem;
+}
+
+@media screen and (max-width: 768px) {
+    .teams-container {
+        padding: 3rem 1rem 0;
+    }
+    
+    .teams-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<div class="teams-container">
+    <header class="teams-header">
+        <h1>College Baseball Teams</h1>
+        <p>Browse all teams and find their schedules, rankings, and upcoming games.</p>
+    </header>
+    
+    {% if teams_by_letter %}
+    <div class="teams-by-letter">
+        {% for letter, letter_teams in teams_by_letter %}
+        <div class="letter-section">
+            <h2 class="letter-header">{{ letter }}</h2>
+            <div class="teams-grid">
+                {% for team in letter_teams %}
+                <div>
+                    {% if team.slug %}
+                    <a href="/teams/{{ team.slug }}/" class="team-link">
+                        {% if team.current_ranking %}
+                        <span class="team-ranking">#{{ team.current_ranking }}</span>
+                        {% endif %}
+                        {{ team.name }}
+                    </a>
+                    {% else %}
+                    <span class="team-link">
+                        {% if team.current_ranking %}
+                        <span class="team-ranking">#{{ team.current_ranking }}</span>
+                        {% endif %}
+                        {{ team.name }}
+                    </span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem 1rem; color: var(--dark-text-muted);">
+        <p>No teams found.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

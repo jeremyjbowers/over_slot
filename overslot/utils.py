@@ -374,3 +374,91 @@ def fuzzy_find_player(name, debug=False, stdout=None):
             )
     
     return None
+
+
+def get_primary_team(team):
+    """
+    Check if this team has been merged into another team.
+    If so, return the primary team. Otherwise, return the original team.
+    Uses the same logic as load_games.py for consistency.
+    """
+    from overslot import models
+    
+    # Check if this team was merged into another (it would be inactive)
+    if not team.active:
+        # Look for a merge decision where this team was the secondary
+        merge_decision = models.TeamDuplicateDecision.objects.filter(
+            decision='merged',
+            primary_team__isnull=False
+        ).filter(
+            Q(team1=team) | Q(team2=team)
+        ).exclude(
+            primary_team=team  # Don't match if this team was the primary
+        ).first()
+        
+        if merge_decision and merge_decision.primary_team.active:
+            return merge_decision.primary_team
+    
+    return team
+
+
+def find_team_by_school_name(school_name):
+    """
+    Find a Team object by matching school name, using deduplication logic.
+    Returns the primary team if the matched team has been merged.
+    
+    Args:
+        school_name: The school name string to match
+        
+    Returns:
+        Team object or None if no match found
+    """
+    from overslot import models
+    from overslot.team_duplicate_views import normalize_team_name
+    
+    if not school_name:
+        return None
+    
+    normalized_school = normalize_team_name(school_name)
+    
+    # Try exact match first (case-insensitive)
+    try:
+        team = models.Team.objects.get(name__iexact=school_name, active=True)
+        return get_primary_team(team)
+    except models.Team.DoesNotExist:
+        pass
+    except models.Team.MultipleObjectsReturned:
+        # If multiple matches, prefer exact case match
+        try:
+            team = models.Team.objects.get(name=school_name, active=True)
+            return get_primary_team(team)
+        except models.Team.DoesNotExist:
+            # Take first one and resolve via deduplication
+            team = models.Team.objects.filter(name__iexact=school_name, active=True).first()
+            if team:
+                return get_primary_team(team)
+    
+    # Try normalized match
+    all_teams = models.Team.objects.filter(active=True)
+    for team in all_teams:
+        normalized_team = normalize_team_name(team.name)
+        if normalized_team == normalized_school:
+            return get_primary_team(team)
+    
+    # Try fuzzy matching with a threshold
+    from thefuzz import fuzz
+    best_match = None
+    best_score = 0
+    threshold = 85  # Require 85% similarity
+    
+    for team in all_teams:
+        normalized_team = normalize_team_name(team.name)
+        score = fuzz.ratio(normalized_school, normalized_team)
+        if score > best_score and score >= threshold:
+            best_score = score
+            best_match = team
+    
+    if best_match:
+        return get_primary_team(best_match)
+    
+    return None

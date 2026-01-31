@@ -63,6 +63,41 @@ class Command(BaseCommand):
                     return merge_decision.primary_player
             
             return player
+        
+        def get_primary_team(team):
+            """
+            Check if this team has been merged into another team.
+            If so, return the primary team. Otherwise, return the original team.
+            """
+            # Check if this team was merged into another (it would be inactive)
+            if not team.active:
+                # Look for a merge decision where this team was the secondary
+                merge_decision = models.TeamDuplicateDecision.objects.filter(
+                    decision='merged',
+                    primary_team__isnull=False
+                ).filter(
+                    Q(team1=team) | Q(team2=team)
+                ).exclude(
+                    primary_team=team  # Don't match if this team was the primary
+                ).first()
+                
+                if merge_decision and merge_decision.primary_team.active:
+                    print(f"  → Team {team.name} was merged into {merge_decision.primary_team.name}")
+                    return merge_decision.primary_team
+            
+            return team
+        
+        def get_or_create_team_with_merge_check(school_name):
+            """
+            Get or create a team by name, and return the primary team if it has been merged.
+            """
+            team, created = models.Team.objects.get_or_create(
+                name=school_name,
+                defaults={'active': True}
+            )
+            # Check if this team has been merged
+            primary_team = get_primary_team(team)
+            return primary_team, created
 
         def transform_level(level):
             if level:
@@ -205,6 +240,13 @@ class Command(BaseCommand):
                         pr.mock_team = row.get('mock_team', None)
                         pr.mock_team_logo_url = row.get('mock_team_photo_url', None)
                         pr.active = True
+                        
+                        # Link to Team object if this is a college player
+                        if pr.level == "College" and pr.school:
+                            school_name = pr.school.strip()
+                            if school_name:
+                                team, created = get_or_create_team_with_merge_check(school_name)
+                                pr.school_team = team
 
                         # Save now so we can work with M2M relationships
                         pr.save()

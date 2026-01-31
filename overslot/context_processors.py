@@ -1,4 +1,7 @@
 from django.conf import settings
+from django.utils import timezone
+from dateutil import parser
+from datetime import datetime, date
 from .pricing import get_price_id
 from . import models
 
@@ -27,6 +30,26 @@ def settings_context(request):
         publish=True
     ).exists()
 
+    # Check if there are games today (or if we're past opening day)
+    has_live_games = False
+    try:
+        season_opening_day = parser.parse(getattr(settings, 'SEASON_OPENING_DAY', '2026-02-12')).date()
+        today = timezone.now().date()
+        display_date = max(today, season_opening_day)
+        
+        # Check if there are any games for today/opening day
+        start_of_day = timezone.make_aware(datetime.combine(display_date, datetime.min.time()))
+        end_of_day = timezone.make_aware(datetime.combine(display_date, datetime.max.time()))
+        
+        has_live_games = models.Game.objects.filter(
+            active=True,
+            start_datetime__gte=start_of_day,
+            start_datetime__lte=end_of_day
+        ).exists()
+    except Exception:
+        # If there's any error checking, default to False
+        has_live_games = False
+
     return {
         'settings': {
             'SUBSCRIPTION_PRICE_MONTHLY': getattr(settings, 'SUBSCRIPTION_PRICE_MONTHLY', 9.99),
@@ -37,4 +60,6 @@ def settings_context(request):
         'has_any_price': has_any_price,
         # Template hook for mock drafts visibility
         'has_published_mock_drafts': has_published_mock_drafts,
+        # Template hook for live games nav styling
+        'has_live_games': has_live_games,
     }

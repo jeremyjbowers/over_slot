@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}{{ team.name }}{% if team.current_ranking %} (#{{ team.current_ranking }}){% endif %} - Team Page - Over Slot{% endblock %}
+
+{% block meta_description %}{{ team.name }} college baseball team page. View upcoming games, schedule, and team information.{% endblock %}
+
+{% block content %}
+<style>
+.team-detail-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 0;
+}
+
+.team-header {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.team-name-large {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--dark-text);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.team-ranking-large {
+    font-size: 2.5rem;
+    color: #fff;
+    font-weight: 900;
+}
+
+.team-abbreviation-large {
+    font-size: 1rem;
+    color: var(--dark-text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.games-section {
+    margin-top: 2rem;
+}
+
+.games-section h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--dark-text);
+    margin-bottom: 1.5rem;
+}
+
+/* Games grid - reuse from games_list */
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* Single game layout (fewer than 3 games) */
+.games-grid.single-game {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+}
+
+.game-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--dark-border);
+    background: var(--dark-surface);
+    height: 100%;
+    overflow: hidden;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.game-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255,255,255,0.2);
+}
+
+/* Image container - clickable */
+.game-media {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 aspect ratio */
+    background: var(--dark-bg);
+    overflow: hidden;
+}
+
+.game-media img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.game-media:hover img {
+    transform: scale(1.05);
+}
+
+/* Play button overlay */
+.game-play-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    background: var(--theme-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+}
+
+.game-media:hover .game-play-button {
+    background: var(--theme-primary-hover);
+    transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.game-play-button::before {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 24px solid #fff;
+    border-top: 14px solid transparent;
+    border-bottom: 14px solid transparent;
+    margin-left: 4px;
+}
+
+/* Content area */
+.game-content {
+    padding: 0.9rem 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    flex: 1;
+}
+
+.game-teams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    line-height: 1.2;
+}
+
+.game-team {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--dark-text);
+    letter-spacing: -0.02em;
+}
+
+.game-team.opponent {
+    color: var(--dark-text);
+}
+
+.team-ranking {
+    color: #fff;
+    font-weight: 900;
+    font-size: 1.5rem;
+}
+
+.team-name {
+    flex: 0 1 auto;
+}
+
+.team-name a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.team-name a:hover {
+    color: var(--theme-primary);
+}
+
+.game-vs {
+    color: var(--dark-text-muted);
+    font-weight: 700;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.game-meta {
+    color: var(--dark-text-muted);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
+.game-status {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-radius: 4px;
+    margin-top: 0.5rem;
+}
+
+.game-status.live {
+    background: var(--theme-primary);
+    color: #fff;
+}
+
+.game-status.future {
+    background: var(--dark-border);
+    color: var(--dark-text-secondary);
+}
+
+.game-status.past {
+    background: var(--dark-border);
+    color: var(--dark-text-muted);
+}
+
+.no-games {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--dark-text-muted);
+    font-size: 1.125rem;
+}
+
+/* Responsive - reuse ranking breakpoints */
+@media (max-width: 1024px) {
+    .games-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .team-detail-container {
+        padding: 3rem 1rem 0;
+    }
+}
+
+@media (max-width: 640px) {
+    .games-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .team-name-large {
+        font-size: 2rem;
+    }
+    
+    .team-ranking-large {
+        font-size: 2rem;
+    }
+}
+</style>
+
+<div class="team-detail-container">
+    <header class="team-header">
+        <h1 class="team-name-large">
+            {% if team.current_ranking %}
+            <span class="team-ranking-large">#{{ team.current_ranking }}</span>
+            {% endif %}
+            {{ team.name }}
+        </h1>
+        {% if team.abbreviation %}
+        <div class="team-abbreviation-large">{{ team.abbreviation }}</div>
+        {% endif %}
+    </header>
+    
+    <section class="games-section">
+        <h2>Upcoming Games</h2>
+        
+        {% if upcoming_games %}
+        <div class="games-grid {% if upcoming_games|length < 3 %}single-game{% endif %}">
+            {% for game in upcoming_games %}
+            <div class="game-card">
+                {% if game.image_url %}
+                <a href="{{ game.streaming_url }}" target="_blank" rel="noopener noreferrer" class="game-media">
+                    <img src="{{ game.image_url }}" alt="{{ game.name }}" loading="lazy">
+                    <div class="game-play-button" aria-hidden="true"></div>
+                </a>
+                {% endif %}
+                
+                <div class="game-content">
+                    <div class="game-teams">
+                        {% if game.away_team == team %}
+                            <div class="game-team">
+                                {% if game.away_team_ranking %}
+                                <span class="team-ranking">#{{ game.away_team_ranking }}</span>
+                                {% endif %}
+                                <span class="team-name">{{ team.name }}</span>
+                            </div>
+                            <span class="game-vs">@</span>
+                            <div class="game-team opponent">
+                                {% if game.home_team_ranking %}
+                                <span class="team-ranking">#{{ game.home_team_ranking }}</span>
+                                {% endif %}
+                                <a href="/teams/{{ game.home_team.slug }}/" class="team-name">{{ game.home_team.name }}</a>
+                            </div>
+                        {% else %}
+                            <div class="game-team opponent">
+                                {% if game.away_team_ranking %}
+                                <span class="team-ranking">#{{ game.away_team_ranking }}</span>
+                                {% endif %}
+                                <a href="/teams/{{ game.away_team.slug }}/" class="team-name">{{ game.away_team.name }}</a>
+                            </div>
+                            <span class="game-vs">vs</span>
+                            <div class="game-team">
+                                {% if game.home_team_ranking %}
+                                <span class="team-ranking">#{{ game.home_team_ranking }}</span>
+                                {% endif %}
+                                <span class="team-name">{{ team.name }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="game-meta">
+                        {{ game.start_datetime|date:"F j, Y" }} • {{ game.start_datetime|date:"g:i A" }}
+                        {% if game.network_name %}
+                        <span> • {{ game.network_name }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <span class="game-status {{ game.status }}">
+                        {{ game.status|title }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-games">
+            <p>No upcoming games scheduled for {{ team.name }}.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

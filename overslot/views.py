@@ -11,8 +11,10 @@ from django.http import JsonResponse
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from decimal import *
-from django.utils.timezone import template_localtime
+from django.utils.timezone import template_localtime, now
 from django.template.response import TemplateResponse
+from dateutil import parser
+from datetime import timedelta
 import json
 
 from overslot import models, utils
@@ -182,6 +184,136 @@ def videos_list(request):
     context['players'] = players
 
     return render(request, "videos_list.html", context)
+
+
+def games_list(request, year=None, month=None, day=None):
+    """
+    Display games for a specific date. If no date provided, shows today's games
+    (or opening day if today is before opening day).
+    """
+    context = {}
+    
+    # Get season opening day from settings
+    try:
+        season_opening_day = parser.parse(getattr(settings, 'SEASON_OPENING_DAY', '2026-02-12')).date()
+    except (ValueError, TypeError):
+        season_opening_day = datetime.date(2026, 2, 12)  # Fallback
+    
+    today = now().date()
+    
+    # Determine which date to show
+    if year and month and day:
+        try:
+            display_date = datetime.date(year, month, day)
+        except (ValueError, TypeError):
+            # Invalid date format, redirect to today/opening day
+            return redirect('games_list')
+    else:
+        # Default: show today's games, or opening day if before opening day
+        display_date = max(today, season_opening_day)
+    
+    # Don't allow dates before opening day
+    if display_date < season_opening_day:
+        display_date = season_opening_day
+    
+    # Get games for this date (start of day to end of day)
+    start_of_day = datetime.datetime.combine(display_date, datetime.time.min)
+    end_of_day = datetime.datetime.combine(display_date, datetime.time.max)
+    
+    # Make timezone-aware if needed
+    from django.utils import timezone
+    if timezone.is_naive(start_of_day):
+        start_of_day = timezone.make_aware(start_of_day)
+    if timezone.is_naive(end_of_day):
+        end_of_day = timezone.make_aware(end_of_day)
+    
+    games = models.Game.objects.filter(
+        active=True,
+        start_datetime__gte=start_of_day,
+        start_datetime__lte=end_of_day
+    ).select_related('home_team', 'away_team').order_by('start_datetime')
+    
+    # Ensure all teams have slugs (for teams created before slug field was added)
+    for game in games:
+        if game.home_team and not game.home_team.slug:
+            game.home_team.save()  # Auto-generates slug
+            game.home_team.refresh_from_db()
+        if game.away_team and not game.away_team.slug:
+            game.away_team.save()  # Auto-generates slug
+            game.away_team.refresh_from_db()
+    
+    context['games'] = games
+    context['display_date'] = display_date
+    context['season_opening_day'] = season_opening_day
+    context['today'] = today
+    
+    # Calculate previous and next dates for navigation
+    prev_date = display_date - timedelta(days=1)
+    next_date = display_date + timedelta(days=1)
+    
+    # Don't allow going back before opening day
+    if prev_date < season_opening_day:
+        context['has_prev'] = False
+    else:
+        context['has_prev'] = True
+        context['prev_date'] = prev_date
+    
+    # Always allow going forward
+    context['has_next'] = True
+    context['next_date'] = next_date
+    
+    return render(request, "games_list.html", context)
+
+
+def teams_list(request):
+    """
+    Display a list of all teams that have games, grouped by first letter, alphabetically sorted.
+    """
+    context = {}
+    # Only show teams that have at least one game (home or away)
+    teams = models.Team.objects.filter(
+        active=True
+    ).filter(
+        Q(home_games__isnull=False) | Q(away_games__isnull=False)
+    ).distinct().order_by('name')
+    
+    # Group teams by first letter
+    teams_by_letter = {}
+    for team in teams:
+        first_letter = team.name[0].upper() if team.name else 'Other'
+        if first_letter not in teams_by_letter:
+            teams_by_letter[first_letter] = []
+        teams_by_letter[first_letter].append(team)
+    
+    # Sort letters and convert to list of tuples
+    context['teams_by_letter'] = sorted(teams_by_letter.items())
+    
+    return render(request, "teams_list.html", context)
+
+
+def team_detail(request, slug):
+    """
+    Display team detail page with upcoming games for this team.
+    """
+    context = {}
+    team = get_object_or_404(models.Team, slug=slug, active=True)
+    context['team'] = team
+    
+    # Get upcoming games for this team (home or away)
+    from django.utils import timezone
+    now = timezone.now()
+    
+    upcoming_games = models.Game.objects.filter(
+        active=True,
+        start_datetime__gte=now
+    ).filter(
+        Q(home_team=team) | Q(away_team=team)
+    ).select_related('home_team', 'away_team').order_by('start_datetime')[:20]  # Next 20 games
+    
+    context['upcoming_games'] = upcoming_games
+    
+    return render(request, "team_detail.html", context)
+
 
 @subscription_required
 def rankings_detail(request, slug):
@@ -480,7 +612,8 @@ def search(request):
         return JsonResponse({
             'articles': [],
             'rankings': [],
-            'players': []
+            'players': [],
+            'teams': []
         })
 
     # Search articles
@@ -508,6 +641,14 @@ def search(request):
         active=True
     )[:5]
 
+    # Search teams (only active teams with slugs)
+    teams = models.Team.objects.filter(
+        Q(name__icontains=query) |
+        Q(abbreviation__icontains=query),
+        active=True,
+        slug__isnull=False
+    ).exclude(slug='')[:5]
+
     return JsonResponse({
         'articles': [{
             'headline': article.headline,
@@ -528,9 +669,15 @@ def search(request):
         'players': [{
             'name': player.name,
             'slug': player.slug,
-            'position': player.position,
-            'school': player.school
-        } for player in players]
+            'position': player.position or '',
+            'school': player.school or ''
+        } for player in players],
+        'teams': [{
+            'name': team.name,
+            'slug': team.slug or '',
+            'ranking': team.current_ranking,
+            'abbreviation': team.abbreviation or ''
+        } for team in teams]
     })
 
 

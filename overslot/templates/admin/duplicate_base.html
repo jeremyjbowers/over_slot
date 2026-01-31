@@ -363,6 +363,30 @@
             color: #744210;
         }
         
+        /* Similarity badges (0-100 scale) */
+        .badge-similarity-8,
+        .badge-similarity-9,
+        .badge-similarity-10 {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .badge-similarity-6,
+        .badge-similarity-7 {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .badge-similarity-0,
+        .badge-similarity-1,
+        .badge-similarity-2,
+        .badge-similarity-3,
+        .badge-similarity-4,
+        .badge-similarity-5 {
+            background: #f56565;
+            color: white;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .main-content {
@@ -501,13 +525,19 @@
         <nav class="breadcrumb">
             <a href="{% url 'admin:index' %}">Admin</a>
             <span class="breadcrumb-separator">›</span>
-            <a href="{% url 'duplicate_dashboard' %}">Duplicate Management</a>
+            {% if request.path|slice:':20' == '/admin/team-duplicates' %}
+                <a href="{% url 'team_duplicate_dashboard' %}">Team Duplicate Management</a>
+            {% else %}
+                <a href="{% url 'duplicate_dashboard' %}">Player Duplicate Management</a>
+            {% endif %}
             {% block breadcrumb %}{% endblock %}
         </nav>
         
         <!-- Section Nav (cross-links) -->
         <div class="section-subnav">
-            <a href="{% url 'duplicate_dashboard' %}" class="subnav-link {% if request.path|slice:':18' == '/admin/duplicates' %}is-active{% endif %}">Duplicate Management</a>
+            <a href="{% url 'admin:index' %}" class="subnav-link">Django Admin</a>
+            <a href="{% url 'duplicate_dashboard' %}" class="subnav-link {% if request.path|slice:':18' == '/admin/duplicates' %}is-active{% endif %}">Player Duplicates</a>
+            <a href="{% url 'team_duplicate_dashboard' %}" class="subnav-link {% if request.path|slice:':20' == '/admin/team-duplicates' %}is-active{% endif %}">Team Duplicates</a>
             <a href="{% url 'data_status' %}" class="subnav-link {% if request.path == '/admin/data-status/' %}is-active{% endif %}">Data Status</a>
         </div>
         

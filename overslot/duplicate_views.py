@@ -74,7 +74,7 @@ def review_duplicate(request):
     next_pair = PotentialDuplicate.objects.select_related('player1', 'player2').first()
     
     if not next_pair:
-        messages.info(request, "No more potential duplicates to review! Run 'django-admin generate_duplicates' to find new ones.")
+        messages.info(request, "No more potential duplicates to review! Run 'django-admin generate_player_duplicates' to find new ones.")
         return redirect('duplicate_dashboard')
     
     # Redirect to the specific pair review URL
@@ -273,6 +273,12 @@ def data_status(request):
 def duplicate_history(request):
     """View history of duplicate decisions"""
     context = {}
+    
+    # Get summary stats
+    all_decisions = DuplicateDecision.objects.all()
+    context['total_decisions'] = all_decisions.count()
+    context['merged_count'] = all_decisions.filter(decision='merged').count()
+    context['separate_count'] = all_decisions.filter(decision='separate').count()
     
     decisions = DuplicateDecision.objects.select_related(
         'player1', 'player2', 'decided_by'

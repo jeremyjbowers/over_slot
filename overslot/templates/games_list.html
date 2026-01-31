@@ -1,0 +1,481 @@
+{% extends "base.html" %}
+
+{% block title %}{% if display_date == today %}Live College Baseball Games Today{% else %}College Baseball Games - {{ display_date|date:"F j, Y" }}{% endif %} - Over Slot{% endblock %}
+
+{% block meta_description %}Watch live college baseball games{% if display_date == today %} today{% else %} on {{ display_date|date:"F j, Y" }}{% endif %}. Find streaming links, game times, and matchups for NCAA baseball games featuring top-ranked teams.{% endblock %}
+
+{% block og_title %}{% if display_date == today %}Live College Baseball Games Today{% else %}College Baseball Games - {{ display_date|date:"F j, Y" }}{% endif %} - Over Slot{% endblock %}
+
+{% block og_description %}Watch live college baseball games{% if display_date == today %} today{% else %} on {{ display_date|date:"F j, Y" }}{% endif %}. Find streaming links, game times, and matchups for NCAA baseball games featuring top-ranked teams.{% endblock %}
+
+{% block og_type %}website{% endblock %}
+
+{% block og_image %}{% if games and games.0.image_url %}{{ games.0.image_url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+
+{% block twitter_title %}{% if display_date == today %}Live College Baseball Games Today{% else %}College Baseball Games - {{ display_date|date:"F j, Y" }}{% endif %} - Over Slot{% endblock %}
+
+{% block twitter_description %}Watch live college baseball games{% if display_date == today %} today{% else %} on {{ display_date|date:"F j, Y" }}{% endif %}. Find streaming links, game times, and matchups for NCAA baseball games featuring top-ranked teams.{% endblock %}
+
+{% block twitter_image %}{% if games and games.0.image_url %}{{ games.0.image_url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+
+{% block extra_head %}
+<!-- SEO Meta Tags -->
+<meta name="robots" content="index, follow">
+<meta name="keywords" content="college baseball, NCAA baseball, live baseball games, baseball streaming, college baseball schedule, baseball games today{% if display_date != today %}, baseball games {{ display_date|date:"F j, Y" }}{% endif %}">
+<link rel="canonical" href="{{ request.build_absolute_uri }}">
+{% endblock %}
+
+{% block content %}
+<style>
+/* Main layout */
+.games-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 0;
+}
+
+/* Date navigation */
+.date-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 1rem 0;
+}
+
+.date-nav-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 1px solid var(--dark-border);
+    background: var(--dark-surface);
+    color: var(--dark-text);
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.date-nav-button:hover:not(.disabled) {
+    background: var(--dark-surface-hover);
+    border-color: var(--theme-primary);
+    color: var(--theme-primary);
+}
+
+.date-nav-button.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.date-display {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--dark-text);
+    min-width: 200px;
+    text-align: center;
+}
+
+/* Games grid - reuse ranking styles */
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem 2.5rem;
+}
+
+/* Single game layout (fewer than 3 games) */
+.games-grid.single-game {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+}
+
+.game-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--dark-border);
+    background: var(--dark-surface);
+    height: 100%;
+    overflow: hidden;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+}
+
+.game-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255,255,255,0.2);
+}
+
+/* Image container - clickable, reuse ranking-media style */
+.game-media {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 aspect ratio */
+    background: var(--dark-bg);
+    overflow: hidden;
+}
+
+.game-media img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.game-media:hover img {
+    transform: scale(1.05);
+}
+
+/* Play button overlay */
+.game-play-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    background: var(--theme-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    pointer-events: none; /* Allow clicks to pass through to link */
+}
+
+.game-media:hover .game-play-button {
+    background: var(--theme-primary-hover);
+    transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+.game-play-button::before {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 24px solid #fff;
+    border-top: 14px solid transparent;
+    border-bottom: 14px solid transparent;
+    margin-left: 4px; /* Slight offset to center the triangle */
+}
+
+/* Content area - reuse ranking-content style */
+.game-content {
+    padding: 0.9rem 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    flex: 1;
+}
+
+.game-teams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    line-height: 1.2;
+}
+
+.game-team {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--dark-text);
+    letter-spacing: -0.02em;
+}
+
+.team-ranking {
+    color: #fff;
+    font-weight: 900;
+    font-size: 1.5rem;
+}
+
+.team-name {
+    flex: 0 1 auto;
+}
+
+.team-name a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.team-name a:hover {
+    color: var(--theme-primary);
+}
+
+.game-vs {
+    color: var(--dark-text-muted);
+    font-weight: 700;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.game-meta {
+    color: var(--dark-text-muted);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
+.game-status {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    border-radius: 4px;
+    margin-top: 0.5rem;
+}
+
+.game-status.live {
+    background: var(--theme-primary);
+    color: #fff;
+}
+
+.game-status.future {
+    background: var(--dark-border);
+    color: var(--dark-text-secondary);
+}
+
+.game-status.past {
+    background: var(--dark-border);
+    color: var(--dark-text-muted);
+}
+
+.no-games {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--dark-text-muted);
+    font-size: 1.125rem;
+}
+
+.no-games p {
+    margin: 0.5rem 0;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* Responsive - reuse ranking breakpoints */
+@media (max-width: 1024px) {
+    .games-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .games-container {
+        padding: 3rem 1rem 0;
+    }
+    
+    .date-navigation {
+        gap: 1rem;
+    }
+    
+    .date-display {
+        font-size: 1rem;
+        min-width: 150px;
+    }
+}
+
+@media (max-width: 640px) {
+    .games-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<div class="games-container">
+    <!-- Page Header -->
+    <header style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="font-size: 2rem; font-weight: 800; color: var(--dark-text); margin-bottom: 0.5rem;">
+            {% if display_date == today %}
+                Live College Baseball Games Today
+            {% else %}
+                College Baseball Games - {{ display_date|date:"F j, Y" }}
+            {% endif %}
+        </h1>
+        <p style="color: var(--dark-text-muted); font-size: 1rem; max-width: 600px; margin: 0 auto;">
+            {% if games %}
+                Watch {{ games|length }} college baseball game{{ games|length|pluralize }} featuring top-ranked NCAA teams. 
+                Click any game to watch live streaming coverage.
+            {% else %}
+                Find live college baseball games, streaming links, and game times for NCAA baseball matchups.
+            {% endif %}
+        </p>
+        <p style="margin-top: 0.75rem;">
+            <a href="/teams/" style="color: var(--theme-primary); text-decoration: none; font-weight: 600;">Browse all teams →</a>
+        </p>
+    </header>
+    
+    <!-- Date Navigation -->
+    <div class="date-navigation">
+        <a href="{% if has_prev %}/live-games/{{ prev_date.year }}/{{ prev_date.month }}/{{ prev_date.day }}/{% else %}#{% endif %}" 
+           class="date-nav-button {% if not has_prev %}disabled{% endif %}"
+           aria-label="Previous day">
+            <i class="fas fa-chevron-left"></i>
+        </a>
+        
+        <div class="date-display">
+            {{ display_date|date:"F j, Y" }}
+        </div>
+        
+        <a href="/live-games/{{ next_date.year }}/{{ next_date.month }}/{{ next_date.day }}/" 
+           class="date-nav-button"
+           aria-label="Next day">
+            <i class="fas fa-chevron-right"></i>
+        </a>
+    </div>
+    
+    <!-- Games Grid -->
+    {% if games %}
+    <section aria-label="College baseball games schedule">
+        <h2 class="sr-only">Game Schedule</h2>
+        <div class="games-grid {% if games|length < 3 %}single-game{% endif %}">
+        {% for game in games %}
+        <div class="game-card">
+            {% if game.image_url %}
+            <a href="{{ game.streaming_url }}" target="_blank" rel="noopener noreferrer" class="game-media">
+                <img src="{{ game.image_url }}" alt="{{ game.name }}" loading="lazy">
+                <div class="game-play-button" aria-hidden="true"></div>
+            </a>
+            {% endif %}
+            
+            <div class="game-content">
+                <div class="game-teams">
+                    {% if game.away_team %}
+                    <div class="game-team away">
+                        {% if game.away_team_ranking %}
+                        <span class="team-ranking">#{{ game.away_team_ranking }}</span>
+                        {% endif %}
+                        {% if game.away_team.slug %}
+                        <a href="/teams/{{ game.away_team.slug }}/" class="team-name">{{ game.away_team.name }}</a>
+                        {% else %}
+                        <span class="team-name">{{ game.away_team.name }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <span class="game-vs">vs</span>
+                    
+                    {% if game.home_team %}
+                    <div class="game-team home">
+                        {% if game.home_team_ranking %}
+                        <span class="team-ranking">#{{ game.home_team_ranking }}</span>
+                        {% endif %}
+                        {% if game.home_team.slug %}
+                        <a href="/teams/{{ game.home_team.slug }}/" class="team-name">{{ game.home_team.name }}</a>
+                        {% else %}
+                        <span class="team-name">{{ game.home_team.name }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="game-meta">
+                    {{ game.start_datetime|date:"F j, Y" }} • {{ game.start_datetime|date:"g:i A" }}
+                    {% if game.network_name %}
+                    <span> • {{ game.network_name }}</span>
+                    {% endif %}
+                </div>
+                
+                <span class="game-status {{ game.status }}">
+                    {{ game.status|title }}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+    </section>
+    {% else %}
+    <section aria-label="No games scheduled">
+        <div class="no-games">
+            <p>No games scheduled for {{ display_date|date:"F j, Y" }}.</p>
+            <p style="margin-top: 1rem; font-size: 0.95rem;">Check back for updated schedules or browse games on other dates using the navigation above.</p>
+        </div>
+    </section>
+    {% endif %}
+</div>
+
+<!-- Structured Data for SEO (JSON-LD) -->
+{% if games %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "{% if display_date == today %}Live College Baseball Games Today{% else %}College Baseball Games - {{ display_date|date:"F j, Y" }}{% endif %}",
+    "description": "Schedule of college baseball games{% if display_date == today %} today{% else %} on {{ display_date|date:"F j, Y" }}{% endif %} with streaming links and game times",
+    "url": "{{ request.build_absolute_uri }}",
+    "numberOfItems": {{ games|length }},
+    "itemListElement": [
+        {% for game in games %}
+        {
+            "@type": "SportsEvent",
+            "name": "{{ game.name|escapejs }}",
+            "startDate": "{{ game.start_datetime|date:"c" }}",
+            {% if game.end_datetime %}"endDate": "{{ game.end_datetime|date:"c" }}",{% endif %}
+            "sport": "Baseball",
+            {% if game.is_ncaa %}"league": "NCAA Baseball",{% endif %}
+            {% if game.home_team and game.away_team %}
+            "competitor": [
+                {
+                    "@type": "SportsTeam",
+                    "name": "{{ game.away_team.name|escapejs }}"
+                    {% if game.away_team_ranking %},
+                    "ranking": {
+                        "@type": "SportsTeamRanking",
+                        "rank": {{ game.away_team_ranking }}
+                    }
+                    {% endif %}
+                },
+                {
+                    "@type": "SportsTeam",
+                    "name": "{{ game.home_team.name|escapejs }}"
+                    {% if game.home_team_ranking %},
+                    "ranking": {
+                        "@type": "SportsTeamRanking",
+                        "rank": {{ game.home_team_ranking }}
+                    }
+                    {% endif %}
+                }
+            ],
+            {% endif %}
+            {% if game.streaming_url %}"url": "{{ game.streaming_url }}",{% endif %}
+            {% if game.network_name %}"broadcastService": {
+                "@type": "BroadcastService",
+                "name": "{{ game.network_name|escapejs }}"
+            },{% endif %}
+            "eventStatus": {
+                "@type": "EventStatusType",
+                "name": "{{ game.status|title }}"
+            }
+            {% if game.image_url %},
+            "image": "{{ game.image_url }}"{% endif %}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]
+}
+</script>
+{% endif %}
+{% endblock %}

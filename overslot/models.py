@@ -434,6 +434,7 @@ class PlayerRanking(BaseModel):
     rank = models.IntegerField(blank=True, null=True)
     position = models.CharField(max_length=255, blank=True, null=True)
     school = models.CharField(max_length=255, blank=True, null=True)
+    school_team = models.ForeignKey('Team', on_delete=models.SET_NULL, blank=True, null=True, related_name='player_rankings', help_text="Team object for college players (linked to school field)")
     country = models.CharField(max_length=255, blank=True, null=True)
     commitment = models.CharField(max_length=255, blank=True, null=True)
     raw_carrying_tools = models.TextField(blank=True, null=True)
@@ -568,6 +569,30 @@ class PlayerRanking(BaseModel):
     class Meta:
         ordering = ['ranking', 'rank']
 
+    def save(self, *args, **kwargs):
+        """Auto-populate school_team from school field if not already set.
+        Only matches college players to teams, not high school players.
+        Creates teams if they don't exist (for consistency with sheet_load commands).
+        """
+        # Only try to match college players with a school name and no school_team set
+        if self.level == "College" and self.school and not self.school_team:
+            school_name = self.school.strip()
+            if school_name:
+                # First try to find existing team
+                matched_team = utils.find_team_by_school_name(school_name)
+                if matched_team:
+                    self.school_team = matched_team
+                else:
+                    # If no match found, create the team (same logic as sheet_load commands)
+                    team, created = models.Team.objects.get_or_create(
+                        name=school_name,
+                        defaults={'active': True}
+                    )
+                    # Check if team was merged (using same logic as sheet_load commands)
+                    self.school_team = utils.get_primary_team(team)
+        
+        super().save(*args, **kwargs)
+    
     def __unicode__(self):
         return f"({self.rank}) {self.player} in {self.ranking}"
 
@@ -996,3 +1021,176 @@ class FeatureFlag(BaseModel):
         except cls.DoesNotExist:
             return False
         return flag.is_enabled_for(user)
+
+
+class Team(BaseModel):
+    """
+    Represents a baseball team (college, high school, etc.)
+    """
+    name = models.CharField(max_length=255, unique=True, help_text="Full team name")
+    abbreviation = models.CharField(max_length=50, blank=True, null=True, help_text="Team abbreviation")
+    logo_url = models.TextField(blank=True, null=True, help_text="URL to team logo image")
+    current_ranking = models.IntegerField(null=True, blank=True, help_text="Current team ranking from ESPN (e.g., 15 for '#15 UCLA'). Updated when games are loaded.")
+    slug = models.SlugField(max_length=255, blank=True, null=True, help_text="URL-friendly identifier")
+    regenerate_slug = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['name']
+    
+    def save(self, *args, **kwargs):
+        if self.regenerate_slug or not self.slug:
+            self.slug = slugify(self.name)
+            self.regenerate_slug = False
+        super().save(*args, **kwargs)
+    
+    def __unicode__(self):
+        return self.name
+
+
+class TeamDuplicateDecision(BaseModel):
+    """
+    Stores decisions about whether two teams are duplicates or separate entities.
+    This prevents the duplicate finder from asking about the same pair repeatedly.
+    """
+    team1 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='duplicate_decisions_as_team1')
+    team2 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='duplicate_decisions_as_team2')
+    decision = models.CharField(max_length=20, choices=[
+        ('merged', 'Merged - teams are the same'),
+        ('separate', 'Separate - teams are different')
+    ])
+    decided_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    primary_team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True, 
+                                     related_name='duplicate_decisions_as_primary',
+                                     help_text="For merged decisions, which team was kept as primary")
+    notes = models.TextField(blank=True, null=True, help_text="Optional notes about the decision")
+    
+    class Meta:
+        unique_together = ['team1', 'team2']
+        ordering = ['-created']
+    
+    def save(self, *args, **kwargs):
+        # Ensure consistent ordering of teams (smaller ID first)
+        if self.team1.pk > self.team2.pk:
+            self.team1, self.team2 = self.team2, self.team1
+        super().save(*args, **kwargs)
+    
+    def __unicode__(self):
+        return f"{self.team1.name} vs {self.team2.name} - {self.decision}"
+
+
+class PotentialTeamDuplicate(BaseModel):
+    """
+    Pre-calculated potential duplicate team pairs for fast duplicate management.
+    This table is populated by a management command and cleared/rebuilt as needed.
+    """
+    team1 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='potential_duplicates_as_team1')
+    team2 = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='potential_duplicates_as_team2')
+    similarity_score = models.FloatField(help_text="Similarity score between 0 and 1")
+    match_reasons = models.JSONField(default=list, help_text="List of reasons why these might be duplicates")
+    
+    # Denormalized fields for fast filtering/sorting
+    team1_name = models.CharField(max_length=255)
+    team2_name = models.CharField(max_length=255)
+    team1_abbreviation = models.CharField(max_length=50, blank=True, null=True)
+    team2_abbreviation = models.CharField(max_length=50, blank=True, null=True)
+    
+    class Meta:
+        unique_together = ['team1', 'team2']
+        ordering = ['-similarity_score', 'team1_name', 'team2_name']
+        indexes = [
+            models.Index(fields=['similarity_score']),
+            models.Index(fields=['team1_name']),
+            models.Index(fields=['team2_name']),
+        ]
+    
+    def save(self, *args, **kwargs):
+        # Ensure consistent ordering of teams (smaller ID first)
+        if self.team1.pk > self.team2.pk:
+            self.team1, self.team2 = self.team2, self.team1
+        
+        # Update denormalized fields
+        self.team1_name = self.team1.name
+        self.team2_name = self.team2.name
+        self.team1_abbreviation = self.team1.abbreviation
+        self.team2_abbreviation = self.team2.abbreviation
+        
+        super().save(*args, **kwargs)
+    
+    def __unicode__(self):
+        return f"{self.team1.name} vs {self.team2.name} ({self.similarity_score:.2f})"
+
+
+class Game(BaseModel):
+    """
+    Represents a baseball game fetched from ESPN API.
+    Can be in the future, currently live, or in the past.
+    """
+    STATUS_CHOICES = (
+        ('future', 'Future'),
+        ('live', 'Live'),
+        ('past', 'Past'),
+    )
+    
+    # Game identification
+    espn_id = models.CharField(max_length=255, unique=True, help_text="ESPN API game/airing ID")
+    name = models.CharField(max_length=255, help_text="Game name (e.g., 'Team A vs. Team B')")
+    short_name = models.CharField(max_length=255, blank=True, null=True)
+    
+    # Teams
+    home_team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True, related_name='home_games')
+    away_team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True, related_name='away_games')
+    
+    # Team rankings (from ESPN game name, e.g., "#15 UCLA vs. #25 South Florida")
+    home_team_ranking = models.IntegerField(null=True, blank=True, help_text="Home team ranking from ESPN (e.g., 15 for '#15 UCLA')")
+    away_team_ranking = models.IntegerField(null=True, blank=True, help_text="Away team ranking from ESPN (e.g., 25 for '#25 South Florida')")
+    
+    # Players (M2M for future use)
+    players = models.ManyToManyField(Player, blank=True, related_name='games')
+    
+    # Game timing
+    start_datetime = models.DateTimeField(help_text="Game start date and time")
+    end_datetime = models.DateTimeField(blank=True, null=True, help_text="Game end date and time")
+    short_date = models.CharField(max_length=50, blank=True, null=True, help_text="Short date string from ESPN")
+    
+    # Status
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='future', help_text="Game status")
+    
+    # Streaming
+    streaming_url = models.TextField(help_text="URL to watch the game stream")
+    image_url = models.TextField(blank=True, null=True, help_text="Game image URL from ESPN")
+    
+    # Additional ESPN metadata
+    network_name = models.CharField(max_length=255, blank=True, null=True, help_text="Broadcast network name")
+    sport_name = models.CharField(max_length=255, blank=True, null=True, help_text="Sport name from ESPN")
+    league_name = models.CharField(max_length=255, blank=True, null=True, help_text="League name from ESPN")
+    is_ncaa = models.BooleanField(default=False, help_text="Whether this is an NCAA game")
+    
+    class Meta:
+        ordering = ['start_datetime']
+        indexes = [
+            models.Index(fields=['status', 'start_datetime']),
+            models.Index(fields=['start_datetime']),
+        ]
+    
+    def __unicode__(self):
+        return f"{self.name} - {self.start_datetime.strftime('%Y-%m-%d %H:%M') if self.start_datetime else 'TBD'}"
+    
+    def save(self, *args, **kwargs):
+        """Update status based on current time vs start/end datetime"""
+        from django.utils import timezone
+        now = timezone.now()
+        
+        if self.end_datetime and now > self.end_datetime:
+            self.status = 'past'
+        elif self.start_datetime and now >= self.start_datetime:
+            if self.end_datetime and now <= self.end_datetime:
+                self.status = 'live'
+            elif not self.end_datetime:
+                # If no end time, assume live if start time has passed
+                self.status = 'live'
+            else:
+                self.status = 'past'
+        else:
+            self.status = 'future'
+        
+        super().save(*args, **kwargs)

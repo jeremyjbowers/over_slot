@@ -5,10 +5,10 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 
-from overslot import views, subscription_views, duplicate_views, account_views
+from overslot import views, subscription_views, duplicate_views, account_views, team_duplicate_views
 from overslot.admin import admin_site
 from . import auth
-from .sitemaps import StaticViewSitemap, ArticleSitemap, RankingSitemap, PlayerSitemap
+from .sitemaps import StaticViewSitemap, ArticleSitemap, RankingSitemap, PlayerSitemap, MockDraftSitemap, GamesSitemap
 
 urlpatterns = [
     # Internal data status (admin only)
@@ -23,6 +23,14 @@ urlpatterns = [
     path('admin/duplicates/search/', duplicate_views.search_duplicates, name='search_duplicates'),
     path('admin/duplicates/check/<uuid:player1_uuid>/<uuid:player2_uuid>/', duplicate_views.manual_duplicate_check, name='manual_duplicate_check'),
     path('admin/duplicates/suggest/', duplicate_views.suggest_duplicate, name='suggest_duplicate'),
+    
+    # Team Duplicate Management URLs (admin only)
+    path('admin/team-duplicates/', team_duplicate_views.team_duplicate_dashboard, name='team_duplicate_dashboard'),
+    path('admin/team-duplicates/review/', team_duplicate_views.review_team_duplicate, name='review_team_duplicate'),
+    path('admin/team-duplicates/review/<int:team1_id>/<int:team2_id>/', team_duplicate_views.review_team_duplicate_pair, name='review_team_duplicate_pair'),
+    path('admin/team-duplicates/merge/<int:team1_id>/<int:team2_id>/', team_duplicate_views.merge_teams, name='merge_teams'),
+    path('admin/team-duplicates/separate/<int:team1_id>/<int:team2_id>/', team_duplicate_views.mark_teams_separate, name='mark_teams_separate'),
+    path('admin/team-duplicates/history/', team_duplicate_views.team_duplicate_history, name='team_duplicate_history'),
 
     path("admin/", admin_site.urls),
     # Summernote editor URLs (includes image upload endpoints)
@@ -47,6 +55,12 @@ urlpatterns = [
 
     path("videos/", views.videos_list, name="videos_list"),
 
+    path("live-games/", views.games_list, name="games_list"),
+    path("live-games/<int:year>/<int:month>/<int:day>/", views.games_list, name="games_list_date"),
+
+    path("teams/", views.teams_list, name="teams_list"),
+    path("teams/<slug:slug>/", views.team_detail, name="team_detail"),
+
     path("about-us/", views.about_us, name="about_us"),
 
     path("", views.index, name="index"),
@@ -57,6 +71,10 @@ urlpatterns = [
         "sitemap.xml",
         sitemap,
         {"sitemaps": {
+            # High priority - important for SEO
+            "mock_drafts": MockDraftSitemap(),
+            "games": GamesSitemap(),
+            # Standard priority
             "static": StaticViewSitemap(),
             "articles": ArticleSitemap(),
             "rankings": RankingSitemap(),
