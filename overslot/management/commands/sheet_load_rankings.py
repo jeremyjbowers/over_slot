@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.core.exceptions import MultipleObjectsReturned
 import traceback
 
 from overslot import models, utils
@@ -138,19 +139,79 @@ class Command(BaseCommand):
                     deactivated = models.PlayerRanking.objects.filter(ranking=r).update(rank=None, active=False)
                     if debug:
                         self.stdout.write(f"Deactivated {deactivated} existing PlayerRanking rows for ranking id={r.pk}")
+                    
+                    # Delete any duplicate inactive PlayerRankings for this ranking to avoid get_or_create conflicts
+                    # Keep only one inactive record per player+ranking combination
+                    duplicate_inactive_prs = models.PlayerRanking.objects.filter(
+                        ranking=r, 
+                        active=False
+                    ).values('player').annotate(
+                        count=Count('id')
+                    ).filter(count__gt=1)
+                    
+                    if duplicate_inactive_prs.exists():
+                        deleted_count = 0
+                        for dup_info in duplicate_inactive_prs:
+                            # Get all inactive PlayerRankings for this player+ranking
+                            prs_to_clean = models.PlayerRanking.objects.filter(
+                                ranking=r,
+                                player_id=dup_info['player'],
+                                active=False
+                            ).order_by('id')
+                            # Keep the first one, delete the rest
+                            if prs_to_clean.count() > 1:
+                                to_delete = prs_to_clean[1:]
+                                deleted_count += to_delete.count()
+                                for pr in to_delete:
+                                    if debug:
+                                        self.stdout.write(f"  Deleting duplicate inactive PlayerRanking: id={pr.pk} player={pr.player.name if pr.player else 'None'}")
+                                    pr.delete()
+                        if deleted_count > 0:
+                            self.stdout.write(self.style.WARNING(f"Deleted {deleted_count} duplicate inactive PlayerRanking records for ranking id={r.pk}"))
 
                     processed_rows = 0
                     for idx, row in enumerate(sheet, start=1):
                         processed_rows += 1
+                        player_name = row.get('name', '')
+                        player_position = row.get('position', '')
                         if debug:
-                            self.stdout.write(f"Row {idx}/{len(sheet)}: name={row.get('name')} position={row.get('position')}")
-                        # player object
-                        p, created = models.Player.objects.get_or_create(name=row['name'], position = row['position'])
-                        if debug:
-                            self.stdout.write(f"  Player {'created' if created else 'found'}: id={p.pk} name={p.name}")
+                            self.stdout.write(f"Row {idx}/{len(sheet)}: name={player_name} position={player_position}")
+                        
+                        # player object - handle duplicate case
+                        try:
+                            p, created = models.Player.objects.get_or_create(name=player_name, position=player_position)
+                            if debug:
+                                self.stdout.write(f"  Player {'created' if created else 'found'}: id={p.pk} name={p.name} position={p.position}")
+                        except MultipleObjectsReturned as e:
+                            # Multiple players found with same name/position
+                            self.stderr.write(self.style.ERROR(f"\n{'='*80}"))
+                            self.stderr.write(self.style.ERROR(f"DUPLICATE PLAYER ERROR at Row {idx}/{len(sheet)}"))
+                            self.stderr.write(self.style.ERROR(f"  Name: '{player_name}'"))
+                            self.stderr.write(self.style.ERROR(f"  Position: '{player_position}'"))
+                            matching_players = models.Player.objects.filter(name=player_name, position=player_position)
+                            self.stderr.write(self.style.ERROR(f"  Found {matching_players.count()} matching players:"))
+                            for mp in matching_players:
+                                self.stderr.write(f"    - id={mp.pk} name='{mp.name}' position='{mp.position}' active={mp.active} school='{mp.school}'")
+                            
+                            # Try to get the first active one, or just the first one
+                            p = matching_players.filter(active=True).first()
+                            if not p:
+                                p = matching_players.first()
+                                self.stderr.write(self.style.WARNING(f"  → Using inactive player: id={p.pk}"))
+                            else:
+                                self.stderr.write(self.style.SUCCESS(f"  → Using active player: id={p.pk}"))
+                            self.stderr.write(self.style.ERROR(f"{'='*80}\n"))
+                            created = False
                         
                         # Check if this player has been merged into another player
+                        if debug:
+                            self.stdout.write(f"  Checking for merged player: id={p.pk} name={p.name} active={p.active}")
+                        p_original = p
                         p = get_primary_player(p)
+                        if p != p_original:
+                            self.stdout.write(self.style.WARNING(f"  → Player was merged: {p_original.name} (id={p_original.pk}) -> {p.name} (id={p.pk})"))
+                        elif debug:
+                            self.stdout.write(f"  No merge found, using original player: id={p.pk}")
                         
                         p.school=row.get('school')
 
@@ -189,13 +250,36 @@ class Command(BaseCommand):
                             self.stdout.write(f"  Player saved: id={p.pk}")
 
                         # Find existing player ranking for this player+ranking or create if missing
-                        pr, pr_created = models.PlayerRanking.objects.get_or_create(
-                            ranking=r,
-                            player=p,
-                            defaults={}
-                        )
-                        if debug:
-                            self.stdout.write(f"  PlayerRanking {'created' if pr_created else 'found'}: id={pr.pk}")
+                        # First check if there's an active one, if not check for inactive ones
+                        pr = models.PlayerRanking.objects.filter(ranking=r, player=p, active=True).first()
+                        if pr:
+                            pr_created = False
+                            if debug:
+                                self.stdout.write(f"  PlayerRanking found (active): id={pr.pk}")
+                        else:
+                            # Check for inactive ones
+                            inactive_prs = models.PlayerRanking.objects.filter(ranking=r, player=p, active=False)
+                            if inactive_prs.exists():
+                                # Use the first inactive one and reactivate it
+                                pr = inactive_prs.first()
+                                pr_created = False
+                                if debug:
+                                    self.stdout.write(f"  PlayerRanking found (inactive, reactivating): id={pr.pk}")
+                                # If there are multiple inactive ones, delete the extras
+                                if inactive_prs.count() > 1:
+                                    extras = inactive_prs[1:]
+                                    deleted_count = extras.count()
+                                    for extra_pr in extras:
+                                        if debug:
+                                            self.stdout.write(f"    Deleting duplicate inactive PlayerRanking: id={extra_pr.pk}")
+                                        extra_pr.delete()
+                                    self.stderr.write(self.style.WARNING(f"  Deleted {deleted_count} duplicate inactive PlayerRanking(s) for {p.name}"))
+                            else:
+                                # Create a new one
+                                pr = models.PlayerRanking.objects.create(ranking=r, player=p)
+                                pr_created = True
+                                if debug:
+                                    self.stdout.write(f"  PlayerRanking created: id={pr.pk}")
 
                         # Update fields from the sheet
                         pr.school = row.get('school')
