@@ -89,6 +89,30 @@ def format_avg3(value):
 
 
 @register.filter
+def format_avg2(value):
+    """
+    Format a numeric stat to two decimals.
+    - If value is < 1 and >= 0, drop leading zero (e.g., 0.50 -> .50)
+    - If value is >= 1, keep the integer part (e.g., 1.50 -> 1.50)
+    - Non-numeric or None returns empty string
+    """
+    if value is None:
+        return ""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return ""
+    formatted = f"{number:.2f}"
+    # Drop leading zero only for non-negative values between 0 and 1
+    if 0 <= number < 1 and formatted.startswith("0"):
+        return formatted[1:]
+    # Handle potential "-0.xy" edge case by normalizing to "-.xy"
+    if -1 < number < 0 and formatted.startswith("-0"):
+        return "-" + formatted[2:]
+    return formatted
+
+
+@register.filter
 def get_item(mapping, key):
     """
     Safely get item from a dict-like mapping in templates.

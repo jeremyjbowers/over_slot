@@ -610,19 +610,19 @@ def players_detail(request, slug):
     ).order_by('-year', 'team_name')
     
     # Check if we have any stats with actual data (hitting or pitching)
+    # Only count as having hitting stats if player has at least 1 plate appearance
     has_hitting_stats = stats_643_qs.filter(
-        Q(hit_games_played__isnull=False) |
-        Q(hit_plate_appearances__isnull=False) |
-        Q(hit_at_bats__isnull=False) |
-        Q(hit_hits__isnull=False)
+        hit_plate_appearances__gt=0
     ).exists()
     
+    # Only count as having pitching stats if player has at least 1 inning pitched
     has_pitching_stats = stats_643_qs.filter(
-        pitch_appearances__isnull=False
+        pitch_innings_pitched__gt=0
     ).exists()
     
     context['stats_643'] = stats_643_qs
     context['has_stats_643'] = has_hitting_stats or has_pitching_stats
+    context['has_hitting_stats'] = has_hitting_stats
     context['has_pitching_stats'] = has_pitching_stats
 
     return render(request, "players_detail.html", context)
@@ -1146,3 +1146,224 @@ def hs_hitters_year(request, year: int):
         "hs_years": hs_years,
     }
     return TemplateResponse(request, "hitters_list.html", context)
+
+
+@subscription_required
+def stats_list(request):
+    """
+    Redirect to the latest available year-specific stats page (hitting stats).
+    """
+    latest_year = (
+        models.Player643StatSeason.objects.filter(
+            active=True, player__active=True, hit_plate_appearances__gt=0
+        )
+        .values_list("year", flat=True)
+        .distinct()
+        .order_by("-year")
+        .first()
+    )
+    if latest_year:
+        try:
+            return redirect("stats_hit_year", year=int(latest_year))
+        except Exception:
+            return redirect("stats_hit_year", year=latest_year)
+    # If no data, show empty page
+    return redirect("stats_hit_year", year=2025)
+
+
+@subscription_required
+def stats_hit_year(request, year: int):
+    """
+    Year-specific table for hitting stats from Player643StatSeason.
+    """
+    year_str = str(year)
+
+    columns = [
+        ("hit_games_played", "G"),
+        ("hit_plate_appearances", "PA"),
+        ("hit_hits", "H"),
+        ("hit_singles", "1B"),
+        ("hit_doubles", "2B"),
+        ("hit_triples", "3B"),
+        ("hit_hrs", "HR"),
+        ("hit_runs", "R"),
+        ("hit_base_on_balls", "BB"),
+        ("hit_strikeouts", "SO"),
+        ("hit_hit_by_pitch", "HBP"),
+        ("hit_stolen_bases", "SB"),
+        ("hit_caught_stealing", "CS"),
+        ("hit_ba", "BA"),
+        ("hit_obp", "OBP"),
+        ("hit_slg", "SLG"),
+        ("hit_ops", "OPS"),
+        ("hit_iso", "ISO"),
+        ("hit_babip", "BABIP"),
+        ("hit_walk_rate", "BB%"),
+        ("hit_strikeout_rate", "K%"),
+        ("hit_walk_to_strikeout", "BB/K"),
+        ("hit_woba", "wOBA"),
+    ]
+
+    seasons = (
+        models.Player643StatSeason.objects.filter(
+            active=True, year=year_str, player__active=True, hit_plate_appearances__gt=0
+        )
+        .select_related("player")
+        .order_by("-hit_woba", "player__name")
+    )
+
+    # 404 if no data for the requested year
+    if not seasons.exists():
+        return get_object_or_404(models.Player643StatSeason, year=year_str, hit_plate_appearances__gt=0)
+
+    # Get available years from the database
+    available_years = (
+        models.Player643StatSeason.objects.filter(
+            active=True, player__active=True
+        )
+        .values_list("year", flat=True)
+        .distinct()
+        .order_by("-year")
+    )
+    # Convert to integers where possible, keep as strings otherwise
+    years_list = []
+    for y in available_years:
+        try:
+            years_list.append(int(y))
+        except (ValueError, TypeError):
+            continue
+    years_list = sorted(set(years_list), reverse=True)
+
+    rows = []
+    for s in seasons:
+        row = {
+            "player_name": s.player.name,
+            "player_slug": s.player.slug,
+            "team_name": s.team_name or "",
+            "qualified": s.hit_plate_appearances and s.hit_plate_appearances >= 100,
+        }
+        for key, _label in columns:
+            row[key] = getattr(s, key)
+        rows.append(row)
+
+    # Already sorted by queryset (wOBA descending, then player name)
+    
+    # Determine if this is the current season (2026) - don't enforce qualified for current season
+    current_season = 2026
+    is_current_season = False
+    try:
+        year_int = int(year_str)
+        is_current_season = year_int == current_season
+    except (ValueError, TypeError):
+        pass
+
+    context = {
+        "page_title": f"Hitting Stats {year_str}",
+        "columns": columns,
+        "rows": rows,
+        "stat_type": "hit",
+        "year": int(year) if str(year).isdigit() else year_str,
+        "years": years_list,
+        "qualification_threshold": 100,
+        "qualification_field": "PA",
+        "enforce_qualified": not is_current_season,  # Only enforce for past years
+    }
+    return TemplateResponse(request, "stats_list.html", context)
+
+
+@subscription_required
+def stats_pitch_year(request, year: int):
+    """
+    Year-specific table for pitching stats from Player643StatSeason.
+    """
+    year_str = str(year)
+
+    columns = [
+        ("pitch_appearances", "G"),
+        ("pitch_games_started", "GS"),
+        ("pitch_innings_pitched", "IP"),
+        ("pitch_batters_faced", "BF"),
+        ("pitch_hits", "H"),
+        ("pitch_runs", "R"),
+        ("pitch_base_on_balls", "BB"),
+        ("pitch_strikeouts", "SO"),
+        ("pitch_hit_by_pitch", "HBP"),
+        ("pitch_whip", "WHIP"),
+        ("pitch_ba", "BA"),
+        ("pitch_obp", "OBP"),
+        ("pitch_slg", "SLG"),
+        ("pitch_ops", "OPS"),
+        ("pitch_babip", "BABIP"),
+        ("pitch_walk_rate", "BB%"),
+        ("pitch_strikeout_rate", "K%"),
+        ("pitch_walk_to_strikeout", "BB/K"),
+        ("pitch_fip", "FIP"),
+        ("pitch_xfip", "xFIP"),
+        ("pitch_siera", "SIERA"),
+    ]
+
+    seasons = (
+        models.Player643StatSeason.objects.filter(
+            active=True, year=year_str, player__active=True, pitch_innings_pitched__gt=0
+        )
+        .select_related("player")
+        .order_by("pitch_siera", "player__name")  # Sort by SIERA ascending (lower is better)
+    )
+
+    # 404 if no data for the requested year
+    if not seasons.exists():
+        return get_object_or_404(models.Player643StatSeason, year=year_str, pitch_innings_pitched__gt=0)
+
+    # Get available years from the database
+    available_years = (
+        models.Player643StatSeason.objects.filter(
+            active=True, player__active=True
+        )
+        .values_list("year", flat=True)
+        .distinct()
+        .order_by("-year")
+    )
+    # Convert to integers where possible, keep as strings otherwise
+    years_list = []
+    for y in available_years:
+        try:
+            years_list.append(int(y))
+        except (ValueError, TypeError):
+            continue
+    years_list = sorted(set(years_list), reverse=True)
+
+    rows = []
+    for s in seasons:
+        row = {
+            "player_name": s.player.name,
+            "player_slug": s.player.slug,
+            "team_name": s.team_name or "",
+            "qualified": s.pitch_innings_pitched and s.pitch_innings_pitched >= 20,
+        }
+        for key, _label in columns:
+            row[key] = getattr(s, key)
+        rows.append(row)
+
+    # Already sorted by queryset (SIERA ascending, then player name)
+    
+    # Determine if this is the current season (2026) - don't enforce qualified for current season
+    current_season = 2026
+    is_current_season = False
+    try:
+        year_int = int(year_str)
+        is_current_season = year_int == current_season
+    except (ValueError, TypeError):
+        pass
+
+    context = {
+        "page_title": f"Pitching Stats {year_str}",
+        "columns": columns,
+        "rows": rows,
+        "stat_type": "pitch",
+        "year": int(year) if str(year).isdigit() else year_str,
+        "years": years_list,
+        "qualification_threshold": 20,
+        "qualification_field": "IP",
+        "enforce_qualified": not is_current_season,  # Only enforce for past years
+    }
+    return TemplateResponse(request, "stats_list.html", context)

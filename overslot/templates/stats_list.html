@@ -1,0 +1,552 @@
+{% extends "base.html" %}
+{% load overslot_tags %}
+
+{% block extra_css %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+.page-hero {
+    background: linear-gradient(rgba(var(--theme-primary-rgb), 0.1), var(--dark-bg));
+    border-bottom: 1px solid var(--dark-border);
+    padding: 2.75rem 0 1.5rem;
+}
+.page-hero .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+.page-hero-nav {
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.nav-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.nav-label {
+    font-size: 0.9rem;
+    color: var(--dark-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.nav-pills {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+.nav-pill {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid var(--dark-border);
+    border-radius: 999px;
+    color: var(--dark-text);
+    text-decoration: none;
+    background: rgba(255,255,255,0.02);
+    font-size: 0.9rem;
+}
+.nav-pill:hover {
+    background: var(--dark-surface);
+    border-color: var(--theme-primary);
+}
+.nav-pill.active {
+    background: var(--theme-primary);
+    color: #0a0a0a;
+    border-color: var(--theme-primary);
+}
+.nav-divider {
+    width: 1px;
+    height: 1.25rem;
+    background: var(--dark-border);
+    margin: 0 0.25rem;
+}
+
+/* Qualified Toggle Styles */
+.qualified-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.qualified-toggle-text {
+    font-size: 0.9rem;
+    color: var(--dark-text);
+    white-space: nowrap;
+}
+
+.qualified-toggle-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.qualified-toggle-slider {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    background: var(--dark-border);
+    border-radius: 999px;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+}
+
+.qualified-toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background: var(--dark-text);
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+}
+
+.qualified-toggle-input:checked + .qualified-toggle-slider {
+    background: var(--theme-primary);
+}
+
+.qualified-toggle-input:checked + .qualified-toggle-slider::before {
+    transform: translateX(20px);
+}
+
+.qualified-toggle-label:hover .qualified-toggle-slider {
+    background: var(--dark-surface-hover);
+}
+
+.qualified-toggle-input:checked:hover + .qualified-toggle-slider {
+    background: var(--theme-primary-hover);
+}
+.page-hero-title {
+    font-family: var(--font-sans);
+    font-size: var(--text-4xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--dark-text);
+    margin: 0;
+}
+@media (max-width: 640px) {
+    .page-hero-title { font-size: var(--text-3xl); }
+}
+
+.page-intro {
+    border-bottom: 1px solid var(--dark-border);
+    background: var(--dark-bg);
+}
+.page-intro .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1rem 1.5rem 1.25rem;
+}
+.page-intro p {
+    margin: 0.5rem 0;
+    line-height: var(--leading-relaxed);
+}
+.page-intro .muted {
+    color: var(--dark-text-muted);
+}
+
+.info-section-header { display: none; } /* Hide small inline title; use page hero above */
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+/* Clean, simple table design */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    font-variant-numeric: tabular-nums;
+}
+
+.data-table thead th {
+    background: var(--dark-surface);
+    color: var(--dark-text);
+    border-bottom: 2px solid var(--dark-border);
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-align: center;
+    vertical-align: middle;
+    position: relative;
+}
+
+.data-table thead th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.data-table thead th.sortable:hover {
+    background: var(--dark-surface-hover);
+}
+
+/* First two columns: left alignment (Player, Team) */
+.data-table thead th:first-child,
+.data-table thead th:nth-child(2) {
+    text-align: left;
+}
+
+/* Metric columns: compact width */
+.data-table thead th.metric {
+    width: 70px;
+    padding: 0.75rem 0.5rem;
+}
+
+.data-table tbody td {
+    border-top: 1px solid var(--dark-border);
+    padding: 0.75rem 0.5rem;
+    font-size: 0.95rem;
+    color: var(--dark-text-secondary);
+    text-align: center;
+}
+
+.data-table tbody td:first-child,
+.data-table tbody td:nth-child(2) {
+    text-align: left;
+    color: var(--dark-text);
+    font-weight: 500;
+}
+
+.data-table tbody tr:nth-child(odd) {
+    background: rgba(255, 255, 255, 0.02);
+}
+.data-table tbody tr:hover {
+    background: var(--dark-surface-hover);
+}
+
+/* Sort indicators - positioned at bottom of header */
+.data-table thead th.sortable {
+    position: relative;
+}
+
+.data-table thead th.sortable::after {
+    content: '';
+    position: absolute;
+    bottom: 0.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.data-table thead th.sortable.sorted-desc::after {
+    border-bottom: 5px solid var(--theme-primary);
+    opacity: 1;
+}
+
+.data-table thead th.sortable.sorted-asc::after {
+    border-top: 5px solid var(--theme-primary);
+    opacity: 1;
+}
+
+.stats-powered-by {
+    font-size: var(--text-sm);
+    color: var(--dark-text-muted);
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+.stats-powered-by a {
+    color: var(--theme-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.stats-powered-by a:hover {
+    color: var(--theme-primary-hover);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+    <div class="container">
+        <div style="display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;">
+            <h1 class="page-hero-title">{{ page_title }}</h1>
+            <span class="stats-powered-by">powered by <a href="https://643charts.com/" target="_blank" rel="noopener">6-4-3 Charts</a></span>
+        </div>
+        {% if years %}
+        <div class="page-hero-nav">
+            <div class="nav-group">
+                <span class="nav-label">{% if stat_type == "hit" %}Hitting{% else %}Pitching{% endif %}</span>
+                <div class="nav-pills">
+                    {% for y in years %}
+                        <a href="{% if stat_type == 'hit' %}{% url 'stats_hit_year' year=y %}{% else %}{% url 'stats_pitch_year' year=y %}{% endif %}"
+                           class="nav-pill {% if y == year %}active{% endif %}">
+                           {{ y }}
+                        </a>
+                    {% empty %}
+                        <span class="nav-empty">No data</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="nav-divider"></div>
+            <div class="nav-group">
+                <span class="nav-label">Type</span>
+                <div class="nav-pills">
+                    <a href="{% url 'stats_hit_year' year=year %}"
+                       class="nav-pill {% if stat_type == 'hit' %}active{% endif %}">
+                       Hitting
+                    </a>
+                    <a href="{% url 'stats_pitch_year' year=year %}"
+                       class="nav-pill {% if stat_type == 'pitch' %}active{% endif %}">
+                       Pitching
+                    </a>
+                </div>
+            </div>
+            <div class="nav-divider"></div>
+            <div class="nav-group">
+                <label class="qualified-toggle-label">
+                    <input type="checkbox" id="qualified-toggle" {% if enforce_qualified %}checked{% endif %} class="qualified-toggle-input">
+                    <span class="qualified-toggle-slider"></span>
+                    <span class="qualified-toggle-text">Qualified ({{ qualification_field }} ≥ {{ qualification_threshold }})</span>
+                </label>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+<div class="content-container">
+    <div class="grid grid-cols-12 gap-6">
+        <div class="col-span-12">
+            <div class="info-section">
+                <div class="info-section-header">
+                    <span class="icon">
+                        <i class="fas fa-list"></i>
+                    </span>
+                    <h3 class="info-section-title">{{ page_title }}</h3>
+                </div>
+                <div class="info-section-content">
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-key="player_name">Player</th>
+                                    <th class="sortable" data-key="team_name">Team</th>
+                                    {% for key, label in columns %}
+                                        <th class="sortable metric" data-key="{{ key }}">{{ label }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in rows %}
+                                <tr data-qualified="{% if r.qualified %}true{% else %}false{% endif %}">
+                                    <td data-value="{{ r.player_name }}">
+                                        <a href="{% url 'players_detail' slug=r.player_slug %}">{{ r.player_name }}</a>
+                                    </td>
+                                    <td data-value="{{ r.team_name|default_if_none:'' }}">{{ r.team_name|default:"—" }}</td>
+                                    {% for key, _label in columns %}
+                                        {% with val=r|get_item:key %}
+                                            {% if key == "hit_ba" or key == "hit_obp" or key == "hit_slg" or key == "hit_ops" or key == "hit_iso" or key == "hit_babip" or key == "hit_woba" or key == "pitch_ba" or key == "pitch_obp" or key == "pitch_slg" or key == "pitch_ops" or key == "pitch_babip" or key == "pitch_whip" or key == "pitch_fip" or key == "pitch_xfip" or key == "pitch_siera" %}
+                                                <td data-value="{{ val|default_if_none:'' }}">
+                                                    {% if val is not None %}
+                                                        {% if key == "hit_woba" or key == "hit_ba" or key == "hit_obp" or key == "hit_slg" or key == "hit_ops" or key == "hit_iso" or key == "hit_babip" or key == "pitch_ba" or key == "pitch_obp" or key == "pitch_slg" or key == "pitch_ops" or key == "pitch_babip" %}
+                                                            {{ val|format_avg3 }}
+                                                        {% elif key == "pitch_whip" or key == "pitch_fip" or key == "pitch_xfip" or key == "pitch_siera" %}
+                                                            {{ val|floatformat:2 }}
+                                                        {% else %}
+                                                            {{ val|floatformat:3 }}
+                                                        {% endif %}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+                                            {% elif key == "hit_walk_rate" or key == "hit_strikeout_rate" or key == "pitch_walk_rate" or key == "pitch_strikeout_rate" %}
+                                                <td data-value="{{ val|default_if_none:'' }}">
+                                                    {% if val is not None %}
+                                                        {{ val|floatformat:1 }}%
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+                                            {% elif key == "hit_walk_to_strikeout" or key == "pitch_walk_to_strikeout" %}
+                                                <td data-value="{{ val|default_if_none:'' }}">
+                                                    {% if val is not None %}
+                                                        {{ val|floatformat:2 }}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+                                            {% elif key == "pitch_innings_pitched" %}
+                                                <td data-value="{{ val|default_if_none:'' }}">
+                                                    {% if val is not None %}
+                                                        {{ val|floatformat:1 }}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+                                            {% else %}
+                                                <td data-value="{{ val|default_if_none:'' }}">
+                                                    {% if val is not None %}
+                                                        {{ val|floatformat:0 }}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    function getCellValue(td, isNumeric) {
+        if (!td) return null;
+        const raw = td.getAttribute('data-value') ?? td.textContent.trim();
+        if (isNumeric) {
+            if (raw === '' || raw === '—' || raw === '–') return null;
+            const num = Number(raw);
+            return isNaN(num) ? null : num;
+        }
+        return raw.toLowerCase();
+    }
+
+    function compare(a, b, isNumeric, direction) {
+        if (a === null && b === null) return 0;
+        if (a === null) return 1;   // nulls last
+        if (b === null) return -1;   // nulls last
+        if (isNumeric) {
+            return direction * (a - b);
+        }
+        if (a < b) return -direction;
+        if (a > b) return direction;
+        return 0;
+    }
+
+    function sortTableByColumn(table, columnIndex, isNumeric, asc) {
+        const tbody = table.tBodies[0];
+        if (!tbody) return;
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const direction = asc ? 1 : -1;
+        rows.sort((r1, r2) => {
+            const c1 = r1.children[columnIndex];
+            const c2 = r2.children[columnIndex];
+            const v1 = getCellValue(c1, isNumeric);
+            const v2 = getCellValue(c2, isNumeric);
+            return compare(v1, v2, isNumeric, direction);
+        });
+        rows.forEach(r => tbody.appendChild(r));
+    }
+
+    function setupSorting() {
+        const table = document.querySelector('.data-table');
+        if (!table) return;
+
+        const headers = table.querySelectorAll('thead th.sortable');
+        // Find wOBA/SIERA column index for default sort
+        let defaultSortIndex = null;
+        let defaultSortAsc = false;
+        headers.forEach((th, idx) => {
+            const key = th.getAttribute('data-key') || '';
+            if (key === 'hit_woba') {
+                defaultSortIndex = idx;
+                defaultSortAsc = false; // wOBA descending (higher is better)
+            } else if (key === 'pitch_siera') {
+                defaultSortIndex = idx;
+                defaultSortAsc = true; // SIERA ascending (lower is better)
+            }
+        });
+
+        // Store sort state for each column
+        const sortStates = new Map();
+        
+        headers.forEach((th, idx) => {
+            // Set default sort for wOBA/FIP column
+            if (idx === defaultSortIndex && defaultSortIndex !== null) {
+                sortStates.set(idx, defaultSortAsc);
+                th.classList.add(defaultSortAsc ? 'sorted-asc' : 'sorted-desc');
+                // Sort table on load
+                const isNumeric = idx >= 2;
+                sortTableByColumn(table, idx, isNumeric, defaultSortAsc);
+            } else {
+                sortStates.set(idx, null);
+            }
+            
+            th.addEventListener('click', () => {
+                // Columns: 0=Player, 1=Team, rest numeric
+                const isNumeric = idx >= 2;
+                let currentState = sortStates.get(idx);
+                
+                // Toggle: null -> desc -> asc -> desc -> ...
+                if (currentState === null || currentState === true) {
+                    currentState = false; // descending first (bigger numbers first)
+                } else {
+                    currentState = true; // ascending second
+                }
+                
+                sortStates.set(idx, currentState);
+                
+                // Clear active classes
+                headers.forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
+                th.classList.add(currentState ? 'sorted-asc' : 'sorted-desc');
+                sortTableByColumn(table, idx, isNumeric, currentState);
+            });
+        });
+    }
+
+    function setupQualifiedToggle() {
+        const toggle = document.getElementById('qualified-toggle');
+        const table = document.querySelector('.data-table');
+        if (!toggle || !table) return;
+
+        function filterRows() {
+            const showQualified = toggle.checked;
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const isQualified = row.getAttribute('data-qualified') === 'true';
+                if (showQualified && !isQualified) {
+                    row.style.display = 'none';
+                } else {
+                    row.style.display = '';
+                }
+            });
+        }
+
+        toggle.addEventListener('change', filterRows);
+        // Initial filter (default is checked/on)
+        filterRows();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setupSorting();
+            setupQualifiedToggle();
+        });
+    } else {
+        setupSorting();
+        setupQualifiedToggle();
+    }
+})();
+</script>
+{% endblock %}
+
+{% block extra_templates %}
+{% comment %}
+Utility to access dict key in template: r|get_item:key
+{% endcomment %}
+{% endblock %}

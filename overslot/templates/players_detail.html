@@ -51,6 +51,56 @@
     margin-bottom: 0.5rem;
     font-weight: 500;
     max-width: 700px;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.hero-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.hero-nav-link {
+    color: var(--dark-text-secondary);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hero-nav-link:hover {
+    color: var(--theme-primary);
+}
+
+.hero-nav-link .icon {
+    font-size: 0.875rem;
+    color: var(--theme-primary);
+}
+
+.nav-count {
+    color: var(--dark-text);
+    font-weight: 600;
+    margin-right: 0.25rem;
+}
+
+/* Smooth scrolling for anchor links */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Add scroll offset for fixed headers if needed */
+#stats,
+#rankings,
+#articles {
+    scroll-margin-top: 1rem;
 }
 
 /* Remove dense meta row in favor of simpler subtitle */
@@ -77,7 +127,16 @@
         font-size: 3rem;
     }
     
-    .hero-subtitle { font-size: 1rem; }
+    .hero-subtitle { 
+        font-size: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .hero-nav {
+        margin-left: 0;
+    }
 
     .hero-meta {
         flex-direction: column;
@@ -128,20 +187,49 @@
     object-fit: cover;
 }
 
-.player-video-link {
+.player-photo-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
+    padding: 0.75rem;
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 1rem;
-    color: var(--theme-primary);
-    border-top: 1px solid var(--dark-border);
-    transition: all 0.2s ease;
+    align-items: flex-end;
+    justify-content: space-between;
+    z-index: 1;
+    pointer-events: none;
 }
 
-.player-video-link:hover {
-    background: var(--dark-surface-hover);
-    color: var(--theme-primary);
+.player-video-indicator {
+    color: var(--dark-text);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
+
+.player-play-button {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #ef4444;
+    padding: 4px 6px;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    pointer-events: auto;
+    transition: background 0.2s ease;
+}
+
+.player-play-button:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
 
 /* Compact bio list under photo */
 .player-bio {
@@ -177,24 +265,6 @@
     font-weight: 500;
 }
 
-/* Video link label styling */
-.video-label {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.2;
-}
-
-.video-meet {
-    font-size: var(--text-xs);
-    text-transform: uppercase;
-    color: var(--dark-text-muted);
-}
-
-.video-name {
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--theme-primary);
-}
 
 .player-info-card {
     background: var(--dark-surface);
@@ -217,6 +287,29 @@
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 1rem;
+}
+
+.stats-section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.stats-powered-by {
+    font-size: var(--text-sm);
+    color: var(--dark-text-muted);
+    font-weight: 400;
+}
+
+.stats-powered-by a {
+    color: var(--theme-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.stats-powered-by a:hover {
+    color: var(--theme-primary-hover);
 }
 
 .info-section-header .icon {
@@ -737,7 +830,30 @@ body {
     <div class="container">
         <h1 class="hero-title">{{ player.name }}</h1>
         <div class="hero-subtitle">
-            {{ player.position }}{% if player.school %} • {{ player.school }}{% endif %}
+            <span>{{ player.position }}{% if player.school %} • {{ player.school }}{% endif %}</span>
+            {% if has_stats_643 or rankings or articles %}
+            <nav class="hero-nav">
+                {% if has_stats_643 %}
+                {% regroup stats_643 by year as stats_by_year %}
+                <a href="#stats" class="hero-nav-link">
+                    <span class="icon"><i class="fas fa-table"></i></span>
+                    <span><span class="nav-count">{{ stats_by_year|length }}</span> stat season{{ stats_by_year|length|pluralize }}</span>
+                </a>
+                {% endif %}
+                {% if rankings %}
+                <a href="#rankings" class="hero-nav-link">
+                    <span class="icon"><i class="fas fa-chart-line"></i></span>
+                    <span><span class="nav-count">{{ rankings|length }}</span> ranking{{ rankings|length|pluralize }}</span>
+                </a>
+                {% endif %}
+                {% if articles %}
+                <a href="#articles" class="hero-nav-link">
+                    <span class="icon"><i class="fas fa-newspaper"></i></span>
+                    <span><span class="nav-count">{{ articles|length }}</span> article{{ articles|length|pluralize }}</span>
+                </a>
+                {% endif %}
+            </nav>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -749,6 +865,14 @@ body {
             <div class="player-photo-wrapper">
                 <img src="{{ player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}" 
                      alt="{{ player.name }}">
+                {% if player.video_url %}
+                <div class="player-photo-overlay">
+                    <span class="player-video-indicator">Meet {{ player.name }}</span>
+                </div>
+                <a href="{{ player.video_url }}" class="player-play-button">
+                    <i class="fas fa-play"></i>
+                </a>
+                {% endif %}
             </div>
             <div class="player-bio">
                 <ul class="bio-list">
@@ -802,17 +926,6 @@ body {
                     {% endif %}
                 </ul>
             </div>
-            {% if player.video_url %}
-            <a href="{{ player.video_url }}" class="player-video-link">
-                <span class="icon">
-                    <i class="fas fa-video"></i>
-                </span>
-                <span class="video-label">
-                    <span class="video-meet">Meet</span>
-                    <span class="video-name">{{ player.name }}</span>
-                </span>
-            </a>
-            {% endif %}
         </div>
 
 
@@ -995,17 +1108,20 @@ body {
 
 {% if has_stats_643 %}
 <!-- 643 Stats Tables Section -->
-<div class="content-section">
+<div id="stats" class="content-section">
     <div class="stats-643-container">
         <div class="section-header">
             <span class="icon">
                 <i class="fas fa-table"></i>
             </span>
-            <h2 class="section-title">Season Stats</h2>
+            <div class="stats-section-header">
+                <h2 class="section-title">Season Stats</h2>
+                <span class="stats-powered-by">powered by <a href="https://643charts.com/" target="_blank" rel="noopener">6-4-3 Charts</a></span>
+            </div>
         </div>
         
-        {% if has_pitching_stats %}
-        <!-- Tabs for Hit/Pitch stats -->
+        {% if has_hitting_stats and has_pitching_stats %}
+        <!-- Tabs for Hit/Pitch stats - only show if both exist -->
         <div class="chart-tabs-wrapper">
             <div class="tabs is-toggle is-small">
                 <ul id="stats-643-tabs">
@@ -1025,7 +1141,12 @@ body {
         {% endif %}
         
         <!-- Hitting Stats Table -->
+        {% if has_hitting_stats %}
+        {% if has_hitting_stats and has_pitching_stats %}
         <div id="stats-643-hitting" class="stats-643-panel">
+        {% else %}
+        <div id="stats-643-hitting" class="stats-643-panel" style="display:block">
+        {% endif %}
             <div class="stats-table-container">
                 <table class="stats-table">
                     <thead>
@@ -1059,7 +1180,7 @@ body {
                     </thead>
                     <tbody>
                         {% for stat in stats_643 %}
-                        {% if stat.hit_games_played or stat.hit_plate_appearances or stat.hit_at_bats or stat.hit_hits %}
+                        {% if stat.hit_plate_appearances and stat.hit_plate_appearances > 0 %}
                         <tr>
                             <td>{{ stat.year }}</td>
                             <td>{{ stat.team_name|default:"—" }}</td>
@@ -1093,10 +1214,15 @@ body {
                 </table>
             </div>
         </div>
+        {% endif %}
         
         <!-- Pitching Stats Table -->
         {% if has_pitching_stats %}
+        {% if has_hitting_stats and has_pitching_stats %}
         <div id="stats-643-pitching" class="stats-643-panel" style="display:none">
+        {% else %}
+        <div id="stats-643-pitching" class="stats-643-panel" style="display:block">
+        {% endif %}
             <div class="stats-table-container">
                 <table class="stats-table">
                     <thead>
@@ -1128,7 +1254,7 @@ body {
                     </thead>
                     <tbody>
                         {% for stat in stats_643 %}
-                        {% if stat.pitch_appearances or stat.pitch_games_started or stat.pitch_innings_pitched %}
+                        {% if stat.pitch_innings_pitched and stat.pitch_innings_pitched > 0 %}
                         <tr>
                             <td>{{ stat.year }}</td>
                             <td>{{ stat.team_name|default:"—" }}</td>
@@ -1144,12 +1270,12 @@ body {
                             <td>{% if stat.pitch_whip %}{{ stat.pitch_whip|floatformat:2 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.pitch_ba %}{{ stat.pitch_ba|format_avg3 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.pitch_obp %}{{ stat.pitch_obp|format_avg3 }}{% else %}—{% endif %}</td>
-                            <td>{% if stat.pitch_slg %}{{ stat.pitch_slg|floatformat:3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_slg %}{{ stat.pitch_slg|format_avg3 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.pitch_ops %}{{ stat.pitch_ops|format_avg3 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.pitch_babip %}{{ stat.pitch_babip|format_avg3 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.pitch_walk_rate %}{{ stat.pitch_walk_rate|floatformat:1 }}%{% else %}—{% endif %}</td>
                             <td>{% if stat.pitch_strikeout_rate %}{{ stat.pitch_strikeout_rate|floatformat:1 }}%{% else %}—{% endif %}</td>
-                            <td>{% if stat.pitch_walk_to_strikeout %}{{ stat.pitch_walk_to_strikeout|floatformat:2 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_walk_to_strikeout %}{{ stat.pitch_walk_to_strikeout|format_avg2 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.pitch_fip %}{{ stat.pitch_fip|floatformat:2 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.pitch_xfip %}{{ stat.pitch_xfip|floatformat:2 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.pitch_siera %}{{ stat.pitch_siera|floatformat:2 }}{% else %}—{% endif %}</td>
@@ -1168,7 +1294,7 @@ body {
 <div class="content-section">
     <div class="content-grid">
         <!-- Rankings column -->
-        <div>
+        <div id="rankings">
             {% if preview_mode %}
             <!-- Preview Mode: Show partial ranking info -->
             <div class="section-header">
@@ -1262,7 +1388,7 @@ body {
             {% endif %}
         </div>
         <!-- Articles column -->
-        <div>
+        <div id="articles">
             {% if preview_mode %}
             <!-- Preview Mode: Show article headlines only -->
             <div class="section-header">

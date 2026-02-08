@@ -53,6 +53,11 @@ urlpatterns = [
     path("hitters/high-school/", views.hs_hitters_list, name="hs_hitters_list"),
     path("hitters/high-school/<int:year>/", views.hs_hitters_year, name="hs_hitters_year"),
 
+    # Stats lists (643 stats)
+    path("stats/", views.stats_list, name="stats_list"),
+    path("stats/hit/<int:year>/", views.stats_hit_year, name="stats_hit_year"),
+    path("stats/pitch/<int:year>/", views.stats_pitch_year, name="stats_pitch_year"),
+
     path("videos/", views.videos_list, name="videos_list"),
 
     path("live-games/", views.games_list, name="games_list"),
