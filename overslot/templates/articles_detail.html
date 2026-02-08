@@ -604,7 +604,7 @@
         {% endif %}
     </div>
 
-    {% if article.active_players %}
+    {% if article.active_players|length > 0 %}
     <div class="featured-players">
         <div class="featured-players-header">
             <h2 class="title">Players Mentioned</h2>
@@ -618,6 +618,37 @@
                 <div class="player-info">
                     <div class="player-name">{{ player.name }}</div>
                     <div class="player-position">{{ player.position }}</div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if article.active_teams|length > 0 %}
+    <div class="featured-players">
+        <div class="featured-players-header">
+            <h2 class="title">Teams Mentioned</h2>
+        </div>
+        <div class="featured-players-list">
+            {% for team in article.active_teams %}
+            <a href="/teams/{{ team.slug }}/" class="player-card">
+                {% if team.logo_url %}
+                <img src="{{ team.logo_url }}" 
+                     alt="{{ team.name }}" 
+                     class="player-photo">
+                {% else %}
+                <div class="player-photo" style="background: var(--dark-surface-hover); display: flex; align-items: center; justify-content: center; color: var(--dark-text-muted); font-weight: 600; font-size: 0.75rem;">
+                    {% if team.abbreviation %}{{ team.abbreviation }}{% else %}{{ team.name|slice:":2"|upper }}{% endif %}
+                </div>
+                {% endif %}
+                <div class="player-info">
+                    <div class="player-name">{{ team.name }}</div>
+                    {% if team.current_ranking %}
+                    <div class="player-position">#{{ team.current_ranking }}</div>
+                    {% elif team.abbreviation %}
+                    <div class="player-position">{{ team.abbreviation }}</div>
+                    {% endif %}
                 </div>
             </a>
             {% endfor %}

@@ -243,7 +243,7 @@ class ArticleAdmin(SummernoteModelAdmin):
 
     # --- Form configuration -------------------------------------------------
     summernote_fields = ('body',)
-    autocomplete_fields = ["players", "authors"]
+    autocomplete_fields = ["players", "teams", "authors"]
 
     fieldsets = (
         (
@@ -266,6 +266,7 @@ class ArticleAdmin(SummernoteModelAdmin):
                 "fields": (
                     "authors",
                     "players",
+                    "teams",
                 ),
             },
         ),

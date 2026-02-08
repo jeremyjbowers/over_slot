@@ -29,6 +29,7 @@ def index(request):
     latest_articles = latest_articles_qs.order_by('-created')[:5]
     for article in latest_articles:
         article.active_players = article.players.filter(active=True)
+        article.active_teams = article.teams.filter(active=True)
     context['latest_articles'] = latest_articles
 
     latest_rankings = models.Ranking.objects.filter(
@@ -107,9 +108,10 @@ def articles_list(request):
     # Only show published articles
     articles = models.Article.objects.filter(publish=True)
     
-    # Add active players to each article
+    # Add active players and teams to each article
     for article in articles:
         article.active_players = article.players.filter(active=True)
+        article.active_teams = article.teams.filter(active=True)
     context['articles'] = articles
     
     # Add recent rankings for sidebar - only published
@@ -126,6 +128,9 @@ def articles_detail(request, slug):
     
     # Filter out inactive players from the article
     context['article'].active_players = context['article'].players.filter(active=True)
+    
+    # Filter out inactive teams from the article
+    context['article'].active_teams = context['article'].teams.filter(active=True)
 
     return render(request, "articles_detail.html", context)
 

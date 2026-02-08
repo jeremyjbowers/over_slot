@@ -823,6 +823,7 @@ class Article(BaseModel):
     featured_image = models.ImageField(upload_to='articles/featured/', blank=True, null=True, help_text="Featured image for the article")
 
     players = models.ManyToManyField(Player, blank=True)
+    teams = models.ManyToManyField('Team', blank=True)
     authors = models.ManyToManyField(Author, blank=True, related_name='articles')
 
     article_type = models.CharField(max_length=255, choices=ARTICLE_TYPE_CHOICES, blank=True, null=True)
