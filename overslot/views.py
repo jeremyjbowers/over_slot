@@ -603,6 +603,27 @@ def players_detail(request, slug):
 
     # Only show published articles
     context['articles'] = models.Article.objects.filter(players=context['player'], publish=True)
+    
+    # Get 643 stats for this player
+    stats_643_qs = models.Player643StatSeason.objects.filter(
+        player=context['player']
+    ).order_by('-year', 'team_name')
+    
+    # Check if we have any stats with actual data (hitting or pitching)
+    has_hitting_stats = stats_643_qs.filter(
+        Q(hit_games_played__isnull=False) |
+        Q(hit_plate_appearances__isnull=False) |
+        Q(hit_at_bats__isnull=False) |
+        Q(hit_hits__isnull=False)
+    ).exists()
+    
+    has_pitching_stats = stats_643_qs.filter(
+        pitch_appearances__isnull=False
+    ).exists()
+    
+    context['stats_643'] = stats_643_qs
+    context['has_stats_643'] = has_hitting_stats or has_pitching_stats
+    context['has_pitching_stats'] = has_pitching_stats
 
     return render(request, "players_detail.html", context)
 

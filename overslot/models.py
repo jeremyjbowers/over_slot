@@ -739,6 +739,76 @@ class PlayerStatSeason(BaseModel):
     def __unicode__(self):
         return f"{self.player.name} {self.level} {self.year}"
 
+
+class Player643StatSeason(BaseModel):
+    """
+    Seasonal stats from the 6-4-3 Charts API.
+    Stores both hitting and pitching stats with prefixed field names to avoid collisions.
+    One row per (player, year, team_name) combination.
+    """
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="stat_seasons_643")
+    year = models.CharField(max_length=10, help_text="Season year (e.g., '2025' or 'Career')")
+    team_name = models.CharField(max_length=255, blank=True, null=True, help_text="Team name for this stat season")
+    
+    # Hitting stats (prefixed with hit_)
+    hit_at_bats = models.IntegerField(blank=True, null=True)
+    hit_ba = models.FloatField(blank=True, null=True, help_text="Batting average")
+    hit_babip = models.FloatField(blank=True, null=True)
+    hit_base_on_balls = models.IntegerField(blank=True, null=True)
+    hit_caught_stealing = models.IntegerField(blank=True, null=True)
+    hit_doubles = models.IntegerField(blank=True, null=True)
+    hit_games_played = models.IntegerField(blank=True, null=True)
+    hit_hit_by_pitch = models.IntegerField(blank=True, null=True)
+    hit_hits = models.IntegerField(blank=True, null=True)
+    hit_hrs = models.IntegerField(blank=True, null=True, help_text="Home runs")
+    hit_iso = models.FloatField(blank=True, null=True, help_text="Isolated power")
+    hit_obp = models.FloatField(blank=True, null=True, help_text="On-base percentage")
+    hit_ops = models.FloatField(blank=True, null=True, help_text="On-base plus slugging")
+    hit_plate_appearances = models.IntegerField(blank=True, null=True)
+    hit_runs = models.IntegerField(blank=True, null=True)
+    hit_singles = models.IntegerField(blank=True, null=True)
+    hit_slg = models.FloatField(blank=True, null=True, help_text="Slugging percentage")
+    hit_stolen_bases = models.IntegerField(blank=True, null=True)
+    hit_strikeout_rate = models.FloatField(blank=True, null=True)
+    hit_strikeouts = models.IntegerField(blank=True, null=True)
+    hit_triples = models.IntegerField(blank=True, null=True)
+    hit_walk_rate = models.FloatField(blank=True, null=True)
+    hit_walk_to_strikeout = models.FloatField(blank=True, null=True)
+    hit_woba = models.FloatField(blank=True, null=True, help_text="Weighted on-base average")
+    
+    # Pitching stats (prefixed with pitch_)
+    pitch_appearances = models.IntegerField(blank=True, null=True)
+    pitch_ba = models.FloatField(blank=True, null=True, help_text="Batting average against")
+    pitch_babip = models.FloatField(blank=True, null=True)
+    pitch_base_on_balls = models.IntegerField(blank=True, null=True)
+    pitch_batters_faced = models.IntegerField(blank=True, null=True)
+    pitch_fip = models.FloatField(blank=True, null=True, help_text="Fielding independent pitching")
+    pitch_games_started = models.IntegerField(blank=True, null=True)
+    pitch_hit_by_pitch = models.IntegerField(blank=True, null=True)
+    pitch_hits = models.IntegerField(blank=True, null=True)
+    pitch_innings_pitched = models.FloatField(blank=True, null=True)
+    pitch_obp = models.FloatField(blank=True, null=True, help_text="On-base percentage against")
+    pitch_ops = models.FloatField(blank=True, null=True, help_text="On-base plus slugging against")
+    pitch_runs = models.IntegerField(blank=True, null=True)
+    pitch_siera = models.FloatField(blank=True, null=True, help_text="Skill-interactive ERA")
+    pitch_slg = models.FloatField(blank=True, null=True, help_text="Slugging percentage against")
+    pitch_strikeout_rate = models.FloatField(blank=True, null=True)
+    pitch_strikeouts = models.IntegerField(blank=True, null=True)
+    pitch_walk_rate = models.FloatField(blank=True, null=True)
+    pitch_walk_to_strikeout = models.FloatField(blank=True, null=True)
+    pitch_whip = models.FloatField(blank=True, null=True, help_text="Walks plus hits per inning pitched")
+    pitch_xfip = models.FloatField(blank=True, null=True, help_text="Expected fielding independent pitching")
+    
+    class Meta:
+        unique_together = ['player', 'year', 'team_name']
+        ordering = ['-year', 'player__name']
+        verbose_name = "Player 643 Stat Season"
+        verbose_name_plural = "Player 643 Stat Seasons"
+    
+    def __unicode__(self):
+        return f"{self.player.name} {self.year} ({self.team_name or 'N/A'})"
+
+
 class Article(BaseModel):
     ARTICLE_TYPE_CHOICES = (
         ("breaking news", "breaking news"),

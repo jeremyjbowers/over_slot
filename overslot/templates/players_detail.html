@@ -273,7 +273,7 @@
 .content-section {
     max-width: 1200px;
     margin: 3rem auto 0;
-    padding: 0 1.5rem 3rem;
+    padding: 0 1.5rem 0.5rem;
     background: var(--dark-bg);
 }
 
@@ -659,6 +659,78 @@ body {
     overflow: hidden;
 }
 
+/* 643 Stats Tables Styles */
+.stats-643-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.stats-table-container {
+    overflow-x: auto;
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 1rem;
+    margin-top: 1rem;
+}
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.stats-table thead {
+    background: var(--dark-surface-hover);
+    border-bottom: 2px solid var(--dark-border);
+}
+
+.stats-table th {
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--dark-text);
+    white-space: nowrap;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stats-table td {
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid var(--dark-border);
+    color: var(--dark-text-secondary);
+    white-space: nowrap;
+}
+
+.stats-table tbody tr:hover {
+    background: var(--dark-surface-hover);
+}
+
+.stats-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.stats-643-panel {
+    margin-top: 1rem;
+}
+
+@media screen and (max-width: 768px) {
+    .stats-table-container {
+        border-radius: 0.5rem;
+    }
+    
+    .stats-table {
+        font-size: 0.75rem;
+    }
+    
+    .stats-table th,
+    .stats-table td {
+        padding: 0.5rem 0.25rem;
+    }
+}
+
 </style>
 
 <div class="hero">
@@ -921,6 +993,178 @@ body {
 </div>
 {% endif %}
 
+{% if has_stats_643 %}
+<!-- 643 Stats Tables Section -->
+<div class="content-section">
+    <div class="stats-643-container">
+        <div class="section-header">
+            <span class="icon">
+                <i class="fas fa-table"></i>
+            </span>
+            <h2 class="section-title">Season Stats</h2>
+        </div>
+        
+        {% if has_pitching_stats %}
+        <!-- Tabs for Hit/Pitch stats -->
+        <div class="chart-tabs-wrapper">
+            <div class="tabs is-toggle is-small">
+                <ul id="stats-643-tabs">
+                    <li class="is-active">
+                        <a href="#" data-target="stats-643-hitting">
+                            <span>Hitting</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-target="stats-643-pitching">
+                            <span>Pitching</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Hitting Stats Table -->
+        <div id="stats-643-hitting" class="stats-643-panel">
+            <div class="stats-table-container">
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Team</th>
+                            <th>G</th>
+                            <th>PA</th>
+                            <th>H</th>
+                            <th>1B</th>
+                            <th>2B</th>
+                            <th>3B</th>
+                            <th>HR</th>
+                            <th>R</th>
+                            <th>BB</th>
+                            <th>SO</th>
+                            <th>HBP</th>
+                            <th>SB</th>
+                            <th>CS</th>
+                            <th>BA</th>
+                            <th>OBP</th>
+                            <th>SLG</th>
+                            <th>OPS</th>
+                            <th>ISO</th>
+                            <th>BABIP</th>
+                            <th>BB%</th>
+                            <th>K%</th>
+                            <th>BB/K</th>
+                            <th>wOBA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in stats_643 %}
+                        {% if stat.hit_games_played or stat.hit_plate_appearances or stat.hit_at_bats or stat.hit_hits %}
+                        <tr>
+                            <td>{{ stat.year }}</td>
+                            <td>{{ stat.team_name|default:"—" }}</td>
+                            <td>{{ stat.hit_games_played|default:"—" }}</td>
+                            <td>{{ stat.hit_plate_appearances|default:"—" }}</td>
+                            <td>{{ stat.hit_hits|default:"—" }}</td>
+                            <td>{{ stat.hit_singles|default:"—" }}</td>
+                            <td>{{ stat.hit_doubles|default:"—" }}</td>
+                            <td>{{ stat.hit_triples|default:"—" }}</td>
+                            <td>{{ stat.hit_hrs|default:"—" }}</td>
+                            <td>{{ stat.hit_runs|default:"—" }}</td>
+                            <td>{{ stat.hit_base_on_balls|default:"—" }}</td>
+                            <td>{{ stat.hit_strikeouts|default:"—" }}</td>
+                            <td>{{ stat.hit_hit_by_pitch|default:"—" }}</td>
+                            <td>{{ stat.hit_stolen_bases|default:"—" }}</td>
+                            <td>{{ stat.hit_caught_stealing|default:"—" }}</td>
+                            <td>{% if stat.hit_ba %}{{ stat.hit_ba|format_avg3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.hit_obp %}{{ stat.hit_obp|format_avg3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.hit_slg %}{{ stat.hit_slg|floatformat:3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.hit_ops %}{{ stat.hit_ops|format_avg3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.hit_iso %}{{ stat.hit_iso|format_avg3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.hit_babip %}{{ stat.hit_babip|format_avg3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.hit_walk_rate %}{{ stat.hit_walk_rate|floatformat:1 }}%{% else %}—{% endif %}</td>
+                            <td>{% if stat.hit_strikeout_rate %}{{ stat.hit_strikeout_rate|floatformat:1 }}%{% else %}—{% endif %}</td>
+                            <td>{% if stat.hit_walk_to_strikeout %}{{ stat.hit_walk_to_strikeout|floatformat:2 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.hit_woba %}{{ stat.hit_woba|format_avg3 }}{% else %}—{% endif %}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Pitching Stats Table -->
+        {% if has_pitching_stats %}
+        <div id="stats-643-pitching" class="stats-643-panel" style="display:none">
+            <div class="stats-table-container">
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Year</th>
+                            <th>Team</th>
+                            <th>G</th>
+                            <th>GS</th>
+                            <th>IP</th>
+                            <th>BF</th>
+                            <th>H</th>
+                            <th>R</th>
+                            <th>BB</th>
+                            <th>SO</th>
+                            <th>HBP</th>
+                            <th>WHIP</th>
+                            <th>BA</th>
+                            <th>OBP</th>
+                            <th>SLG</th>
+                            <th>OPS</th>
+                            <th>BABIP</th>
+                            <th>BB%</th>
+                            <th>K%</th>
+                            <th>BB/K</th>
+                            <th>FIP</th>
+                            <th>xFIP</th>
+                            <th>SIERA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in stats_643 %}
+                        {% if stat.pitch_appearances or stat.pitch_games_started or stat.pitch_innings_pitched %}
+                        <tr>
+                            <td>{{ stat.year }}</td>
+                            <td>{{ stat.team_name|default:"—" }}</td>
+                            <td>{{ stat.pitch_appearances|default:"—" }}</td>
+                            <td>{{ stat.pitch_games_started|default:"—" }}</td>
+                            <td>{% if stat.pitch_innings_pitched %}{{ stat.pitch_innings_pitched|floatformat:1 }}{% else %}—{% endif %}</td>
+                            <td>{{ stat.pitch_batters_faced|default:"—" }}</td>
+                            <td>{{ stat.pitch_hits|default:"—" }}</td>
+                            <td>{{ stat.pitch_runs|default:"—" }}</td>
+                            <td>{{ stat.pitch_base_on_balls|default:"—" }}</td>
+                            <td>{{ stat.pitch_strikeouts|default:"—" }}</td>
+                            <td>{{ stat.pitch_hit_by_pitch|default:"—" }}</td>
+                            <td>{% if stat.pitch_whip %}{{ stat.pitch_whip|floatformat:2 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_ba %}{{ stat.pitch_ba|format_avg3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_obp %}{{ stat.pitch_obp|format_avg3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_slg %}{{ stat.pitch_slg|floatformat:3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_ops %}{{ stat.pitch_ops|format_avg3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_babip %}{{ stat.pitch_babip|format_avg3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_walk_rate %}{{ stat.pitch_walk_rate|floatformat:1 }}%{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_strikeout_rate %}{{ stat.pitch_strikeout_rate|floatformat:1 }}%{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_walk_to_strikeout %}{{ stat.pitch_walk_to_strikeout|floatformat:2 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_fip %}{{ stat.pitch_fip|floatformat:2 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_xfip %}{{ stat.pitch_xfip|floatformat:2 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.pitch_siera %}{{ stat.pitch_siera|floatformat:2 }}{% else %}—{% endif %}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
 <div class="content-section">
     <div class="content-grid">
         <!-- Rankings column -->
@@ -1163,6 +1407,24 @@ function toggleReport(button) {
                     const panel = document.getElementById(target);
                     if (panel) panel.style.display = '';
                 }
+            });
+        });
+    }
+    
+    // 643 Stats tabs (Hitting/Pitching)
+    const stats643Tabs = document.querySelectorAll('#stats-643-tabs li a');
+    if (stats643Tabs.length) {
+        stats643Tabs.forEach(a => {
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = a.getAttribute('data-target');
+                // activate tab
+                document.querySelectorAll('#stats-643-tabs li').forEach(li => li.classList.remove('is-active'));
+                a.parentElement.classList.add('is-active');
+                // show panel
+                document.querySelectorAll('.stats-643-panel').forEach(p => p.style.display = 'none');
+                const panel = document.getElementById(target);
+                if (panel) panel.style.display = '';
             });
         });
     }
