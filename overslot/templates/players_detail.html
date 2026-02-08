@@ -1199,13 +1199,13 @@ body {
                             <td>{{ stat.hit_caught_stealing|default:"—" }}</td>
                             <td>{% if stat.hit_ba %}{{ stat.hit_ba|format_avg3 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.hit_obp %}{{ stat.hit_obp|format_avg3 }}{% else %}—{% endif %}</td>
-                            <td>{% if stat.hit_slg %}{{ stat.hit_slg|floatformat:3 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.hit_slg %}{{ stat.hit_slg|format_avg3 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.hit_ops %}{{ stat.hit_ops|format_avg3 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.hit_iso %}{{ stat.hit_iso|format_avg3 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.hit_babip %}{{ stat.hit_babip|format_avg3 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.hit_walk_rate %}{{ stat.hit_walk_rate|floatformat:1 }}%{% else %}—{% endif %}</td>
                             <td>{% if stat.hit_strikeout_rate %}{{ stat.hit_strikeout_rate|floatformat:1 }}%{% else %}—{% endif %}</td>
-                            <td>{% if stat.hit_walk_to_strikeout %}{{ stat.hit_walk_to_strikeout|floatformat:2 }}{% else %}—{% endif %}</td>
+                            <td>{% if stat.hit_walk_to_strikeout %}{{ stat.hit_walk_to_strikeout|format_avg2 }}{% else %}—{% endif %}</td>
                             <td>{% if stat.hit_woba %}{{ stat.hit_woba|format_avg3 }}{% else %}—{% endif %}</td>
                         </tr>
                         {% endif %}
@@ -1291,9 +1291,11 @@ body {
 </div>
 {% endif %}
 
+{% if rankings or articles %}
 <div class="content-section">
     <div class="content-grid">
         <!-- Rankings column -->
+        {% if rankings %}
         <div id="rankings">
             {% if preview_mode %}
             <!-- Preview Mode: Show partial ranking info -->
@@ -1387,7 +1389,9 @@ body {
             {% endfor %}
             {% endif %}
         </div>
+        {% endif %}
         <!-- Articles column -->
+        {% if articles %}
         <div id="articles">
             {% if preview_mode %}
             <!-- Preview Mode: Show article headlines only -->
@@ -1459,8 +1463,10 @@ body {
             {% endfor %}
             {% endif %}
         </div>
+        {% endif %}
     </div>
 </div>
+{% endif %}
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script>

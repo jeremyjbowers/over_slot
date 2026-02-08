@@ -9,7 +9,6 @@ from overslot import models, utils
 class Command(BaseCommand):
     def handle(self, *args, **options):
         call_command('load_podcast_episodes')
-        call_command('load_games')
 
         call_command('generate_player_duplicates')
         call_command('sheet_load_rankings')
@@ -19,11 +18,12 @@ class Command(BaseCommand):
         call_command('load_hs_hitters')
         call_command('generate_player_duplicates')
         
-        # Load 643 stats only every 4 hours (6 times per day)
+        # Load 643 stats and games only every 4 hours (6 times per day)
         # Only run if we're in the first 5 minutes of the 4-hour interval
         current_time = int(time.time())
         interval_seconds = 4 * 60 * 60  # 4 hours
         if (current_time % interval_seconds) < 300:
+            call_command('load_games')
             call_command('load_643_stats')
         else:
-            self.stdout.write("Skipping 643 stats update (not in update window - runs every 4 hours)")
+            self.stdout.write("Skipping 643 stats and games update (not in update window - runs every 4 hours)")

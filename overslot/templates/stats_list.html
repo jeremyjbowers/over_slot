@@ -376,7 +376,7 @@
                                             {% elif key == "hit_walk_to_strikeout" or key == "pitch_walk_to_strikeout" %}
                                                 <td data-value="{{ val|default_if_none:'' }}">
                                                     {% if val is not None %}
-                                                        {{ val|floatformat:2 }}
+                                                        {{ val|format_avg2 }}
                                                     {% else %}
                                                         —
                                                     {% endif %}
