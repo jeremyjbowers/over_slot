@@ -269,6 +269,130 @@
 .stats-powered-by a:hover {
     color: var(--theme-primary-hover);
 }
+
+/* Subscription Banner Styles */
+.subscription-banner {
+    position: relative;
+    margin: 2rem 0;
+    z-index: 10;
+}
+
+.subscription-overlay {
+    position: absolute;
+    top: -4rem;
+    left: 0;
+    right: 0;
+    height: 6rem;
+    background: linear-gradient(transparent, var(--dark-bg));
+    pointer-events: none;
+    z-index: 1;
+}
+
+.subscription-content {
+    position: relative;
+    z-index: 2;
+}
+
+.subscription-card {
+    background: var(--dark-surface);
+    border: 2px solid var(--theme-primary);
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.subscription-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.subscription-icon {
+    width: 2rem;
+    height: 2rem;
+    color: var(--theme-primary);
+}
+
+.subscription-header h3 {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--dark-text);
+    margin: 0;
+}
+
+.subscription-description {
+    font-size: var(--text-lg);
+    color: var(--dark-text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: var(--leading-relaxed);
+}
+
+.subscription-price {
+    margin-bottom: 2rem;
+}
+
+.price-amount {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--dark-text);
+}
+
+.price-period {
+    font-size: var(--text-lg);
+    color: var(--dark-text-muted);
+    font-weight: 500;
+}
+
+.subscription-actions {
+    margin-bottom: 1rem;
+}
+
+.btn-subscribe {
+    display: inline-block;
+    background: var(--theme-primary);
+    color: var(--dark-text);
+    padding: 1rem 2rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: var(--text-lg);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-subscribe:hover {
+    background: var(--theme-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(var(--theme-primary-rgb), 0.2);
+}
+
+.subscription-note {
+    font-size: var(--text-sm);
+    color: var(--dark-text-muted);
+    margin: 0;
+}
+
+@media screen and (max-width: 768px) {
+    .subscription-card {
+        padding: 1.5rem;
+    }
+    
+    .subscription-header h3 {
+        font-size: var(--text-xl);
+    }
+    
+    .price-amount {
+        font-size: 2.5rem;
+    }
+    
+    .btn-subscribe {
+        padding: 0.875rem 1.5rem;
+        font-size: var(--text-base);
+    }
+}
 </style>
 {% endblock %}
 
@@ -308,6 +432,7 @@
                     </a>
                 </div>
             </div>
+            {% if not preview_mode %}
             <div class="nav-divider"></div>
             <div class="nav-group">
                 <label class="qualified-toggle-label">
@@ -316,6 +441,7 @@
                     <span class="qualified-toggle-text">Qualified ({{ qualification_field }} ≥ {{ qualification_threshold }})</span>
                 </label>
             </div>
+            {% endif %}
         </div>
         {% endif %}
     </div>
@@ -328,9 +454,87 @@
                     <span class="icon">
                         <i class="fas fa-list"></i>
                     </span>
-                    <h3 class="info-section-title">{{ page_title }}</h3>
+                    <h3 class="info-section-title">{% if preview_mode %}Preview: {{ page_title }}{% else %}{{ page_title }}{% endif %}</h3>
                 </div>
                 <div class="info-section-content">
+                    {% if preview_mode %}
+                    <!-- Preview Mode: Show limited rows -->
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" data-key="player_name">Player</th>
+                                    <th class="sortable" data-key="team_name">Team</th>
+                                    {% for key, label in columns %}
+                                        <th class="sortable metric" data-key="{{ key }}">{{ label }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in rows|slice:":5" %}
+                                <tr data-qualified="{% if r.qualified %}true{% else %}false{% endif %}">
+                                    <td data-value="{{ r.player_name }}">
+                                        <a href="{% url 'players_detail' slug=r.player_slug %}">{{ r.player_name }}</a>
+                                    </td>
+                                    <td data-value="{{ r.team_name|default_if_none:'' }}">{{ r.team_name|default:"—" }}</td>
+                                    {% for key, _label in columns %}
+                                        {% with val=r|get_item:key %}
+                                            {% if key == "hit_ba" or key == "hit_obp" or key == "hit_slg" or key == "hit_ops" or key == "hit_iso" or key == "hit_babip" or key == "hit_woba" or key == "pitch_ba" or key == "pitch_obp" or key == "pitch_slg" or key == "pitch_ops" or key == "pitch_babip" or key == "pitch_whip" or key == "pitch_fip" or key == "pitch_xfip" or key == "pitch_siera" %}
+                                                <td data-value="{{ val|default_if_none:'' }}">
+                                                    {% if val is not None %}
+                                                        {% if key == "hit_woba" or key == "hit_ba" or key == "hit_obp" or key == "hit_slg" or key == "hit_ops" or key == "hit_iso" or key == "hit_babip" or key == "pitch_ba" or key == "pitch_obp" or key == "pitch_slg" or key == "pitch_ops" or key == "pitch_babip" %}
+                                                            {{ val|format_avg3 }}
+                                                        {% elif key == "pitch_whip" or key == "pitch_fip" or key == "pitch_xfip" or key == "pitch_siera" %}
+                                                            {{ val|floatformat:2 }}
+                                                        {% else %}
+                                                            {{ val|floatformat:3 }}
+                                                        {% endif %}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+                                            {% elif key == "hit_walk_rate" or key == "hit_strikeout_rate" or key == "pitch_walk_rate" or key == "pitch_strikeout_rate" %}
+                                                <td data-value="{{ val|default_if_none:'' }}">
+                                                    {% if val is not None %}
+                                                        {{ val|floatformat:1 }}%
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+                                            {% elif key == "hit_walk_to_strikeout" or key == "pitch_walk_to_strikeout" %}
+                                                <td data-value="{{ val|default_if_none:'' }}">
+                                                    {% if val is not None %}
+                                                        {{ val|format_avg2 }}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+                                            {% elif key == "pitch_innings_pitched" %}
+                                                <td data-value="{{ val|default_if_none:'' }}">
+                                                    {% if val is not None %}
+                                                        {{ val|floatformat:1 }}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+                                            {% else %}
+                                                <td data-value="{{ val|default_if_none:'' }}">
+                                                    {% if val is not None %}
+                                                        {{ val|floatformat:0 }}
+                                                    {% else %}
+                                                        —
+                                                    {% endif %}
+                                                </td>
+                                            {% endif %}
+                                        {% endwith %}
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <!-- Full Content for Subscribers -->
                     <div class="table-responsive">
                         <table class="data-table">
                             <thead>
@@ -405,11 +609,49 @@
                             </tbody>
                         </table>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+{% if preview_mode %}
+<!-- Subscription Banner -->
+{% load overslot_tags %}
+<div class="subscription-banner">
+    <div class="subscription-overlay"></div>
+    <div class="subscription-content">
+        <div class="subscription-card">
+            <div class="subscription-header">
+                <svg class="subscription-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                <h3>See Full Data Tables</h3>
+            </div>
+            <p class="subscription-description">
+                Access complete {% if stat_type == "hit" %}hitting{% else %}pitching{% endif %} stats tables with sortable metrics, filters, and comprehensive player statistics.
+            </p>
+            <div class="subscription-price">
+                <span class="price-amount">${{ settings.SUBSCRIPTION_PRICE_MONTHLY|floatformat:2 }}</span>
+                <span class="price-period">/month</span>
+            </div>
+            <div class="subscription-actions">
+                {% if user_authenticated %}
+                    <a href="{% url 'subscription_dashboard' %}" class="btn-subscribe">
+                        Subscribe Now
+                    </a>
+                {% else %}
+                    <a href="{% url 'account_login' %}?next={{ request.get_full_path }}" class="btn-subscribe">
+                        Log In to Subscribe
+                    </a>
+                {% endif %}
+            </div>
+            <p class="subscription-note">Cancel anytime • No long-term commitment</p>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}

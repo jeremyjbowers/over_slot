@@ -472,7 +472,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for r in rows|slice:":10" %}
+                                {% for r in rows|slice:":5" %}
                                 <tr data-draft-year="{{ r.draft_year|default_if_none:'' }}">
                                     <td data-value="{{ r.player_name }}">
                                         <a href="{% url 'players_detail' slug=r.player_slug %}">{{ r.player_name }}</a>

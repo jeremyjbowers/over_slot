@@ -3,6 +3,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
+from django.template.response import TemplateResponse
 
 from overslot.models import Subscription, Article, Ranking, Player, PlayerRanking
 
@@ -59,15 +60,44 @@ def subscription_required(view_func):
             # Hitters data tables (year-specific views only)
             'college_hitters_year': 'hitters_list.html',
             'hs_hitters_year': 'hitters_list.html',
+            # Stats data tables
+            'stats_list': 'stats_list.html',
+            'stats_hit_year': 'stats_list.html',
+            'stats_pitch_year': 'stats_list.html',
         }
         
         # Call the view to get the context (but ignore its response)
         response = view_func(request, *args, **kwargs)
         
         # Extract context from the response if it's a TemplateResponse
-        if hasattr(response, 'context_data'):
-            context = response.context_data.copy()
-        else:
+        context = {}
+        if isinstance(response, TemplateResponse):
+            # TemplateResponse has context_data as a property that returns the context dict
+            try:
+                context_data = response.context_data
+                if context_data:
+                    # Convert to dict - context_data might be a Context object or dict
+                    if isinstance(context_data, dict):
+                        context = context_data.copy()
+                    elif hasattr(context_data, 'dicts'):
+                        # It's a Context object - flatten all dicts
+                        context = {}
+                        for d in context_data.dicts:
+                            if isinstance(d, dict):
+                                context.update(d)
+                    else:
+                        # Try direct conversion
+                        try:
+                            context = dict(context_data)
+                        except (TypeError, ValueError):
+                            # If that fails, try iterating
+                            context = {k: v for k, v in context_data.items()} if hasattr(context_data, 'items') else {}
+            except (AttributeError, TypeError, ValueError):
+                # If context_data access fails, context stays empty
+                pass
+        
+        # If still no context and it's not a TemplateResponse, use fallback
+        if not context:
             # For regular HttpResponse, we need to recreate the context
             # by calling the view logic directly
             context = {}
@@ -81,13 +111,21 @@ def subscription_required(view_func):
                 context['player'] = player
                 context['rankings'] = PlayerRanking.objects.filter(player=player, ranking__publish=True, active=True)
                 context['articles'] = Article.objects.filter(players=player, publish=True)
-            # For hitters views, the context is already extracted from TemplateResponse above
+            # For hitters and stats views, the context is already extracted from TemplateResponse above
             # If it's not a TemplateResponse, we'll need to call the view logic
-            # But since these views use render(), they should return TemplateResponse
+            # But since these views use TemplateResponse(), they should return TemplateResponse
         
         # Add preview mode flags
         context['preview_mode'] = True
         context['user_authenticated'] = request.user.is_authenticated
+        
+        # Ensure required context variables exist for stats views
+        if view_name in ['stats_list', 'stats_hit_year', 'stats_pitch_year']:
+            # If context is missing critical variables, the view might have failed
+            # In that case, return the original response (which might be an error)
+            if not context.get('rows') and not context.get('columns'):
+                # Context extraction failed - return original response
+                return response
         
         # Get the template name from our mapping
         template_name = template_mapping.get(view_name)
