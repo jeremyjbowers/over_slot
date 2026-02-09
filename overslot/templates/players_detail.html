@@ -265,6 +265,57 @@ html {
     font-weight: 500;
 }
 
+/* Video embed section */
+.player-video-embed {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--dark-border);
+    width: 100%;
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+    overflow: hidden;
+}
+
+.player-video-embed iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 0.5rem;
+}
+
+/* Fallback video link button */
+.player-video-link {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--dark-border);
+}
+
+.video-link-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: var(--theme-primary);
+    color: var(--dark-text);
+    text-decoration: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: var(--text-sm);
+    transition: background 0.2s ease;
+}
+
+.video-link-button:hover {
+    background: var(--theme-primary-hover);
+}
+
+.video-link-button .fas {
+    font-size: 0.875rem;
+}
+
 
 .player-info-card {
     background: var(--dark-surface);
@@ -865,14 +916,6 @@ body {
             <div class="player-photo-wrapper">
                 <img src="{{ player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}" 
                      alt="{{ player.name }}">
-                {% if player.video_url %}
-                <div class="player-photo-overlay">
-                    <span class="player-video-indicator">Meet {{ player.name }}</span>
-                </div>
-                <a href="{{ player.video_url }}" class="player-play-button">
-                    <i class="fas fa-play"></i>
-                </a>
-                {% endif %}
             </div>
             <div class="player-bio">
                 <ul class="bio-list">
@@ -925,6 +968,29 @@ body {
                     </li>
                     {% endif %}
                 </ul>
+                {% if player.video_url %}
+                {% with embed_url=player.video_url|video_embed_url %}
+                {% if embed_url %}
+                <div class="player-video-embed">
+                    <iframe 
+                        src="{{ embed_url }}" 
+                        title="YouTube video player" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                        referrerpolicy="strict-origin-when-cross-origin" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                {% else %}
+                <div class="player-video-link">
+                    <a href="{{ player.video_url }}" target="_blank" rel="noopener" class="video-link-button">
+                        <i class="fas fa-play"></i>
+                        <span>Watch Video</span>
+                    </a>
+                </div>
+                {% endif %}
+                {% endwith %}
+                {% endif %}
             </div>
         </div>
 

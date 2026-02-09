@@ -1,5 +1,7 @@
 from django import template
 from decimal import Decimal
+import re
+from urllib.parse import urlparse, parse_qs
 from overslot.decorators import has_active_subscription
 from overslot.models import FeatureFlag
 
@@ -125,3 +127,111 @@ def get_item(mapping, key):
             return mapping[key]
         except Exception:
             return None
+
+
+@register.filter
+def video_embed_url(url):
+    """
+    Convert a video URL to an embed URL.
+    Supports YouTube (youtube.com/watch?v=, youtu.be/, youtube.com/embed/) and Vimeo.
+    Returns the embed URL if recognized, otherwise returns empty string.
+    """
+    if not url:
+        return ""
+    
+    original_url = url.strip()
+    url = original_url
+    
+    # Add protocol if missing (needed for urlparse)
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+    
+    # Parse the URL to handle fragments and query parameters
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        # If parsing fails, try regex fallback on original URL
+        return _extract_video_id_regex(original_url)
+    
+    # YouTube: youtube.com/watch?v=VIDEO_ID
+    if 'youtube.com' in parsed.netloc or 'youtu.be' in parsed.netloc:
+        video_id = None
+        
+        # Handle youtube.com/embed/VIDEO_ID format (already embed)
+        if '/embed/' in parsed.path:
+            # Already an embed URL, clean it up
+            embed_path = parsed.path.split('/embed/')[-1].split('?')[0].split('&')[0].split('#')[0]
+            if embed_path and re.match(r'^[a-zA-Z0-9_-]{10,11}$', embed_path):
+                return f"https://www.youtube.com/embed/{embed_path}"
+        
+        # Try to get video ID from query parameter (youtube.com/watch?v=VIDEO_ID)
+        if parsed.path == '/watch' or parsed.path.startswith('/watch/'):
+            query_params = parse_qs(parsed.query)
+            video_id = query_params.get('v', [None])[0]
+        
+        # Try to get video ID from path (youtu.be/VIDEO_ID)
+        if not video_id and 'youtu.be' in parsed.netloc:
+            path = parsed.path.lstrip('/')
+            # Remove query params and fragments
+            video_id = path.split('?')[0].split('&')[0].split('#')[0]
+        
+        # Validate and return YouTube embed URL
+        if video_id:
+            # Clean up video ID - remove any trailing parameters
+            video_id = video_id.split('&')[0].split('#')[0].strip()
+            # YouTube video IDs are exactly 11 characters (alphanumeric, -, _)
+            # Validate it matches the expected pattern
+            if video_id and re.match(r'^[a-zA-Z0-9_-]{10,11}$', video_id):
+                return f"https://www.youtube.com/embed/{video_id}"
+    
+    # Vimeo: vimeo.com/VIDEO_ID
+    if 'vimeo.com' in parsed.netloc:
+        video_id = None
+        
+        # Already an embed URL
+        if 'player.vimeo.com' in parsed.netloc:
+            # Clean up any query parameters
+            clean_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+            return clean_url
+        
+        # Extract video ID from path
+        path_parts = [p for p in parsed.path.strip('/').split('/') if p]
+        for part in path_parts:
+            if part.isdigit():
+                video_id = part
+                break
+        
+        if video_id:
+            return f"https://player.vimeo.com/video/{video_id}"
+    
+    # Fallback to regex extraction if URL parsing didn't work
+    return _extract_video_id_regex(original_url)
+
+
+def _extract_video_id_regex(url):
+    """
+    Fallback regex-based extraction for video IDs.
+    Used when URL parsing fails or as a backup method.
+    """
+    # YouTube: youtube.com/watch?v=VIDEO_ID
+    youtube_watch_match = re.search(r'youtube\.com/watch\?v=([a-zA-Z0-9_-]{10,11})', url)
+    if youtube_watch_match:
+        return f"https://www.youtube.com/embed/{youtube_watch_match.group(1)}"
+    
+    # YouTube: youtu.be/VIDEO_ID
+    youtube_short_match = re.search(r'youtu\.be/([a-zA-Z0-9_-]{10,11})', url)
+    if youtube_short_match:
+        return f"https://www.youtube.com/embed/{youtube_short_match.group(1)}"
+    
+    # YouTube: Already an embed URL
+    youtube_embed_match = re.search(r'youtube\.com/embed/([a-zA-Z0-9_-]{10,11})', url)
+    if youtube_embed_match:
+        return f"https://www.youtube.com/embed/{youtube_embed_match.group(1)}"
+    
+    # Vimeo: vimeo.com/VIDEO_ID
+    vimeo_match = re.search(r'vimeo\.com/(\d+)', url)
+    if vimeo_match:
+        return f"https://player.vimeo.com/video/{vimeo_match.group(1)}"
+    
+    # If we can't recognize it, return empty string (don't embed unknown URLs)
+    return ""
