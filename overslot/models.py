@@ -1235,6 +1235,8 @@ class Game(BaseModel):
     sport_name = models.CharField(max_length=255, blank=True, null=True, help_text="Sport name from ESPN")
     league_name = models.CharField(max_length=255, blank=True, null=True, help_text="League name from ESPN")
     is_ncaa = models.BooleanField(default=False, help_text="Whether this is an NCAA game")
+    featured = models.BooleanField(default=False, help_text="Feature this game prominently on the games list page")
+    is_carousel = models.BooleanField(default=False, help_text="Display this game in the homepage carousel")
     
     class Meta:
         ordering = ['start_datetime']

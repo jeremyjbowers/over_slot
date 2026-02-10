@@ -45,6 +45,24 @@ def index(request):
     ).order_by('-created')[:5]
     context['latest_rankings'] = latest_rankings
 
+    # Carousel games: only current and future games, ordered by start time
+    # Filter to ensure games have at least a name and streaming URL
+    latest_games = models.Game.objects.filter(
+        active=True,
+        is_carousel=True
+    ).exclude(
+        status='past'
+    ).exclude(
+        name__isnull=True
+    ).exclude(
+        name=''
+    ).exclude(
+        streaming_url__isnull=True
+    ).exclude(
+        streaming_url=''
+    ).select_related('home_team', 'away_team').order_by('start_datetime')[:5]
+    context['latest_games'] = latest_games
+
     # Flanking lists: left = scouting articles; right = non-scouting
     scouting_articles = models.Article.objects.filter(
         publish=True, article_type='scouting'
@@ -96,6 +114,17 @@ def index(request):
     context['player_videos'] = videos_qs.order_by('?')[:9]
     context['videos_count'] = videos_qs.count()
 
+    # Featured games belt: only current and future games, ordered by start time
+    from django.utils import timezone
+    now = timezone.now()
+    featured_games = models.Game.objects.filter(
+        active=True,
+        featured=True
+    ).exclude(
+        status='past'
+    ).select_related('home_team', 'away_team').order_by('start_datetime')
+    context['featured_games'] = featured_games
+
     # Podcast belt: top 5, prioritize featured then newest
     context['latest_podcasts'] = models.PodcastEpisode.objects.filter(
         publish=True
@@ -114,8 +143,19 @@ def articles_list(request):
         article.active_teams = article.teams.filter(active=True)
     context['articles'] = articles
     
-    # Add recent rankings for sidebar - only published
-    context['recent_rankings'] = models.Ranking.objects.filter(active=True, publish=True).order_by('-created')[:3]
+    # Add recent rankings for sidebar - same order as non-archived on homepage:
+    # 2026 Overall first, then 2026 College/High School, then 2027, then 2028
+    context['recent_rankings'] = models.Ranking.objects.filter(
+        is_mock_draft=False, publish=True, current=True
+    ).annotate(
+        level_order=Case(
+            When(draft_level='Overall', then=Value(0)),
+            When(draft_level='College', then=Value(1)),
+            When(draft_level='High School', then=Value(2)),
+            default=Value(99),
+            output_field=IntegerField(),
+        )
+    ).order_by('year', 'level_order')
 
     return render(request, "articles_list.html", context)
 

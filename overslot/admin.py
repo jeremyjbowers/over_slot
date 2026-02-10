@@ -1,9 +1,11 @@
 from django.contrib import admin
+from django.contrib.admin import SimpleListFilter
 from django_summernote.admin import SummernoteModelAdmin
 from django.contrib.admin import AdminSite
 from django.urls import reverse_lazy
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin, GroupAdmin as DjangoGroupAdmin
+from django.db.models import Q, Exists, OuterRef
 
 # Create a custom admin site for content editors
 class ContentEditorAdminSite(AdminSite):
@@ -798,11 +800,45 @@ class PotentialTeamDuplicateAdmin(admin.ModelAdmin):
     ordering = ["-similarity_score"]
 
 
+class HasRankedTeamFilter(SimpleListFilter):
+    title = 'has ranked team'
+    parameter_name = 'has_ranked_team'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('yes', 'Yes - Has ranked team'),
+            ('no', 'No - No ranked teams'),
+        )
+
+    def queryset(self, request, queryset):
+        # Check if home_team or away_team has an NCAA ranking
+        # Check both the team's current_ranking field and the game's team ranking fields
+        if self.value() == 'yes':
+            # Games where home_team OR away_team has a ranking
+            return queryset.filter(
+                Q(home_team__current_ranking__isnull=False) |
+                Q(away_team__current_ranking__isnull=False) |
+                Q(home_team_ranking__isnull=False) |
+                Q(away_team_ranking__isnull=False)
+            ).distinct()
+        elif self.value() == 'no':
+            # Games where NEITHER team has a ranking
+            # A team has no ranking if: team is null OR (current_ranking is null AND game ranking is null)
+            return queryset.exclude(
+                Q(home_team__current_ranking__isnull=False) |
+                Q(away_team__current_ranking__isnull=False) |
+                Q(home_team_ranking__isnull=False) |
+                Q(away_team_ranking__isnull=False)
+            ).distinct()
+        return queryset
+
+
 @admin.register(Game, site=admin_site)
 class GameAdmin(admin.ModelAdmin):
     model = Game
-    list_display = ["name", "home_team", "away_team", "start_datetime", "status", "is_ncaa"]
-    list_filter = ["status", "is_ncaa", "start_datetime"]
+    list_display = ["name", "home_team", "away_team", "start_datetime", "status", "is_ncaa", "featured", "is_carousel"]
+    list_editable = ["featured", "is_carousel"]
+    list_filter = ["status", "is_ncaa", "featured", "is_carousel", HasRankedTeamFilter, "start_datetime"]
     search_fields = ["name", "home_team__name", "away_team__name"]
     readonly_fields = ["espn_id", "created", "last_modified"]
     date_hierarchy = "start_datetime"
@@ -849,6 +885,8 @@ class GameAdmin(admin.ModelAdmin):
                     "sport_name",
                     "league_name",
                     "is_ncaa",
+                    "featured",
+                    "is_carousel",
                 )
             },
         ),
