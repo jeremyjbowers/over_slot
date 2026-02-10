@@ -256,6 +256,78 @@
     color: var(--dark-text-muted);
 }
 
+/* Player rankings section */
+.team-player-rankings {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--dark-border);
+}
+
+.team-player-rankings-section {
+    margin-bottom: 0.75rem;
+}
+
+.team-player-rankings-section:last-child {
+    margin-bottom: 0;
+}
+
+.team-player-rankings-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--dark-text-muted);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.05em;
+}
+
+.team-player-rankings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.team-player-ranking-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--dark-text);
+}
+
+.team-player-ranking-info {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.team-player-ranking-info a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.team-player-ranking-info a:hover {
+    color: var(--theme-primary);
+}
+
+.team-player-ranking-rank {
+    font-weight: 700;
+    color: var(--theme-primary);
+}
+
+.team-player-ranking-position {
+    color: var(--dark-text);
+    font-weight: 600;
+}
+
+.team-player-ranking-type {
+    font-size: 0.7rem;
+    color: var(--dark-text-muted);
+    font-weight: 500;
+    margin-left: 0.25rem;
+}
+
 .no-games {
     text-align: center;
     padding: 3rem 1rem;
@@ -399,6 +471,55 @@
                     <span> • {{ game.network_name }}</span>
                     {% endif %}
                 </div>
+                
+                <!-- Player Rankings -->
+                {% if game.away_team.player_rankings_list or game.home_team.player_rankings_list %}
+                <div class="team-player-rankings">
+                    {% if game.away_team.player_rankings_list %}
+                    <div class="team-player-rankings-section">
+                        <div class="team-player-rankings-title">{{ game.away_team.name }} Players</div>
+                        <div class="team-player-rankings-list">
+                            {% for pr in game.away_team.player_rankings_list %}
+                            <div class="team-player-ranking-item">
+                                <div class="team-player-ranking-info">
+                                    <span class="team-player-ranking-rank">#{{ pr.rank }}</span>
+                                    {% if pr.position %}
+                                    <span class="team-player-ranking-position"> {{ pr.position }}</span>
+                                    {% endif %}
+                                    <a href="/players/{{ pr.player.slug }}/"> {{ pr.player.name }}</a>
+                                </div>
+                                {% if pr.ranking.year and pr.ranking.draft_level %}
+                                <span class="team-player-ranking-type">{{ pr.ranking.year }} {{ pr.ranking.draft_level }}{% if pr.ranking.ranking_length %} {{ pr.ranking.ranking_length }}{% endif %}</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if game.home_team.player_rankings_list %}
+                    <div class="team-player-rankings-section">
+                        <div class="team-player-rankings-title">{{ game.home_team.name }} Players</div>
+                        <div class="team-player-rankings-list">
+                            {% for pr in game.home_team.player_rankings_list %}
+                            <div class="team-player-ranking-item">
+                                <div class="team-player-ranking-info">
+                                    <span class="team-player-ranking-rank">#{{ pr.rank }}</span>
+                                    {% if pr.position %}
+                                    <span class="team-player-ranking-position"> {{ pr.position }}</span>
+                                    {% endif %}
+                                    <a href="/players/{{ pr.player.slug }}/"> {{ pr.player.name }}</a>
+                                </div>
+                                {% if pr.ranking.year and pr.ranking.draft_level %}
+                                <span class="team-player-ranking-type">{{ pr.ranking.year }} {{ pr.ranking.draft_level }}{% if pr.ranking.ranking_length %} {{ pr.ranking.ranking_length }}{% endif %}</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
                 
                 <span class="game-status {{ game.status }}">
                     {{ game.status|title }}

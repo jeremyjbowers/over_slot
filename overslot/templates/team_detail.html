@@ -53,20 +53,44 @@
     margin-bottom: 1.5rem;
 }
 
-/* Games grid - reuse from games_list */
+/* Two-column layout: games on left, prospects on right */
+.team-content-layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2rem;
+    align-items: start;
+}
+
+/* Games grid - compressed for sidebar layout */
 .games-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
-    max-width: 1400px;
-    margin: 0 auto;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
     padding: 0;
 }
 
-/* Single game layout (fewer than 3 games) */
+/* Single game layout (fewer than 2 games) */
 .games-grid.single-game {
     grid-template-columns: 1fr;
-    max-width: 600px;
+}
+
+/* Right rail for prospects */
+.prospects-sidebar {
+    position: sticky;
+    top: 5rem; /* Account for fixed navbar (3.5rem) + padding */
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 4px;
+    padding: 1.25rem;
+    max-height: calc(100vh - 6.5rem); /* Account for navbar + top offset */
+    overflow-y: auto;
+}
+
+.prospects-sidebar h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--dark-text);
+    margin: 0 0 1rem 0;
 }
 
 .game-card {
@@ -243,6 +267,16 @@
 
 /* Responsive - reuse ranking breakpoints */
 @media (max-width: 1024px) {
+    .team-content-layout {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .prospects-sidebar {
+        position: static;
+        max-height: none;
+    }
+    
     .games-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -265,6 +299,68 @@
         font-size: 2rem;
     }
 }
+
+/* Player rankings section - optimized for sidebar */
+.team-player-rankings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.team-player-ranking-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.team-player-ranking-item:last-child {
+    border-bottom: none;
+}
+
+.team-player-ranking-info {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--dark-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.team-player-ranking-info a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.team-player-ranking-info a:hover {
+    color: var(--theme-primary);
+}
+
+.team-player-ranking-rank {
+    font-weight: 700;
+    color: var(--theme-primary);
+    flex-shrink: 0;
+}
+
+.team-player-ranking-position {
+    color: var(--dark-text);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.team-player-ranking-type {
+    font-size: 0.7rem;
+    color: var(--dark-text-muted);
+    font-weight: 500;
+}
 </style>
 
 <div class="team-detail-container">
@@ -280,11 +376,14 @@
         {% endif %}
     </header>
     
-    <section class="games-section">
-        <h2>Upcoming Games</h2>
-        
-        {% if upcoming_games %}
-        <div class="games-grid {% if upcoming_games|length < 3 %}single-game{% endif %}">
+    <!-- Two-column layout: Games on left, Prospects on right -->
+    <div class="team-content-layout">
+        <!-- Games Section (Left Column) -->
+        <section class="games-section">
+            <h2>Upcoming Games</h2>
+            
+            {% if upcoming_games %}
+            <div class="games-grid {% if upcoming_games|length < 2 %}single-game{% endif %}">
             {% for game in upcoming_games %}
             <div class="game-card">
                 {% if game.image_url %}
@@ -340,12 +439,36 @@
                 </div>
             </div>
             {% endfor %}
-        </div>
-        {% else %}
-        <div class="no-games">
-            <p>No upcoming games scheduled for {{ team.name }}.</p>
-        </div>
+            </div>
+            {% else %}
+            <div class="no-games">
+                <p>No upcoming games scheduled for {{ team.name }}.</p>
+            </div>
+            {% endif %}
+        </section>
+        
+        <!-- Prospects Sidebar (Right Column) -->
+        {% if team.player_rankings_list %}
+        <aside class="prospects-sidebar">
+            <h3>Ranked Prospects</h3>
+            <div class="team-player-rankings-list">
+                {% for pr in team.player_rankings_list %}
+                <div class="team-player-ranking-item">
+                    <div class="team-player-ranking-info">
+                        <span class="team-player-ranking-rank">#{{ pr.rank }}</span>
+                        {% if pr.position %}
+                        <span class="team-player-ranking-position">{{ pr.position }}</span>
+                        {% endif %}
+                        <a href="/players/{{ pr.player.slug }}/">{{ pr.player.name }}</a>
+                    </div>
+                    {% if pr.ranking.year and pr.ranking.draft_level %}
+                    <span class="team-player-ranking-type">{{ pr.ranking.year }} {{ pr.ranking.draft_level }}{% if pr.ranking.ranking_length %} {{ pr.ranking.ranking_length }}{% endif %}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </aside>
         {% endif %}
-    </section>
+    </div>
 </div>
 {% endblock %}

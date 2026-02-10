@@ -195,6 +195,9 @@ def games_list(request, year=None, month=None, day=None):
     """
     Display games for a specific date. If no date provided, shows today's games
     (or opening day if today is before opening day).
+    
+    NOTE: This view is PUBLIC and should NOT be paywalled. Games list and player
+    rankings shown on game cards are free content.
     """
     context = {}
     
@@ -238,14 +241,75 @@ def games_list(request, year=None, month=None, day=None):
         start_datetime__lte=end_of_day
     ).select_related('home_team', 'away_team').order_by('start_datetime')
     
-    # Ensure all teams have slugs (for teams created before slug field was added)
+    # Collect all unique teams
+    teams = set()
     for game in games:
-        if game.home_team and not game.home_team.slug:
-            game.home_team.save()  # Auto-generates slug
-            game.home_team.refresh_from_db()
-        if game.away_team and not game.away_team.slug:
-            game.away_team.save()  # Auto-generates slug
-            game.away_team.refresh_from_db()
+        if game.home_team:
+            teams.add(game.home_team)
+        if game.away_team:
+            teams.add(game.away_team)
+    
+    # Ensure all teams have slugs (for teams created before slug field was added)
+    for team in teams:
+        if not team.slug:
+            team.save()  # Auto-generates slug
+            team.refresh_from_db()
+    
+    # Prefetch player rankings for all teams at once (from current, published rankings)
+    # Deduplicate by player - only keep the most recent ranking for each player
+    team_ids = [team.id for team in teams]
+    player_rankings_by_team = {}
+    if team_ids:
+        rankings_qs = models.PlayerRanking.objects.filter(
+            school_team_id__in=team_ids,
+            ranking__publish=True,
+            ranking__current=True,
+            ranking__is_mock_draft=False,
+            active=True,
+            player__isnull=False  # Ensure player exists
+        ).select_related('player', 'ranking', 'school_team').annotate(
+            # Create priority: Overall = 0, others = 1 (so Overall comes first)
+            ranking_priority=Case(
+                When(ranking__draft_level='Overall', then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField(),
+            )
+        ).order_by(
+            'school_team_id', 
+            'player_id',
+            'ranking_priority',  # Overall rankings first
+            '-ranking__created'  # Then most recent ranking
+        )
+        
+        # Track preferred ranking per (team, player) pair
+        # Prefers Overall rankings, then falls back to most recent
+        # Key: (team_id, player_id), Value: PlayerRanking
+        preferred_by_player = {}
+        
+        for pr in rankings_qs:
+            if not pr.player_id or not pr.school_team_id:
+                continue
+            
+            key = (pr.school_team_id, pr.player_id)
+            # Only keep the first ranking for each player
+            # Due to ordering, this will be Overall if available, otherwise most recent
+            if key not in preferred_by_player:
+                preferred_by_player[key] = pr
+        
+        # Group deduplicated rankings by team
+        for (team_id, player_id), pr in preferred_by_player.items():
+            if team_id not in player_rankings_by_team:
+                player_rankings_by_team[team_id] = []
+            player_rankings_by_team[team_id].append(pr)
+        
+        # Sort by rank and limit to top 10 per team
+        for team_id in player_rankings_by_team:
+            player_rankings_by_team[team_id].sort(key=lambda pr: pr.rank if pr.rank else 9999)
+            player_rankings_by_team[team_id] = player_rankings_by_team[team_id][:10]
+    
+    # Attach rankings to teams
+    for team in teams:
+        team.player_rankings_list = player_rankings_by_team.get(team.id, [])
     
     context['games'] = games
     context['display_date'] = display_date
@@ -273,6 +337,8 @@ def games_list(request, year=None, month=None, day=None):
 def teams_list(request):
     """
     Display a list of all teams that have games, grouped by first letter, alphabetically sorted.
+    
+    NOTE: This view is PUBLIC and should NOT be paywalled.
     """
     context = {}
     # Only show teams that have at least one game (home or away)
@@ -299,10 +365,18 @@ def teams_list(request):
 def team_detail(request, slug):
     """
     Display team detail page with upcoming games for this team.
+    
+    NOTE: This view is PUBLIC and should NOT be paywalled. Team pages and player
+    rankings shown on team detail pages are free content.
     """
     context = {}
     team = get_object_or_404(models.Team, slug=slug, active=True)
     context['team'] = team
+    
+    # Ensure team has slug (for teams created before slug field was added)
+    if not team.slug:
+        team.save()  # Auto-generates slug
+        team.refresh_from_db()
     
     # Get upcoming games for this team (home or away)
     from django.utils import timezone
@@ -316,6 +390,46 @@ def team_detail(request, slug):
     ).select_related('home_team', 'away_team').order_by('start_datetime')[:20]  # Next 20 games
     
     context['upcoming_games'] = upcoming_games
+    
+    # Get player rankings for this team (from current, published rankings)
+    # Deduplicate by player - prefer Overall rankings, then most recent
+    rankings_qs = models.PlayerRanking.objects.filter(
+        school_team=team,
+        ranking__publish=True,
+        ranking__current=True,
+        ranking__is_mock_draft=False,
+        active=True,
+        player__isnull=False  # Ensure player exists
+    ).select_related('player', 'ranking', 'school_team').annotate(
+        # Create priority: Overall = 0, others = 1 (so Overall comes first)
+        ranking_priority=Case(
+            When(ranking__draft_level='Overall', then=Value(0)),
+            default=Value(1),
+            output_field=IntegerField(),
+        )
+    ).order_by(
+        'player_id',
+        'ranking_priority',  # Overall rankings first
+        '-ranking__created'  # Then most recent ranking
+    )
+    
+    # Track preferred ranking per player
+    # Prefers Overall rankings, then falls back to most recent
+    preferred_by_player = {}
+    
+    for pr in rankings_qs:
+        if not pr.player_id:
+            continue
+        
+        # Only keep the first ranking for each player
+        # Due to ordering, this will be Overall if available, otherwise most recent
+        if pr.player_id not in preferred_by_player:
+            preferred_by_player[pr.player_id] = pr
+    
+    # Get deduplicated rankings, sort by rank, and limit to top 50
+    player_rankings_list = list(preferred_by_player.values())
+    player_rankings_list.sort(key=lambda pr: pr.rank if pr.rank else 9999)
+    team.player_rankings_list = player_rankings_list[:50]  # Top 50 players
     
     return render(request, "team_detail.html", context)
 
