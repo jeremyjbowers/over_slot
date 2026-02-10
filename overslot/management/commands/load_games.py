@@ -44,7 +44,7 @@ class Command(BaseCommand):
 
         # Get season opening day from settings
         try:
-            season_opening_day = parser.parse(getattr(settings, 'SEASON_OPENING_DAY', '2026-02-12')).date()
+            season_opening_day = parser.parse(getattr(settings, 'SEASON_OPENING_DAY', '2026-02-13')).date()
         except (ValueError, TypeError) as e:
             self.stdout.write(self.style.ERROR(f"Invalid SEASON_OPENING_DAY setting: {str(e)}"))
             return

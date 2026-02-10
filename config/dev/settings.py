@@ -238,7 +238,7 @@ SUBSCRIPTION_PRICE_ANNUAL = 79.99  # Annual price in USD
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 
 # Season opening day - games will not be loaded before this date
-SEASON_OPENING_DAY = '2026-02-12'
+SEASON_OPENING_DAY = '2026-02-13'
 
 # HTTPS and proxy settings for development
 USE_TLS = env('USE_TLS', default=True)

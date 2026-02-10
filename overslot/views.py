@@ -203,9 +203,9 @@ def games_list(request, year=None, month=None, day=None):
     
     # Get season opening day from settings
     try:
-        season_opening_day = parser.parse(getattr(settings, 'SEASON_OPENING_DAY', '2026-02-12')).date()
+        season_opening_day = parser.parse(getattr(settings, 'SEASON_OPENING_DAY', '2026-02-13')).date()
     except (ValueError, TypeError):
-        season_opening_day = datetime.date(2026, 2, 12)  # Fallback
+        season_opening_day = datetime.date(2026, 2, 13)  # Fallback
     
     today = now().date()
     
