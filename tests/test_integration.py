@@ -117,6 +117,31 @@ class AuthenticationIntegrationTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         mock_send_email.assert_not_called()
 
+    @patch('overslot.auth.MailgunEmailer.send_email')
+    def test_signup_with_prohibited_domain_in_name_fails(self, mock_send_email):
+        """Signup fails when first or last name contains prohibited domains (e.g., .ru, .su, .cn)."""
+        self.client.get(reverse('account_signup'))
+        response = self.client.post(reverse('magic_link_signup'), {
+            'email': 'valid@example.com',
+            'first_name': 'spam.ru',
+            'last_name': 'User'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('account_signup'), response.url)
+        mock_send_email.assert_not_called()
+        self.assertFalse(User.objects.filter(email='valid@example.com').exists())
+
+        self.client.get(reverse('account_signup'))
+        response = self.client.post(reverse('magic_link_signup'), {
+            'email': 'valid2@example.com',
+            'first_name': 'John',
+            'last_name': 'mailinator.com'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('account_signup'), response.url)
+        mock_send_email.assert_not_called()
+        self.assertFalse(User.objects.filter(email='valid2@example.com').exists())
+
 
 class ContentDiscoveryIntegrationTestCase(TestCase):
     """Integration tests for content discovery and navigation"""

@@ -83,6 +83,27 @@ def _name_contains_disallowed_substring(first_name: str | None, last_name: str |
             return True
     return False
 
+
+def _name_contains_prohibited_domain(first_name: str | None, last_name: str | None) -> bool:
+    """
+    Return True if either name contains prohibited TLDs (e.g., .ru, .su, .cn)
+    or blocked email domains. Used to reject signups with domain-like content in names.
+    """
+    fn = (first_name or '').lower()
+    ln = (last_name or '').lower()
+    combined = f"{fn} {ln}"
+
+    blocked_tlds = getattr(settings, 'BLOCKED_EMAIL_TLDS', [])
+    for tld in blocked_tlds:
+        if tld and f".{tld.lower()}" in combined:
+            return True
+
+    blocked_domains = getattr(settings, 'BLOCKED_EMAIL_DOMAINS', [])
+    for domain in blocked_domains:
+        if domain and domain.lower() in combined:
+            return True
+    return False
+
 def validate_email_with_mailgun(email: str) -> bool:
     """
     Optionally validate email using Mailgun's Email Validation API (v4).
@@ -154,6 +175,11 @@ def send_magic_link(request, email, is_signup=False, first_name=None, last_name=
             # Do not create a user or send an email, but report success to avoid leaking signals to bots
             messages.success(request, "We've sent you a magic link! Check your email to continue.")
             return redirect('account_login')
+
+        # Reject if first or last name contains prohibited domains (e.g., .ru, .su, .cn)
+        if _name_contains_prohibited_domain(first_name, last_name):
+            messages.error(request, "Please use a valid first and last name.")
+            return redirect('account_signup')
 
     # Optional deliverability check with Mailgun (reduces bounces)
     if not validate_email_with_mailgun(email_normalized):
