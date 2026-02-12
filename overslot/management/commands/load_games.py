@@ -100,6 +100,18 @@ class Command(BaseCommand):
         if now.tzinfo is None:
             now = est.localize(now.replace(tzinfo=None))
 
+        # Deactivate all future ESPN games; they will be reactivated if found in the API feed.
+        # Games no longer in the feed (canceled or moved) will remain inactive.
+        # Exclude FloBaseball games (espn_id starts with 'flo_') - those are managed by load_flocollege_games.
+        if not options.get('clear'):
+            deactivated = models.Game.objects.filter(
+                start_datetime__gt=now
+            ).exclude(
+                espn_id__startswith='flo_'
+            ).update(active=False)
+            if deactivated > 0:
+                self.stdout.write(self.style.WARNING(f'Deactivated {deactivated} future ESPN game(s) (will reactivate if found in feed).'))
+
         self.stdout.write(f"Loading games from {start_date} to {end_date} (4 weeks)...")
 
         # Track totals across all days
