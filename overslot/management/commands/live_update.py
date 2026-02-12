@@ -24,6 +24,7 @@ class Command(BaseCommand):
         interval_seconds = 4 * 60 * 60  # 4 hours
         if (current_time % interval_seconds) < 300:
             call_command('load_games')
+            call_command('load_coaches_poll')
             call_command('load_643_stats')
         else:
             self.stdout.write("Skipping 643 stats and games update (not in update window - runs every 4 hours)")
