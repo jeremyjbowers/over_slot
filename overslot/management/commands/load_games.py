@@ -402,38 +402,24 @@ class Command(BaseCommand):
                 # End datetime is optional, so we'll just skip it if invalid
                 pass
 
-        # Extract teams and rankings
+        # Extract teams (rankings come from load_coaches_poll - USA Today poll, not ESPN)
         game_name = game_data.get('name', '')
         team_data = self.extract_teams_from_name(game_name)
         
         home_team = None
         away_team = None
-        home_team_ranking = None
+        home_team_ranking = None  # Use team.current_ranking from load_coaches_poll
         away_team_ranking = None
         
         if len(team_data) >= 2:
             # First team is away, second is home (typical "Away vs. Home" format)
-            away_team_name, away_team_ranking = team_data[0]
-            home_team_name, home_team_ranking = team_data[1]
+            away_team_name, _ = team_data[0]
+            home_team_name, _ = team_data[1]
             away_team = self.get_or_create_team(away_team_name)
             home_team = self.get_or_create_team(home_team_name)
-            
-            # Update team rankings if present
-            if away_team_ranking is not None and away_team:
-                away_team.current_ranking = away_team_ranking
-                away_team.save(update_fields=['current_ranking'])
-            if home_team_ranking is not None and home_team:
-                home_team.current_ranking = home_team_ranking
-                home_team.save(update_fields=['current_ranking'])
         elif len(team_data) == 1:
-            # Only one team found, set as away team
-            away_team_name, away_team_ranking = team_data[0]
+            away_team_name, _ = team_data[0]
             away_team = self.get_or_create_team(away_team_name)
-            
-            # Update team ranking if present
-            if away_team_ranking is not None and away_team:
-                away_team.current_ranking = away_team_ranking
-                away_team.save(update_fields=['current_ranking'])
 
         # Extract video URL from API response
         # Prefer source.url (actual video stream URL) over constructed ESPN+ URL

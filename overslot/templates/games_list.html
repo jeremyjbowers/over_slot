@@ -438,7 +438,9 @@
                 <div class="game-teams">
                     {% if game.away_team %}
                     <div class="game-team away">
-                        {% if game.away_team_ranking %}
+                        {% if game.away_team.current_ranking %}
+                        <span class="team-ranking">#{{ game.away_team.current_ranking }}</span>
+                        {% elif game.away_team_ranking %}
                         <span class="team-ranking">#{{ game.away_team_ranking }}</span>
                         {% endif %}
                         {% if game.away_team.slug %}
@@ -453,7 +455,9 @@
                     
                     {% if game.home_team %}
                     <div class="game-team home">
-                        {% if game.home_team_ranking %}
+                        {% if game.home_team.current_ranking %}
+                        <span class="team-ranking">#{{ game.home_team.current_ranking }}</span>
+                        {% elif game.home_team_ranking %}
                         <span class="team-ranking">#{{ game.home_team_ranking }}</span>
                         {% endif %}
                         {% if game.home_team.slug %}
@@ -563,7 +567,12 @@
                 {
                     "@type": "SportsTeam",
                     "name": "{{ game.away_team.name|escapejs }}"
-                    {% if game.away_team_ranking %},
+                    {% if game.away_team.current_ranking %},
+                    "ranking": {
+                        "@type": "SportsTeamRanking",
+                        "rank": {{ game.away_team.current_ranking }}
+                    }
+                    {% elif game.away_team_ranking %},
                     "ranking": {
                         "@type": "SportsTeamRanking",
                         "rank": {{ game.away_team_ranking }}
@@ -573,7 +582,12 @@
                 {
                     "@type": "SportsTeam",
                     "name": "{{ game.home_team.name|escapejs }}"
-                    {% if game.home_team_ranking %},
+                    {% if game.home_team.current_ranking %},
+                    "ranking": {
+                        "@type": "SportsTeamRanking",
+                        "rank": {{ game.home_team.current_ranking }}
+                    }
+                    {% elif game.home_team_ranking %},
                     "ranking": {
                         "@type": "SportsTeamRanking",
                         "rank": {{ game.home_team_ranking }}

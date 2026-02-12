@@ -753,7 +753,8 @@ class FeatureFlagAdmin(admin.ModelAdmin):
 @admin.register(Team, site=admin_site)
 class TeamAdmin(admin.ModelAdmin):
     model = Team
-    list_display = ["name", "abbreviation", "active"]
+    list_display = ["name", "abbreviation", "current_ranking", "active"]
+    list_editable = ["current_ranking", "active"]
     search_fields = ["name", "abbreviation"]
     list_filter = ["active"]
 

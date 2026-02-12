@@ -854,11 +854,11 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
                                         <div class="lead-title">
                                             <a class="hero-title-link" href="{{ game.streaming_url }}" target="_blank" rel="noopener noreferrer">
                                                 {% if game.away_team %}
-                                                    {% if game.away_team_ranking %}#{{ game.away_team_ranking }} {% endif %}{{ game.away_team.name }}
+                                                    {% if game.away_team.current_ranking %}#{{ game.away_team.current_ranking }} {% elif game.away_team_ranking %}#{{ game.away_team_ranking }} {% endif %}{{ game.away_team.name }}
                                                 {% endif %}
                                                 {% if game.away_team and game.home_team %} vs {% endif %}
                                                 {% if game.home_team %}
-                                                    {% if game.home_team_ranking %}#{{ game.home_team_ranking }} {% endif %}{{ game.home_team.name }}
+                                                    {% if game.home_team.current_ranking %}#{{ game.home_team.current_ranking }} {% elif game.home_team_ranking %}#{{ game.home_team_ranking }} {% endif %}{{ game.home_team.name }}
                                                 {% endif %}
                                                 {% if not game.away_team and not game.home_team %}{{ game.name }}{% endif %}
                                             </a>
@@ -934,11 +934,11 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
                     <div class="featured-game-content">
                         <div class="featured-game-title">
                             {% if game.away_team %}
-                                {% if game.away_team_ranking %}#{{ game.away_team_ranking }} {% endif %}{{ game.away_team.name }}
+                                {% if game.away_team.current_ranking %}#{{ game.away_team.current_ranking }} {% elif game.away_team_ranking %}#{{ game.away_team_ranking }} {% endif %}{{ game.away_team.name }}
                             {% endif %}
                             {% if game.away_team and game.home_team %} vs {% endif %}
                             {% if game.home_team %}
-                                {% if game.home_team_ranking %}#{{ game.home_team_ranking }} {% endif %}{{ game.home_team.name }}
+                                {% if game.home_team.current_ranking %}#{{ game.home_team.current_ranking }} {% elif game.home_team_ranking %}#{{ game.home_team_ranking }} {% endif %}{{ game.home_team.name }}
                             {% endif %}
                         </div>
                         <div class="featured-game-meta">

@@ -397,28 +397,36 @@
                     <div class="game-teams">
                         {% if game.away_team == team %}
                             <div class="game-team">
-                                {% if game.away_team_ranking %}
+                                {% if game.away_team.current_ranking %}
+                                <span class="team-ranking">#{{ game.away_team.current_ranking }}</span>
+                                {% elif game.away_team_ranking %}
                                 <span class="team-ranking">#{{ game.away_team_ranking }}</span>
                                 {% endif %}
                                 <span class="team-name">{{ team.name }}</span>
                             </div>
                             <span class="game-vs">@</span>
                             <div class="game-team opponent">
-                                {% if game.home_team_ranking %}
+                                {% if game.home_team.current_ranking %}
+                                <span class="team-ranking">#{{ game.home_team.current_ranking }}</span>
+                                {% elif game.home_team_ranking %}
                                 <span class="team-ranking">#{{ game.home_team_ranking }}</span>
                                 {% endif %}
                                 <a href="/teams/{{ game.home_team.slug }}/" class="team-name">{{ game.home_team.name }}</a>
                             </div>
                         {% else %}
                             <div class="game-team opponent">
-                                {% if game.away_team_ranking %}
+                                {% if game.away_team.current_ranking %}
+                                <span class="team-ranking">#{{ game.away_team.current_ranking }}</span>
+                                {% elif game.away_team_ranking %}
                                 <span class="team-ranking">#{{ game.away_team_ranking }}</span>
                                 {% endif %}
                                 <a href="/teams/{{ game.away_team.slug }}/" class="team-name">{{ game.away_team.name }}</a>
                             </div>
                             <span class="game-vs">vs</span>
                             <div class="game-team">
-                                {% if game.home_team_ranking %}
+                                {% if game.home_team.current_ranking %}
+                                <span class="team-ranking">#{{ game.home_team.current_ranking }}</span>
+                                {% elif game.home_team_ranking %}
                                 <span class="team-ranking">#{{ game.home_team_ranking }}</span>
                                 {% endif %}
                                 <span class="team-name">{{ team.name }}</span>

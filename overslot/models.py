@@ -1101,7 +1101,7 @@ class Team(BaseModel):
     name = models.CharField(max_length=255, unique=True, help_text="Full team name")
     abbreviation = models.CharField(max_length=50, blank=True, null=True, help_text="Team abbreviation")
     logo_url = models.TextField(blank=True, null=True, help_text="URL to team logo image")
-    current_ranking = models.IntegerField(null=True, blank=True, help_text="Current team ranking from ESPN (e.g., 15 for '#15 UCLA'). Updated when games are loaded.")
+    current_ranking = models.IntegerField(null=True, blank=True, help_text="Current team ranking from USA Today Coaches Poll (Top 25). Set via load_coaches_poll management command.")
     slug = models.SlugField(max_length=255, blank=True, null=True, help_text="URL-friendly identifier")
     regenerate_slug = models.BooleanField(default=False)
     
