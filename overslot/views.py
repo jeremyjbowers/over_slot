@@ -5,7 +5,8 @@ import itertools
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, get_object_or_404, redirect
-from django.db.models import Count, Avg, Sum, Max, Min, Q, Case, When, Value, IntegerField
+from django.db.models import Count, Avg, Sum, Max, Min, Q, Case, When, Value, IntegerField, F
+from django.db.models.functions import Coalesce, Least
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import JsonResponse
 from django.conf import settings
@@ -275,11 +276,26 @@ def games_list(request, year=None, month=None, day=None):
     if timezone.is_naive(end_of_day):
         end_of_day = timezone.make_aware(end_of_day)
     
+    # For games at same time: highest-ranked team first (lowest rank number). Unranked games last.
+    home_rank = Coalesce(
+        F('home_team__current_ranking'),
+        F('home_team_ranking'),
+        Value(9999),
+        output_field=IntegerField(),
+    )
+    away_rank = Coalesce(
+        F('away_team__current_ranking'),
+        F('away_team_ranking'),
+        Value(9999),
+        output_field=IntegerField(),
+    )
     games = models.Game.objects.filter(
         active=True,
         start_datetime__gte=start_of_day,
         start_datetime__lte=end_of_day
-    ).select_related('home_team', 'away_team').order_by('start_datetime')
+    ).select_related('home_team', 'away_team').annotate(
+        best_rank=Least(home_rank, away_rank),
+    ).order_by('start_datetime', 'best_rank')
     
     # Collect all unique teams
     teams = set()
@@ -342,9 +358,19 @@ def games_list(request, year=None, month=None, day=None):
                 player_rankings_by_team[team_id] = []
             player_rankings_by_team[team_id].append(pr)
         
-        # Sort by rank and limit to top 10 per team
+        # Sort by year ascending, Overall before College, then rank ascending. Limit to top 10 per team.
+        def _draft_level_priority(dl):
+            if dl == 'Overall':
+                return 0
+            if dl == 'College':
+                return 1
+            return 2  # High School or other
         for team_id in player_rankings_by_team:
-            player_rankings_by_team[team_id].sort(key=lambda pr: pr.rank if pr.rank else 9999)
+            player_rankings_by_team[team_id].sort(key=lambda pr: (
+                pr.ranking.year if (pr.ranking and pr.ranking.year) else '9999',
+                _draft_level_priority(pr.ranking.draft_level if pr.ranking else None),
+                pr.rank if pr.rank else 9999,
+            ))
             player_rankings_by_team[team_id] = player_rankings_by_team[team_id][:10]
     
     # Attach rankings to teams
