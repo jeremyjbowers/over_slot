@@ -300,9 +300,14 @@
     max-width: 70ch;
 }
 
+.article-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    height: fit-content;
+}
+
 .featured-players {
-    position: sticky;
-    top: 2rem;
     background: var(--dark-surface);
     border: 1px solid var(--dark-border);
     overflow: hidden;
@@ -390,8 +395,7 @@
         max-width: none;
     }
 
-    .featured-players {
-        position: static;
+    .article-sidebar {
         margin-top: 2rem;
     }
 }
@@ -604,55 +608,59 @@
         {% endif %}
     </div>
 
-    {% if article.active_players|length > 0 %}
-    <div class="featured-players">
-        <div class="featured-players-header">
-            <h2 class="title">Players Mentioned</h2>
+    {% if article.active_players|length > 0 or article.active_teams|length > 0 %}
+    <div class="article-sidebar">
+        {% if article.active_players|length > 0 %}
+        <div class="featured-players">
+            <div class="featured-players-header">
+                <h2 class="title">Players Mentioned</h2>
+            </div>
+            <div class="featured-players-list">
+                {% for player in article.active_players %}
+                <a href="/players/{{ player.slug }}/" class="player-card">
+                    <img src="{{ player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
+                         alt="{{ player.name }}" 
+                         class="player-photo">
+                    <div class="player-info">
+                        <div class="player-name">{{ player.name }}</div>
+                        <div class="player-position">{{ player.position }}</div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
         </div>
-        <div class="featured-players-list">
-            {% for player in article.active_players %}
-            <a href="/players/{{ player.slug }}/" class="player-card">
-                <img src="{{ player.photo_url|default:'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIGZpbGw9IiMyQTJBMkEiLz48cGF0aCBkPSJNNjQgNzJjMTEuMDQ2IDAgMjAtOC45NTQgMjAtMjBzLTguOTU0LTIwLTIwLTIwLTIwIDguOTU0LTIwIDIwIDguOTU0IDIwIDIwIDIwek00Mi42NjcgODBDMzcuMzMzIDgwIDMyIDg1LjMzMyAzMiA5MC42NjdjMCA1LjMzMyA0LjY2NyAxMC42NjYgMTAuNjY3IDEwLjY2Nmg0Mi42NjZDOTAuNjY3IDEwMS4zMzMgOTYgOTYgOTYgOTAuNjY3IDk2IDg1LjMzMyA5MC42NjcgODAgODUuMzMzIDgwSDQyLjY2N3oiIGZpbGw9IiM0QTRBNEEiLz48L3N2Zz4=' }}"
-                     alt="{{ player.name }}" 
-                     class="player-photo">
-                <div class="player-info">
-                    <div class="player-name">{{ player.name }}</div>
-                    <div class="player-position">{{ player.position }}</div>
-                </div>
-            </a>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
+        {% endif %}
 
-    {% if article.active_teams|length > 0 %}
-    <div class="featured-players">
-        <div class="featured-players-header">
-            <h2 class="title">Teams Mentioned</h2>
-        </div>
-        <div class="featured-players-list">
-            {% for team in article.active_teams %}
-            <a href="/teams/{{ team.slug }}/" class="player-card">
-                {% if team.logo_url %}
-                <img src="{{ team.logo_url }}" 
-                     alt="{{ team.name }}" 
-                     class="player-photo">
-                {% else %}
-                <div class="player-photo" style="background: var(--dark-surface-hover); display: flex; align-items: center; justify-content: center; color: var(--dark-text-muted); font-weight: 600; font-size: 0.75rem;">
-                    {% if team.abbreviation %}{{ team.abbreviation }}{% else %}{{ team.name|slice:":2"|upper }}{% endif %}
-                </div>
-                {% endif %}
-                <div class="player-info">
-                    <div class="player-name">{{ team.name }}</div>
-                    {% if team.current_ranking %}
-                    <div class="player-position">#{{ team.current_ranking }}</div>
-                    {% elif team.abbreviation %}
-                    <div class="player-position">{{ team.abbreviation }}</div>
+        {% if article.active_teams|length > 0 %}
+        <div class="featured-players">
+            <div class="featured-players-header">
+                <h2 class="title">Teams Mentioned</h2>
+            </div>
+            <div class="featured-players-list">
+                {% for team in article.active_teams %}
+                <a href="/teams/{{ team.slug }}/" class="player-card">
+                    {% if team.logo_url %}
+                    <img src="{{ team.logo_url }}" 
+                         alt="{{ team.name }}" 
+                         class="player-photo">
+                    {% else %}
+                    <div class="player-photo" style="background: var(--dark-surface-hover); display: flex; align-items: center; justify-content: center; color: var(--dark-text-muted); font-weight: 600; font-size: 0.75rem;">
+                        {% if team.abbreviation %}{{ team.abbreviation }}{% else %}{{ team.name|slice:":2"|upper }}{% endif %}
+                    </div>
                     {% endif %}
-                </div>
-            </a>
-            {% endfor %}
+                    <div class="player-info">
+                        <div class="player-name">{{ team.name }}</div>
+                        {% if team.current_ranking %}
+                        <div class="player-position">#{{ team.current_ranking }}</div>
+                        {% elif team.abbreviation %}
+                        <div class="player-position">{{ team.abbreviation }}</div>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
         </div>
+        {% endif %}
     </div>
     {% endif %}
 </div>
