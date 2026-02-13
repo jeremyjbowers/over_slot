@@ -33,7 +33,7 @@ def settings_context(request):
     # Check if there are games today (or if we're past opening day)
     has_live_games = False
     try:
-        season_opening_day = parser.parse(getattr(settings, 'SEASON_OPENING_DAY', '2026-02-13')).date()
+        season_opening_day = parser.parse(getattr(settings, 'SEASON_OPENING_DAY', '2025-02-13')).date()
         today = timezone.now().date()
         display_date = max(today, season_opening_day)
         

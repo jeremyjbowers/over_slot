@@ -117,7 +117,7 @@ class GamesSitemap(BaseForcedDomainSitemap):
         """
         # Get season opening day
         try:
-            season_opening_day = parser.parse(getattr(settings, 'SEASON_OPENING_DAY', '2026-02-13')).date()
+            season_opening_day = parser.parse(getattr(settings, 'SEASON_OPENING_DAY', '2025-02-13')).date()
         except (ValueError, TypeError):
             season_opening_day = date(2026, 2, 13)
         
