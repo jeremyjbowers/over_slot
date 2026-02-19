@@ -851,6 +851,67 @@ class Article(BaseModel):
         return self.headline
 
 
+class StockWatchArticle(BaseModel):
+    """
+    Stock watch article: tracks players whose stock is up or down.
+    """
+    headline = models.CharField(max_length=255)
+    deck = models.CharField(max_length=500, blank=True, null=True, help_text="Subhead or summary")
+    body = models.TextField(null=True, blank=True)
+    date = models.DateField(help_text="Publication date")
+    author = models.ForeignKey(Author, on_delete=models.SET_NULL, null=True, blank=True, related_name="stock_watch_articles")
+
+    # Lead art and publishing
+    featured_image = models.ImageField(upload_to='stock_watch/featured/', blank=True, null=True, help_text="Featured image for the article")
+    publish = models.BooleanField(default=False, help_text="Controls visibility on site")
+    is_carousel = models.BooleanField(default=False, help_text="Display in homepage carousel")
+
+    # URL
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False)
+    slug = models.SlugField(max_length=255, blank=True, null=True)
+    regenerate_slug = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-date", "-created"]
+        verbose_name = "Stock Watch Article"
+        verbose_name_plural = "Stock Watch Articles"
+
+    def save(self, *args, **kwargs):
+        if self.regenerate_slug or not self.slug:
+            self.slug = slugify(f"{self.headline}-{self.uuid}")
+            self.regenerate_slug = False
+        super().save(*args, **kwargs)
+
+    def __unicode__(self):
+        return self.headline
+
+
+class StockWatchPlayer(BaseModel):
+    """
+    Links a player to a stock watch article with up/down direction and analysis.
+    """
+    DIRECTION_CHOICES = (
+        ("up", "Stock Up"),
+        ("down", "Stock Down"),
+        ("holding", "Stock Holding"),
+    )
+
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="stock_watch_entries")
+    stock_watch_article = models.ForeignKey(
+        StockWatchArticle, on_delete=models.CASCADE, related_name="stock_watch_players"
+    )
+    direction = models.CharField(max_length=10, choices=DIRECTION_CHOICES, help_text="Stock up, down, or holding")
+    body = models.TextField(blank=True, null=True, help_text="Analysis for this player's stock movement")
+
+    class Meta:
+        ordering = ["stock_watch_article", "-direction", "player__name"]
+        verbose_name = "Stock Watch Player"
+        verbose_name_plural = "Stock Watch Players"
+
+    def __unicode__(self):
+        return f"{self.player.name} ({self.get_direction_display()}) in {self.stock_watch_article.headline}"
+
+
 class PodcastEpisode(BaseModel):
     """
     Podcast episodes imported from Patreon RSS feed.

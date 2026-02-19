@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+{% load overslot_tags %}
+
+{% block title %}{{ article.headline }} - Over Slot{% endblock %}
+
+{% block meta_description %}{% if article.deck %}{{ article.deck }}{% else %}{{ article.headline }} - Baseball prospect stock watch analysis.{% endif %}{% endblock %}
+
+{% block og_title %}{{ article.headline }}{% endblock %}
+
+{% block og_description %}{% if article.deck %}{{ article.deck }}{% else %}{{ article.headline }} - Baseball prospect stock watch analysis.{% endif %}{% endblock %}
+
+{% block twitter_title %}{{ article.headline }}{% endblock %}
+
+{% block twitter_description %}{% if article.deck %}{{ article.deck }}{% else %}{{ article.headline }} - Baseball prospect stock watch analysis.{% endif %}{% endblock %}
+
+{% block og_type %}article{% endblock %}
+
+{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}
+
+{% block og_image %}{% if article.featured_image %}{{ article.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+
+{% block twitter_card %}summary_large_image{% endblock %}
+
+{% block twitter_image %}{% if article.featured_image %}{{ article.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+.hero {
+    background: linear-gradient(
+        rgba(var(--theme-primary-rgb), 0.1),
+        var(--dark-bg)
+    );
+    padding: 4rem 0;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--dark-border);
+    position: relative;
+}
+
+.hero-with-image {
+    background-size: cover;
+    background-position: top left;
+    background-repeat: no-repeat;
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+}
+
+.hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        rgba(0, 0, 0, 0.6),
+        rgba(0, 0, 0, 0.4)
+    );
+    z-index: 1;
+}
+
+.hero-with-image .container {
+    position: relative;
+    z-index: 2;
+}
+
+.hero .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.hero-title {
+    font-family: var(--font-sans);
+    font-size: var(--text-5xl);
+    font-weight: 800;
+    line-height: var(--leading-tight);
+    color: var(--dark-text);
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+    max-width: 700px;
+}
+
+.hero-subhead {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    line-height: var(--leading-snug);
+    color: var(--dark-text-secondary);
+    margin-bottom: 1rem;
+    font-weight: 400;
+    max-width: 700px;
+}
+
+.article-meta {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    color: var(--dark-text-muted);
+    border-left: 3px solid var(--theme-primary);
+    padding-left: 1rem;
+    margin: 2rem 0;
+}
+
+.article-meta .authors {
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--dark-text);
+    margin-bottom: 0.75rem;
+}
+
+.article-meta .date-info {
+    font-size: var(--text-xs);
+    color: var(--dark-text-muted);
+    border-top: 1px solid var(--dark-border);
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+}
+
+.article-body {
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    line-height: var(--leading-relaxed);
+    color: var(--dark-text-secondary);
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+.article-body p {
+    margin-bottom: 1.5em;
+}
+
+.stock-watch-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 1.5rem 3rem;
+}
+
+.stock-watch-players-header {
+    font-family: var(--font-sans);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--dark-text);
+    margin: 2rem 0 1rem;
+    letter-spacing: -0.02em;
+}
+
+.stock-watch-player-card {
+    background: var(--dark-surface);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 1.5rem;
+    position: relative;
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.stock-watch-player-card:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.stock-direction-badge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 60px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+}
+
+.stock-direction-badge.stock-up {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.stock-direction-badge.stock-down {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+}
+
+.stock-direction-badge.stock-holding {
+    background: rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
+}
+
+.stock-watch-player-content {
+    padding: 1.25rem 1.25rem 1.25rem 5rem;
+    min-height: 80px;
+}
+
+.stock-watch-player-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.stock-watch-player-name {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.stock-watch-player-name a {
+    color: white;
+    text-decoration: none;
+}
+
+.stock-watch-player-name a:hover {
+    color: var(--theme-primary);
+}
+
+.stock-watch-player-meta {
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+}
+
+.stock-watch-statline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: var(--dark-text-secondary);
+    margin-bottom: 1rem;
+}
+
+.stock-watch-statline .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.stock-watch-statline .stat-label {
+    font-weight: 600;
+    color: var(--dark-text-muted);
+}
+
+.stock-watch-analysis {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--dark-text-secondary);
+    margin-top: 0.75rem;
+}
+
+.stock-watch-analysis p {
+    margin-bottom: 1rem;
+}
+
+.stock-watch-analysis p:last-child {
+    margin-bottom: 0;
+}
+
+@media screen and (max-width: 768px) {
+    .hero-title {
+        font-size: 2.5rem;
+    }
+
+    .stock-watch-player-content {
+        padding-left: 1.25rem;
+        padding-top: 4rem;
+    }
+
+    .stock-direction-badge {
+        width: 100%;
+        height: 50px;
+        top: 0;
+        left: 0;
+    }
+}
+</style>
+
+<div class="hero{% if article.featured_image %} hero-with-image{% endif %}"{% if article.featured_image %} style="background-image: url('{{ article.featured_image.url }}')"{% endif %}>
+    {% if article.featured_image %}
+    <div class="hero-overlay"></div>
+    {% endif %}
+    <div class="container">
+        <h1 class="hero-title">{{ article.headline }}</h1>
+        {% if article.deck %}
+        <h2 class="hero-subhead">{{ article.deck }}</h2>
+        {% endif %}
+    </div>
+</div>
+
+<div class="stock-watch-container">
+    <div class="article-meta">
+        {% if article.author %}
+        <div class="authors">
+            By {{ article.author.display_name|default:article.author.name }}
+        </div>
+        {% endif %}
+        <div class="date-info">
+            {{ article.date|date:"F j, Y" }}
+        </div>
+    </div>
+
+    {% if article.body %}
+    <div class="article-body">
+        {% if preview_mode %}
+        {{ article.body|safe|truncatewords_html:150 }}
+        {% else %}
+        {{ article.body|safe }}
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if preview_mode %}
+    {% load overslot_tags %}
+    <div class="subscription-banner" style="margin: 2rem 0; position: relative; z-index: 10;">
+        <div class="subscription-overlay" style="position: absolute; top: -4rem; left: 0; right: 0; height: 6rem; background: linear-gradient(transparent, var(--dark-bg)); pointer-events: none;"></div>
+        <div class="subscription-content" style="position: relative; z-index: 2;">
+            <div class="subscription-card" style="background: var(--dark-surface); border: 2px solid var(--theme-primary); padding: 2rem; text-align: center;">
+                <div class="subscription-header" style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 1rem;">
+                    <svg style="width: 2rem; height: 2rem; color: var(--theme-primary);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    <h3 style="font-size: var(--text-2xl); font-weight: 700; color: var(--dark-text); margin: 0;">Continue Reading</h3>
+                </div>
+                <p style="font-size: var(--text-lg); color: var(--dark-text-secondary); margin-bottom: 1.5rem; line-height: var(--leading-relaxed);">Get unlimited access to all stock watch articles, rankings, and player profiles with a subscription.</p>
+                <div style="margin-bottom: 2rem;"><span style="font-size: 3rem; font-weight: 800; color: var(--dark-text);">${{ settings.SUBSCRIPTION_PRICE_MONTHLY|floatformat:2 }}</span><span style="font-size: var(--text-lg); color: var(--dark-text-muted); font-weight: 500;">/month</span></div>
+                <div style="margin-bottom: 1rem;">
+                    {% if user_authenticated %}
+                    <a href="{% url 'subscription_dashboard' %}" style="display: inline-block; background: var(--theme-primary); color: var(--dark-text); padding: 1rem 2rem; font-weight: 600; font-size: var(--text-lg); text-decoration: none;">Subscribe Now</a>
+                    {% else %}
+                    <a href="{% url 'account_login' %}?next={{ request.get_full_path }}" style="display: inline-block; background: var(--theme-primary); color: var(--dark-text); padding: 1rem 2rem; font-weight: 600; font-size: var(--text-lg); text-decoration: none;">Log In to Subscribe</a>
+                    {% endif %}
+                </div>
+                <p style="font-size: var(--text-sm); color: var(--dark-text-muted); margin: 0;">Cancel anytime • No long-term commitment</p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    {% if stock_watch_players %}
+    <h2 class="stock-watch-players-header">Stock Watch</h2>
+
+    {% for swp in stock_watch_players %}
+    <div class="stock-watch-player-card" id="{{ swp.player.slug }}">
+        <div class="stock-direction-badge {% if swp.direction == 'up' %}stock-up{% elif swp.direction == 'down' %}stock-down{% else %}stock-holding{% endif %}">
+            {% if swp.direction == 'up' %}
+            <i class="fas fa-arrow-up" aria-label="Stock Up"></i>
+            {% elif swp.direction == 'down' %}
+            <i class="fas fa-arrow-down" aria-label="Stock Down"></i>
+            {% else %}
+            <i class="fas fa-arrow-right" aria-label="Stock Holding"></i>
+            {% endif %}
+        </div>
+
+        <div class="stock-watch-player-content">
+            <div class="stock-watch-player-header">
+                <h3 class="stock-watch-player-name">
+                    {% if swp.player.position %}{{ swp.player.position }} {% endif %}
+                    <a href="{% url 'players_detail' slug=swp.player.slug %}">{{ swp.player.name }}</a>
+                </h3>
+                <span class="stock-watch-player-meta">
+                    {% if swp.player.school %}{{ swp.player.school }}{% endif %}
+                </span>
+            </div>
+
+            {% if swp.statline %}
+            <div class="stock-watch-statline">
+                {% if swp.statline.type == 'hitting' %}
+                    {% if swp.statline.pa is not None %}
+                    <span class="stat-item"><span class="stat-label">PA</span> {{ swp.statline.pa|floatformat:0 }}</span>
+                    {% endif %}
+                    {% if swp.statline.ba is not None %}
+                    <span class="stat-item"><span class="stat-label">BA</span> {{ swp.statline.ba|format_avg3 }}</span>
+                    {% endif %}
+                    {% if swp.statline.obp is not None %}
+                    <span class="stat-item"><span class="stat-label">OBP</span> {{ swp.statline.obp|format_avg3 }}</span>
+                    {% endif %}
+                    {% if swp.statline.slg is not None %}
+                    <span class="stat-item"><span class="stat-label">SLG</span> {{ swp.statline.slg|format_avg3 }}</span>
+                    {% endif %}
+                    {% if swp.statline.ops is not None %}
+                    <span class="stat-item"><span class="stat-label">OPS</span> {{ swp.statline.ops|format_avg3 }}</span>
+                    {% endif %}
+                    {% if swp.statline.iso is not None %}
+                    <span class="stat-item"><span class="stat-label">ISO</span> {{ swp.statline.iso|format_avg3 }}</span>
+                    {% endif %}
+                {% elif swp.statline.type == 'pitching' %}
+                    {% if swp.statline.ip is not None %}
+                    <span class="stat-item"><span class="stat-label">IP</span> {{ swp.statline.ip|floatformat:1 }}</span>
+                    {% endif %}
+                    {% if swp.statline.whip is not None %}
+                    <span class="stat-item"><span class="stat-label">WHIP</span> {{ swp.statline.whip|floatformat:2 }}</span>
+                    {% endif %}
+                    {% if swp.statline.k_pct is not None %}
+                    <span class="stat-item"><span class="stat-label">K%</span> {{ swp.statline.k_pct|floatformat:1 }}%</span>
+                    {% endif %}
+                    {% if swp.statline.bb_pct is not None %}
+                    <span class="stat-item"><span class="stat-label">BB%</span> {{ swp.statline.bb_pct|floatformat:1 }}%</span>
+                    {% endif %}
+                    {% if swp.statline.ba is not None %}
+                    <span class="stat-item"><span class="stat-label">BA</span> {{ swp.statline.ba|format_avg3 }}</span>
+                    {% endif %}
+                    {% if swp.statline.obp is not None %}
+                    <span class="stat-item"><span class="stat-label">OBP</span> {{ swp.statline.obp|format_avg3 }}</span>
+                    {% endif %}
+                    {% if swp.statline.slg is not None %}
+                    <span class="stat-item"><span class="stat-label">SLG</span> {{ swp.statline.slg|format_avg3 }}</span>
+                    {% endif %}
+                    {% if swp.statline.fip is not None %}
+                    <span class="stat-item"><span class="stat-label">FIP</span> {{ swp.statline.fip|floatformat:2 }}</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if swp.body %}
+            <div class="stock-watch-analysis">
+                {{ swp.body|safe }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

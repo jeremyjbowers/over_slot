@@ -50,6 +50,20 @@ class ArticleSitemap(BaseForcedDomainSitemap):
         return obj.last_modified or obj.created
 
 
+class StockWatchArticleSitemap(BaseForcedDomainSitemap):
+    priority = 0.7
+    changefreq = "weekly"
+
+    def items(self):
+        return models.StockWatchArticle.objects.filter(publish=True, active=True)
+
+    def location(self, obj):
+        return reverse("stock_watch_detail", kwargs={"slug": obj.slug})
+
+    def lastmod(self, obj):
+        return obj.last_modified or obj.created
+
+
 class MockDraftSitemap(BaseForcedDomainSitemap):
     """
     High-priority sitemap for mock drafts - these are important for SEO.

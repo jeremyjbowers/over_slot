@@ -8,7 +8,7 @@ from django.contrib.sitemaps.views import sitemap
 from overslot import views, subscription_views, duplicate_views, account_views, team_duplicate_views
 from overslot.admin import admin_site
 from . import auth
-from .sitemaps import StaticViewSitemap, ArticleSitemap, RankingSitemap, PlayerSitemap, MockDraftSitemap, GamesSitemap
+from .sitemaps import StaticViewSitemap, ArticleSitemap, StockWatchArticleSitemap, RankingSitemap, PlayerSitemap, MockDraftSitemap, GamesSitemap
 
 urlpatterns = [
     # Internal data status (admin only)
@@ -38,6 +38,8 @@ urlpatterns = [
 
     path("articles/", views.articles_list, name="articles_list"),
     path("articles/<slug:slug>/", views.articles_detail, name="articles_detail"),
+
+    path("stock-watch/<slug:slug>/", views.stock_watch_detail, name="stock_watch_detail"),
 
     path("rankings/", views.rankings_list, name="rankings_list"),
     path("rankings/<slug:slug>/", views.rankings_detail, name="rankings_detail"),
@@ -82,6 +84,7 @@ urlpatterns = [
             # Standard priority
             "static": StaticViewSitemap(),
             "articles": ArticleSitemap(),
+            "stock_watch": StockWatchArticleSitemap(),
             "rankings": RankingSitemap(),
             "players": PlayerSitemap(),
         }},

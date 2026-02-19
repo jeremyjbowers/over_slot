@@ -801,10 +801,29 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
 
         <!-- Center: compact carousel with lead art prominent -->
         <div class="carousel-offset">
-            {% if latest_articles or latest_rankings or latest_games %}
+            {% if latest_stock_watch or latest_articles or latest_rankings or latest_games %}
             <div class="hero-carousel">
                 <div class="carousel-container">
                     <div class="carousel-track" id="carouselTrack">
+                        {% for sw in latest_stock_watch %}
+                        <div class="carousel-slide" data-mobile-link="/stock-watch/{{ sw.slug }}/">
+                            <div class="hero-slide">
+                                <div class="lead-visual">
+                                    <div class="ratio">
+                                        {% if sw.featured_image %}
+                                        <img src="{{ sw.featured_image.url }}" alt="">
+                                        {% else %}
+                                        <img src="https://the-over-slot.nyc3.digitaloceanspaces.com/static/site_images/over-slot.gif" alt="">
+                                        {% endif %}
+                                    </div>
+                                    <div class="lead-overlay">
+                                        <div class="lead-title"><a class="hero-title-link" href="/stock-watch/{{ sw.slug }}/">{{ sw.headline }}</a></div>
+                                        {% if sw.deck %}<div class="lead-sub">{{ sw.deck }}</div>{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                         {% for article in latest_articles %}
                         <div class="carousel-slide" data-mobile-link="/articles/{{ article.slug }}/">
                             <div class="hero-slide">
@@ -880,14 +899,17 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
                     <button class="mobile-touch-zone" id="mobileNextBtn"><i class="fas fa-chevron-right"></i></button>
                 </div>
                 <div class="carousel-nav">
-                    {% for article in latest_articles %}
+                    {% for sw in latest_stock_watch %}
                     <button class="carousel-dot{% if forloop.first %} active{% endif %}" data-slide="{{ forloop.counter0 }}"></button>
                     {% endfor %}
+                    {% for article in latest_articles %}
+                    <button class="carousel-dot{% if forloop.first and not latest_stock_watch %} active{% endif %}" data-slide="{{ latest_stock_watch|length|add:forloop.counter0 }}"></button>
+                    {% endfor %}
                     {% for ranking in latest_rankings %}
-                    <button class="carousel-dot{% if forloop.first and not latest_articles %} active{% endif %}" data-slide="{{ latest_articles|length|add:forloop.counter0 }}"></button>
+                    <button class="carousel-dot{% if forloop.first and not latest_stock_watch and not latest_articles %} active{% endif %}" data-slide="{{ latest_stock_watch|length|add:latest_articles|length|add:forloop.counter0 }}"></button>
                     {% endfor %}
                     {% for game in latest_games %}
-                    <button class="carousel-dot{% if forloop.first and not latest_articles and not latest_rankings %} active{% endif %}" data-slide="{{ latest_articles|length|add:latest_rankings|length|add:forloop.counter0 }}"></button>
+                    <button class="carousel-dot{% if forloop.first and not latest_stock_watch and not latest_articles and not latest_rankings %} active{% endif %}" data-slide="{{ latest_stock_watch|length|add:latest_articles|length|add:latest_rankings|length|add:forloop.counter0 }}"></button>
                     {% endfor %}
                 </div>
             </div>

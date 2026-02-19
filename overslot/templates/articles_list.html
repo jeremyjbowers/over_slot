@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block og_image %}{% if articles and articles.0.featured_image %}{{ articles.0.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
-{% block twitter_image %}{% if articles and articles.0.featured_image %}{{ articles.0.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+{% block og_image %}{% if news_items and news_items.0.featured_image %}{{ news_items.0.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
+{% block twitter_image %}{% if news_items and news_items.0.featured_image %}{{ news_items.0.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
 
 {% block content %}
 <style>
@@ -121,19 +121,19 @@
 <div class="main-layout">
     <div class="content-area">
         <div class="article-list">
-            {% for article in articles %}
+            {% for item in news_items %}
     <article class="article-card">
-        {% if article.featured_image %}
-        <a href="/articles/{{ article.slug }}/" class="article-media">
-            <img src="{{ article.featured_image.url }}" alt="{{ article.headline }}">
+        {% if item.featured_image %}
+        <a href="{{ item.url }}" class="article-media">
+            <img src="{{ item.featured_image.url }}" alt="{{ item.headline }}">
         </a>
         {% endif %}
         <div class="article-card-body">
         <div class="article-meta">
-            {% if article.authors.all %}
+            {% if item.item_type == 'article' and item.authors %}
             <span class="icon-text has-text-info">
                 <span class="has-text-weight-medium">
-                    {% for author in article.authors.all %}
+                    {% for author in item.authors %}
                         {{ author.display_name }}
                         {% if author.bluesky or author.twitter %}
                         <span class="social-links">
@@ -157,23 +157,24 @@
                     {% endfor %}
                 </span>
             </span>
+            {% elif item.item_type == 'stock_watch' and item.author %}
+            <span class="icon-text has-text-info">
+                <span class="has-text-weight-medium">{{ item.author.display_name|default:item.author.name }}</span>
+            </span>
             {% endif %}
             <span class="icon-text">
-                <span>{{ article.created|date:"F j, Y" }}</span>
+                <span>{{ item.date|date:"F j, Y" }}</span>
             </span>
         </div>
-        <a href="/articles/{{ article.slug }}/" class="has-text-white">
-            <h2 class="article-headline">{{ article.headline }}</h2>
+        <a href="{{ item.url }}" class="has-text-white">
+            <h2 class="article-headline">{{ item.headline }}</h2>
         </a>
-        {% if article.subhead %}
-        <h3 class="article-subhead">{{ article.subhead }}</h3>
+        {% if item.subhead %}
+        <h3 class="article-subhead">{{ item.subhead }}</h3>
         {% endif %}
-        {% if article.blurb %}
-        <p class="article-blurb">{{ article.blurb }}</p>
-        {% endif %}
-        {% if article.active_players %}
+        {% if item.players %}
         <div class="players-line">
-            {% for player in article.active_players %}
+            {% for player in item.players %}
                 <a href="/players/{{ player.slug }}/">{% if player.position %}<span class="pos">{{ player.position }}</span>{% endif %}{{ player.name }}</a>{% if not forloop.last %}, {% endif %}
             {% endfor %}
         </div>

@@ -23,7 +23,12 @@ from overslot.decorators import subscription_required
 
 def index(request):
     context = {}
-    # Smaller hero: show a few latest carousel items (articles + rankings)
+    # Carousel: stock watch first, then articles, then rankings, then games
+    latest_stock_watch = models.StockWatchArticle.objects.filter(
+        publish=True, active=True, is_carousel=True
+    ).select_related('author').order_by('-date', '-created')[:5]
+    context['latest_stock_watch'] = latest_stock_watch
+
     latest_articles_qs = models.Article.objects.filter(
         publish=True, is_carousel=True
     ).prefetch_related('authors')
@@ -135,15 +140,52 @@ def index(request):
 
 def articles_list(request):
     context = {}
-    # Only show published articles
-    articles = models.Article.objects.filter(publish=True)
-    
-    # Add active players and teams to each article
-    for article in articles:
-        article.active_players = article.players.filter(active=True)
-        article.active_teams = article.teams.filter(active=True)
-    context['articles'] = articles
-    
+    # Build combined list of articles and stock watch articles, sorted by date (newest first)
+    articles_qs = models.Article.objects.filter(publish=True).prefetch_related('authors', 'players')
+    stock_watch_qs = models.StockWatchArticle.objects.filter(publish=True, active=True).select_related('author').prefetch_related('stock_watch_players__player')
+
+    # Build unified items: each has url, headline, subhead, featured_image, author_display, date, players
+    items = []
+    for a in articles_qs:
+        items.append({
+            'item_type': 'article',
+            'url': f'/articles/{a.slug}/',
+            'headline': a.headline,
+            'subhead': a.subhead,
+            'featured_image': a.featured_image,
+            'authors': list(a.authors.all()),
+            'date': a.created,
+            'players': [p for p in a.players.all() if p.active],
+        })
+    for sw in stock_watch_qs:
+        items.append({
+            'item_type': 'stock_watch',
+            'url': f'/stock-watch/{sw.slug}/',
+            'headline': sw.headline,
+            'subhead': sw.deck,
+            'featured_image': sw.featured_image,
+            'author': sw.author,
+            'date': sw.date,
+            'players': [swp.player for swp in sw.stock_watch_players.all() if swp.active],
+        })
+
+    # Sort by date descending (stock watch uses date, articles use created)
+    # Use timestamp for sort key to avoid naive/aware and date/datetime comparison issues
+    def _news_sort_key(item):
+        d = item['date']
+        if d is None:
+            return 0.0
+        if isinstance(d, datetime.date) and not isinstance(d, datetime.datetime):
+            dt = datetime.datetime.combine(d, datetime.time.min)
+        else:
+            dt = d
+        try:
+            return dt.timestamp()
+        except (TypeError, OSError):
+            return 0.0
+    items.sort(key=_news_sort_key, reverse=True)
+    context['news_items'] = items
+
     # Add recent rankings for sidebar - same order as non-archived on homepage:
     # 2026 Overall first, then 2026 College/High School, then 2027, then 2028
     context['recent_rankings'] = models.Ranking.objects.filter(
@@ -174,6 +216,104 @@ def articles_detail(request, slug):
     context['article'].active_teams = context['article'].teams.filter(active=True)
 
     return render(request, "articles_detail.html", context)
+
+
+def _get_player_statline(player):
+    """
+    Get the most recent season stat line for a player.
+    Returns dict with type ('hitting' or 'pitching'), year, level, team_name, and stat-specific fields.
+    Checks: 643 hitting, 643 pitching, PlayerStatSeason (hs_statline).
+    """
+    # Try 643 hitting stats first
+    stat_643_hit = (
+        models.Player643StatSeason.objects.filter(player=player)
+        .exclude(hit_plate_appearances__isnull=True)
+        .exclude(hit_plate_appearances=0)
+        .order_by('-year')
+        .first()
+    )
+    if stat_643_hit and (stat_643_hit.hit_ba is not None or stat_643_hit.hit_obp is not None or stat_643_hit.hit_slg is not None):
+        return {
+            'type': 'hitting',
+            'pa': stat_643_hit.hit_plate_appearances,
+            'ba': stat_643_hit.hit_ba,
+            'obp': stat_643_hit.hit_obp,
+            'slg': stat_643_hit.hit_slg,
+            'ops': stat_643_hit.hit_ops,
+            'iso': stat_643_hit.hit_iso,
+            'year': stat_643_hit.year,
+            'level': None,
+            'team_name': stat_643_hit.team_name,
+        }
+    # Try 643 pitching stats
+    stat_643_pitch = (
+        models.Player643StatSeason.objects.filter(player=player)
+        .exclude(pitch_innings_pitched__isnull=True)
+        .filter(pitch_innings_pitched__gt=0)
+        .order_by('-year')
+        .first()
+    )
+    if stat_643_pitch:
+        return {
+            'type': 'pitching',
+            'ip': stat_643_pitch.pitch_innings_pitched,
+            'whip': stat_643_pitch.pitch_whip,
+            'ba': stat_643_pitch.pitch_ba,
+            'obp': stat_643_pitch.pitch_obp,
+            'slg': stat_643_pitch.pitch_slg,
+            'ops': stat_643_pitch.pitch_ops,
+            'k_pct': stat_643_pitch.pitch_strikeout_rate,
+            'bb_pct': stat_643_pitch.pitch_walk_rate,
+            'fip': stat_643_pitch.pitch_fip,
+            'year': stat_643_pitch.year,
+            'level': None,
+            'team_name': stat_643_pitch.team_name,
+        }
+    # Fall back to PlayerStatSeason (Trackman HS or college hitting)
+    stat_season = (
+        models.PlayerStatSeason.objects.filter(player=player)
+        .order_by('-year')
+        .first()
+    )
+    if stat_season:
+        if stat_season.level == "High School" and any(
+            v is not None for v in [stat_season.hs_pa, stat_season.hs_ba, stat_season.hs_obp]
+        ):
+            return {
+                'type': 'hitting',
+                'pa': stat_season.hs_pa,
+                'ba': stat_season.hs_ba,
+                'obp': stat_season.hs_obp,
+                'slg': stat_season.hs_slg,
+                'ops': stat_season.hs_ops,
+                'iso': stat_season.hs_iso,
+                'year': stat_season.year,
+                'level': stat_season.level,
+                'team_name': stat_season.school,
+            }
+    return None
+
+
+@subscription_required
+def stock_watch_detail(request, slug):
+    context = {}
+    context['article'] = get_object_or_404(
+        models.StockWatchArticle,
+        slug=slug,
+        publish=True,
+        active=True
+    )
+    # Get stock watch players (active only) with player prefetched
+    sw_players = (
+        context['article'].stock_watch_players.filter(active=True)
+        .select_related('player')
+        .order_by('-direction', 'player__name')  # up first, then down; alphabetically within
+    )
+    # Attach statline to each
+    for swp in sw_players:
+        swp.statline = _get_player_statline(swp.player)
+    context['stock_watch_players'] = sw_players
+    return render(request, "stock_watch_detail.html", context)
 
 
 def rankings_list(request):
@@ -788,7 +928,15 @@ def players_detail(request, slug):
 
     # Only show published articles
     context['articles'] = models.Article.objects.filter(players=context['player'], publish=True)
-    
+
+    # Stock watch entries (from published stock watch articles)
+    context['stock_watch_entries'] = models.StockWatchPlayer.objects.filter(
+        player=context['player'],
+        active=True,
+        stock_watch_article__publish=True,
+        stock_watch_article__active=True
+    ).select_related('stock_watch_article', 'stock_watch_article__author').order_by('-stock_watch_article__date')
+
     # Get 643 stats for this player
     stats_643_qs = models.Player643StatSeason.objects.filter(
         player=context['player']

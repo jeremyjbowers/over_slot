@@ -23,6 +23,7 @@ class ContentEditorAdminSite(AdminSite):
         # Define the order we want for content editing
         content_priority_order = [
             ('overslot', 'Articles'),
+            ('overslot', 'Stock watch articles'),
             ('overslot', 'Rankings'), 
             ('overslot', 'Authors'),
             ('overslot', 'Players'),
@@ -47,7 +48,7 @@ class ContentEditorAdminSite(AdminSite):
         for app in app_list:
             if app['app_label'] == 'overslot':
                 # For overslot app, put content models first
-                priority_models = ['Articles', 'Rankings', 'Authors']
+                priority_models = ['Articles', 'Stock watch articles', 'Rankings', 'Authors']
                 support_models = ['Players', 'Player rankings'] 
                 admin_models = ['Subscriptions', 'Player ranking carrying tools', 'Duplicate decisions']
                 
@@ -135,6 +136,8 @@ from overslot.models import (
     Ranking,
     PlayerRanking,
     PlayerRankingCarryingTool,
+    StockWatchArticle,
+    StockWatchPlayer,
     Subscription,
     DuplicateDecision,
     UserEmail,
@@ -290,6 +293,84 @@ class ArticleAdmin(SummernoteModelAdmin):
                     "slug",
                     "regenerate_slug",
                 ),
+            },
+        ),
+    )
+
+
+class StockWatchPlayerInline(admin.StackedInline):
+    model = StockWatchPlayer
+    autocomplete_fields = ["player"]
+    extra = 1
+    min_num = 0
+    fields = ("player", "direction", "body")
+
+
+@admin.register(StockWatchArticle, site=admin_site)
+class StockWatchArticleAdmin(SummernoteModelAdmin):
+    model = StockWatchArticle
+    list_display = ["headline", "date", "author", "publish", "is_carousel", "last_modified"]
+    list_editable = ["publish", "is_carousel"]
+    list_filter = ["date", "author", "publish", "is_carousel"]
+    search_fields = ["headline", "deck", "body"]
+    date_hierarchy = "date"
+    ordering = ("-date", "-created")
+    autocomplete_fields = ["author"]
+    summernote_fields = ("body",)
+    inlines = [StockWatchPlayerInline]
+
+    fieldsets = (
+        (
+            "Core Content",
+            {
+                "classes": ["wide"],
+                "fields": (
+                    "headline",
+                    "deck",
+                    "featured_image",
+                    "date",
+                    "author",
+                    "body",
+                )
+            },
+        ),
+        (
+            "Publishing",
+            {
+                "fields": ("publish", "is_carousel"),
+            },
+        ),
+        (
+            "Advanced",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "slug",
+                    "regenerate_slug",
+                ),
+            },
+        ),
+    )
+
+
+@admin.register(StockWatchPlayer, site=admin_site)
+class StockWatchPlayerAdmin(admin.ModelAdmin):
+    model = StockWatchPlayer
+    list_display = ["player", "stock_watch_article", "direction", "last_modified"]
+    list_filter = ["direction", "stock_watch_article"]
+    search_fields = ["player__name", "body", "stock_watch_article__headline"]
+    autocomplete_fields = ["player", "stock_watch_article"]
+
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "player",
+                    "stock_watch_article",
+                    "direction",
+                    "body",
+                )
             },
         ),
     )

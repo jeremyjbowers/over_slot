@@ -55,6 +55,7 @@ def subscription_required(view_func):
         # we'll map view function names to their templates
         template_mapping = {
             'articles_detail': 'articles_detail.html',
+            'stock_watch_detail': 'stock_watch_detail.html',
             'rankings_detail': 'rankings_detail.html', 
             'players_detail': 'players_detail.html',
             # Hitters data tables (year-specific views only)
@@ -111,6 +112,12 @@ def subscription_required(view_func):
                 context['player'] = player
                 context['rankings'] = PlayerRanking.objects.filter(player=player, ranking__publish=True, active=True)
                 context['articles'] = Article.objects.filter(players=player, publish=True)
+            elif view_name == 'stock_watch_detail':
+                from overslot.models import StockWatchArticle
+                article = get_object_or_404(StockWatchArticle, slug=kwargs.get('slug'), publish=True, active=True)
+                context['article'] = article
+                sw_players = article.stock_watch_players.filter(active=True).select_related('player').order_by('-direction', 'player__name')
+                context['stock_watch_players'] = sw_players
             # For hitters and stats views, the context is already extracted from TemplateResponse above
             # If it's not a TemplateResponse, we'll need to call the view logic
             # But since these views use TemplateResponse(), they should return TemplateResponse
