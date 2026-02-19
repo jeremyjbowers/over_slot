@@ -38,7 +38,7 @@ def subscription_required(view_func):
         view_name = view_func.__name__
         if view_name == 'articles_detail':
             try:
-                article = Article.objects.get(slug=kwargs.get('slug'), publish=True)
+                article = Article.objects.get(slug=kwargs.get('slug'), publish=True, active=True)
                 if article.is_free:
                     # Free articles don't require subscription
                     return view_func(request, *args, **kwargs)
@@ -103,15 +103,15 @@ def subscription_required(view_func):
             # by calling the view logic directly
             context = {}
             if view_name == 'articles_detail':
-                context['article'] = get_object_or_404(Article, slug=kwargs.get('slug'), publish=True)
+                context['article'] = get_object_or_404(Article, slug=kwargs.get('slug'), publish=True, active=True)
             elif view_name == 'rankings_detail':
                 context['ranking'] = get_object_or_404(Ranking, slug=kwargs.get('slug'), publish=True)
-                context['recent_articles'] = Article.objects.filter(publish=True).order_by('-created')[:5]
+                context['recent_articles'] = Article.objects.filter(publish=True, active=True).order_by('-created')[:5]
             elif view_name == 'players_detail':
                 player = get_object_or_404(Player, slug=kwargs.get('slug'))
                 context['player'] = player
                 context['rankings'] = PlayerRanking.objects.filter(player=player, ranking__publish=True, active=True)
-                context['articles'] = Article.objects.filter(players=player, publish=True)
+                context['articles'] = Article.objects.filter(players=player, publish=True, active=True)
             elif view_name == 'stock_watch_detail':
                 from overslot.models import StockWatchArticle
                 article = get_object_or_404(StockWatchArticle, slug=kwargs.get('slug'), publish=True, active=True)

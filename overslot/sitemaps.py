@@ -41,7 +41,7 @@ class ArticleSitemap(BaseForcedDomainSitemap):
     changefreq = "daily"
 
     def items(self):
-        return models.Article.objects.filter(publish=True)
+        return models.Article.objects.filter(publish=True, active=True)
 
     def location(self, obj):
         return reverse("articles_detail", kwargs={"slug": obj.slug})

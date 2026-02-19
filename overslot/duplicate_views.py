@@ -114,11 +114,11 @@ def review_duplicate_pair(request, player1_uuid, player2_uuid):
     ).select_related('ranking').order_by('-ranking__year', 'rank')
     
     context['player1_articles'] = Article.objects.filter(
-        players=context['player1'], publish=True
+        players=context['player1'], publish=True, active=True
     ).order_by('-created')[:5]
     
     context['player2_articles'] = Article.objects.filter(
-        players=context['player2'], publish=True
+        players=context['player2'], publish=True, active=True
     ).order_by('-created')[:5]
     
     return render(request, 'admin/review_duplicate.html', context)

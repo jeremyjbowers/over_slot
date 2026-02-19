@@ -31,7 +31,7 @@ def recent_articles_sidebar(limit=5):
     """Template tag to show recent articles sidebar."""
     from overslot.models import Article
     recent_articles = Article.objects.filter(
-        publish=True
+        publish=True, active=True
     ).order_by('-created')[:limit]
     
     return {

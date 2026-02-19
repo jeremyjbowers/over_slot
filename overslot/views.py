@@ -30,7 +30,7 @@ def index(request):
     context['latest_stock_watch'] = latest_stock_watch
 
     latest_articles_qs = models.Article.objects.filter(
-        publish=True, is_carousel=True
+        publish=True, active=True, is_carousel=True
     ).prefetch_related('authors')
     latest_articles = latest_articles_qs.order_by('-created')[:5]
     for article in latest_articles:
@@ -71,14 +71,14 @@ def index(request):
 
     # Flanking lists: left = scouting articles; right = non-scouting
     scouting_articles = models.Article.objects.filter(
-        publish=True, article_type='scouting'
+        publish=True, active=True, article_type='scouting'
     ).prefetch_related('authors').order_by('-created')[:3]
     for a in scouting_articles:
         a.active_players = a.players.filter(active=True)
     context['scouting_articles'] = scouting_articles
 
     non_scouting_articles = models.Article.objects.filter(
-        publish=True
+        publish=True, active=True
     ).exclude(article_type='scouting').prefetch_related('authors').order_by('-created')[:3]
     for a in non_scouting_articles:
         a.active_players = a.players.filter(active=True)
@@ -141,7 +141,7 @@ def index(request):
 def articles_list(request):
     context = {}
     # Build combined list of articles and stock watch articles, sorted by date (newest first)
-    articles_qs = models.Article.objects.filter(publish=True).prefetch_related('authors', 'players')
+    articles_qs = models.Article.objects.filter(publish=True, active=True).prefetch_related('authors', 'players')
     stock_watch_qs = models.StockWatchArticle.objects.filter(publish=True, active=True).select_related('author').prefetch_related('stock_watch_players__player')
 
     # Build unified items: each has url, headline, subhead, featured_image, author_display, date, players
@@ -207,7 +207,7 @@ def articles_list(request):
 def articles_detail(request, slug):
     context = {}
     # Only allow access to published articles
-    context['article'] = get_object_or_404(models.Article, slug=slug, publish=True)
+    context['article'] = get_object_or_404(models.Article, slug=slug, publish=True, active=True)
     
     # Filter out inactive players from the article
     context['article'].active_players = context['article'].players.filter(active=True)
@@ -691,7 +691,7 @@ def rankings_detail(request, slug):
     context['filter_states'] = states
     
     # Add recent articles for sidebar - only published
-    context['recent_articles'] = models.Article.objects.filter(publish=True).order_by('-created')[:5]
+    context['recent_articles'] = models.Article.objects.filter(publish=True, active=True).order_by('-created')[:5]
 
     return render(request, "rankings_detail.html", context)
 
@@ -747,7 +747,7 @@ def mock_drafts_detail(request, slug):
     context['filter_states'] = states
     
     # Add recent articles for sidebar - only published
-    context['recent_articles'] = models.Article.objects.filter(publish=True).order_by('-created')[:5]
+    context['recent_articles'] = models.Article.objects.filter(publish=True, active=True).order_by('-created')[:5]
 
     return render(request, "rankings_detail.html", context)
 
@@ -927,7 +927,7 @@ def players_detail(request, slug):
     context['hitter_seasons'] = hitter_seasons
 
     # Only show published articles
-    context['articles'] = models.Article.objects.filter(players=context['player'], publish=True)
+    context['articles'] = models.Article.objects.filter(players=context['player'], publish=True, active=True)
 
     # Stock watch entries (from published stock watch articles)
     context['stock_watch_entries'] = models.StockWatchPlayer.objects.filter(
@@ -976,7 +976,7 @@ def search(request):
         Q(subhead__icontains=query) |
         Q(blurb__icontains=query) |
         Q(body__icontains=query)
-    ).filter(publish=True)[:5]
+    ).filter(publish=True, active=True)[:5]
 
     # Search rankings - include rankings that contain matching players, only published
     rankings = models.Ranking.objects.filter(
