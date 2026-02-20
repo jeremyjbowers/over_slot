@@ -309,9 +309,12 @@ def stock_watch_detail(request, slug):
         .select_related('player')
         .order_by('-direction', 'player__name')  # up first, then down; alphabetically within
     )
-    # Attach statline to each
+    # Attach statline to each (college players only; hide stats for high school players)
     for swp in sw_players:
-        swp.statline = _get_player_statline(swp.player)
+        statline = _get_player_statline(swp.player)
+        if statline and statline.get('level') == 'High School':
+            statline = None
+        swp.statline = statline
     context['stock_watch_players'] = sw_players
     return render(request, "stock_watch_detail.html", context)
 
