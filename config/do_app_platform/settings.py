@@ -117,12 +117,8 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Cache configuration - Valkey (Redis-compatible) when VALKEY_URL is set, else database
-# Env var: VALKEY_URL - e.g. valkey://localhost:6379/0 or valkey://:password@host:6379/0
-# For TLS: valkeys:// or rediss:// (Redis with TLS)
-# When DATABASE_URL is Redis (rediss://), it's the cache; use it if VALKEY_URL not set
-VALKEY_URL = os.environ.get('VALKEY_URL', '') or (
-    DATABASE_URL if (DATABASE_URL or '').split(':', 1)[0].lower() in ('rediss', 'redis', 'valkey', 'valkeys') else ''
-)
+# Env var: VALKEY_URL - e.g. valkey://localhost:6379/0 or valkeys://host:6379/0 (TLS)
+VALKEY_URL = os.environ.get('VALKEY_URL', '')
 if VALKEY_URL:
     CACHES = {
         'default': {
