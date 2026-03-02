@@ -26,10 +26,32 @@ ALLOWED_HOSTS = [
 
 DEVELOPMENT_MODE = True
 
+# DigitalOcean injects DATABASE_URL for both Postgres and Redis components.
+# Redis uses rediss:// which dj_database_url doesn't support. When you have both
+# Postgres and Redis, bind Postgres to POSTGRES_DATABASE_URL and Redis to VALKEY_URL.
 DATABASE_URL = os.environ.get("DATABASE_URL", None)
+POSTGRES_DATABASE_URL = os.environ.get("POSTGRES_DATABASE_URL", None)
 
+def _get_database_url():
+    url = DATABASE_URL or POSTGRES_DATABASE_URL
+    if not url:
+        return None
+    scheme = url.split(":", 1)[0].lower()
+    if scheme in ("rediss", "redis", "valkey", "valkeys"):
+        # DATABASE_URL is Redis/Valkey; use POSTGRES_DATABASE_URL for the app DB
+        if not POSTGRES_DATABASE_URL:
+            from django.core.exceptions import ImproperlyConfigured
+            raise ImproperlyConfigured(
+                "DATABASE_URL is a Redis/Valkey URL (rediss://). Set POSTGRES_DATABASE_URL to your "
+                "PostgreSQL connection string. In App Platform, bind your Postgres DB to "
+                "POSTGRES_DATABASE_URL and Redis/Valkey to VALKEY_URL."
+            )
+        return POSTGRES_DATABASE_URL
+    return url
+
+_db_url = _get_database_url()
 DATABASES = {
-    "default": dj_database_url.parse(DATABASE_URL),
+    "default": dj_database_url.parse(_db_url),
 }
 
 # Session settings for multi-pod deployment
@@ -96,8 +118,11 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Cache configuration - Valkey (Redis-compatible) when VALKEY_URL is set, else database
 # Env var: VALKEY_URL - e.g. valkey://localhost:6379/0 or valkey://:password@host:6379/0
-# For TLS: valkeys://host:6379/0
-VALKEY_URL = os.environ.get('VALKEY_URL', '')
+# For TLS: valkeys:// or rediss:// (Redis with TLS)
+# When DATABASE_URL is Redis (rediss://), it's the cache; use it if VALKEY_URL not set
+VALKEY_URL = os.environ.get('VALKEY_URL', '') or (
+    DATABASE_URL if (DATABASE_URL or '').split(':', 1)[0].lower() in ('rediss', 'redis', 'valkey', 'valkeys') else ''
+)
 if VALKEY_URL:
     CACHES = {
         'default': {

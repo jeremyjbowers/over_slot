@@ -279,7 +279,7 @@ Staff users see a "Bust homepage cache" option in the user dropdown (top right).
    - Valkey/Redis service is running and reachable
    - For TLS, use `valkeys://` not `valkey://`
    - Firewall/network allows access to the Valkey port
-   - **DigitalOcean App Platform**: Add the managed Valkey database as a component to your app (link it in the App Spec) so the connection string is injected and networking is configured. Private hostnames require the DB to be in the same project. If using a manually set `VALKEY_URL` with a private hostname, ensure the app and DB can reach each other.
+   - **DigitalOcean App Platform**: When you have both Postgres and Redis/Valkey components, DO may inject the Redis URL as `DATABASE_URL` (rediss://). The app expects PostgreSQL for `DATABASE_URL`. Fix: bind your Postgres database to `POSTGRES_DATABASE_URL` and Redis/Valkey to `VALKEY_URL`. If `DATABASE_URL` is rediss:// and `POSTGRES_DATABASE_URL` is unset, the app will raise a clear error.
 
 5. **Stale content after save**  
    If content doesn't update after saving in admin:
