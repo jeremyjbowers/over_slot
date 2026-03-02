@@ -227,14 +227,14 @@ The site caches expensive querysets and computed data to improve performance und
 
 | Location | Cached Data | TTL |
 |----------|-------------|-----|
-| **Homepage** | Stock watch carousel, articles carousel, rankings carousel, games carousel, scouting articles, non-scouting articles, current/archived rankings, rankings count, player videos, featured games, podcasts | 5 min |
-| **Articles list** | Combined news items (articles + stock watch), recent rankings sidebar | 5 min |
-| **Article detail** | Article with active players/teams (per slug) | 5 min |
-| **Stock watch detail** | Article with stock watch players and statlines (per slug) | 5 min |
-| **Rankings list** | Current + archived rankings | 10 min |
-| **Mock drafts list** | Published mock drafts | 10 min |
-| **Ranking detail** | Player rankings, filter values, recent articles (per slug) | 10 min |
-| **Mock draft detail** | Same as ranking detail (per slug) | 10 min |
+| **Homepage** | Stock watch carousel, articles carousel, rankings carousel, games carousel, scouting articles, non-scouting articles, current/archived rankings, rankings count, player videos, featured games, podcasts | 24 hr |
+| **Articles list** | Combined news items (articles + stock watch), recent rankings sidebar | 24 hr |
+| **Article detail** | Article with active players/teams (per slug) | 24 hr |
+| **Stock watch detail** | Article with stock watch players and statlines (per slug) | 24 hr |
+| **Rankings list** | Current + archived rankings | 24 hr |
+| **Mock drafts list** | Published mock drafts | 24 hr |
+| **Ranking detail** | Player rankings, filter values, recent articles (per slug) | 24 hr |
+| **Mock draft detail** | Same as ranking detail (per slug) | 24 hr |
 
 **Other cache usage**
 - Rate limiting (security) uses the same cache backend
@@ -285,7 +285,7 @@ Staff users see a "Bust homepage cache" option in the user dropdown (top right).
    If content doesn't update after saving in admin:
    - Check that signals are loaded (e.g. `overslot.signals` is imported in `overslot/__init__.py`)
    - Use "Bust homepage cache" for homepage-specific issues
-   - Wait for TTL (5–10 min) or restart the app to clear in-memory caches
+   - Wait for TTL (24 hr) or restart the app to clear in-memory caches
 
 6. **Database cache**  
    When using database cache, ensure the cache table exists:

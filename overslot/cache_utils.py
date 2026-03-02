@@ -7,10 +7,11 @@ Only caches data that is identical for all users - never user-specific state.
 from django.core.cache import cache
 
 # Default TTL for queryset/data caches (seconds)
-DEFAULT_TIMEOUT = 300  # 5 minutes
-HOMEPAGE_TIMEOUT = 300  # 5 minutes
-RANKING_TIMEOUT = 600   # 10 minutes - rankings change less often
-ARTICLE_TIMEOUT = 300   # 5 minutes
+# With admin-triggered cache busting, TTL mainly handles edge cases.
+DEFAULT_TIMEOUT = 86400   # 24 hours
+HOMEPAGE_TIMEOUT = 86400  # 24 hours
+RANKING_TIMEOUT = 86400   # 24 hours
+ARTICLE_TIMEOUT = 86400   # 24 hours
 
 # Cache key prefixes - centralize for invalidation
 KEY_HOMEPAGE = 'overslot:homepage'
