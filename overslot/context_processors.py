@@ -50,6 +50,19 @@ def settings_context(request):
         # If there's any error checking, default to False
         has_live_games = False
 
+    # Cache backend indicator for staff only
+    cache_backend = None
+    if request.user.is_staff:
+        backend = settings.CACHES['default']['BACKEND'].lower()
+        if 'valkey' in backend:
+            cache_backend = 'valkey'
+        elif 'database' in backend or 'db.' in backend:
+            cache_backend = 'db'
+        elif 'locmem' in backend:
+            cache_backend = 'local'
+        else:
+            cache_backend = 'other'
+
     return {
         'settings': {
             'SUBSCRIPTION_PRICE_MONTHLY': getattr(settings, 'SUBSCRIPTION_PRICE_MONTHLY', 9.99),
@@ -62,4 +75,6 @@ def settings_context(request):
         'has_published_mock_drafts': has_published_mock_drafts,
         # Template hook for live games nav styling
         'has_live_games': has_live_games,
+        # Staff-only: which cache backend is in use
+        'cache_backend': cache_backend,
     }

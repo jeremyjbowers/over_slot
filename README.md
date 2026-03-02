@@ -128,6 +128,9 @@ DEFAULT_FROM_EMAIL=noreply@your-domain.com
 
 # For development, you can use console backend:
 EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+
+# Optional: Valkey/Redis for caching (if unset, uses in-memory cache locally)
+# VALKEY_URL=valkey://localhost:6379/0
 ```
 
 4. **Database Setup**
@@ -210,6 +213,86 @@ Magic link authentication depends entirely on reliable email delivery. Mailgun i
 
 **Static Asset Pipeline**
 Player photos and other media assets require CDN distribution for acceptable performance. The DigitalOcean Spaces integration handles this automatically but requires proper configuration of CORS and public access policies.
+
+**Caching**
+
+The site caches expensive querysets and computed data to improve performance under logged-in traffic. Only data that is identical for all users is cached—never user-specific state—so there is no risk of showing one user's content to another.
+
+**Environment Variable**
+- **`VALKEY_URL`** – When set, the site uses Valkey (Redis-compatible) for caching. If unset, production falls back to database cache; development falls back to in-memory cache.
+- Format: `valkey://host:port/0` or `valkey://:password@host:port/0`
+- For TLS: `valkeys://host:port/0`
+
+**Cached Content**
+
+| Location | Cached Data | TTL |
+|----------|-------------|-----|
+| **Homepage** | Stock watch carousel, articles carousel, rankings carousel, games carousel, scouting articles, non-scouting articles, current/archived rankings, rankings count, player videos, featured games, podcasts | 5 min |
+| **Articles list** | Combined news items (articles + stock watch), recent rankings sidebar | 5 min |
+| **Article detail** | Article with active players/teams (per slug) | 5 min |
+| **Stock watch detail** | Article with stock watch players and statlines (per slug) | 5 min |
+| **Rankings list** | Current + archived rankings | 10 min |
+| **Mock drafts list** | Published mock drafts | 10 min |
+| **Ranking detail** | Player rankings, filter values, recent articles (per slug) | 10 min |
+| **Mock draft detail** | Same as ranking detail (per slug) | 10 min |
+
+**Other cache usage**
+- Rate limiting (security) uses the same cache backend
+
+**Automatic cache invalidation**
+
+Saving content in the admin triggers cache invalidation:
+
+| Model | Caches invalidated |
+|-------|---------------------|
+| Article | Article detail, articles list, homepage |
+| Article.players / Article.teams (M2M) | Article detail, articles list, homepage |
+| StockWatchArticle | Stock watch detail, articles list, homepage |
+| StockWatchPlayer | Stock watch detail |
+| Ranking | Ranking detail, rankings list, articles sidebar, homepage |
+| PlayerRanking | Ranking detail |
+| Game | Homepage |
+| Player | Homepage |
+| PodcastEpisode | Homepage |
+
+**Manual cache busting**
+
+Staff users see a "Bust homepage cache" option in the user dropdown (top right). This clears all homepage caches. Use it when you want to ensure the homepage shows fresh content immediately after publishing.
+
+**Troubleshooting**
+
+1. **Verify which cache backend is in use**  
+   Staff users see a small badge in the top nav: **VALKEY** (green), **DB** (yellow), **LOCAL** (blue), or **OTHER** (gray).
+
+2. **Check cache backend from shell**
+   ```bash
+   django-admin shell -c "from django.conf import settings; print(settings.CACHES['default']['BACKEND'])"
+   ```
+
+3. **Verify VALKEY_URL is set**
+   ```bash
+   echo $VALKEY_URL   # or in .env: grep VALKEY_URL .env
+   ```
+
+4. **Connection issues**  
+   If Valkey is configured but the badge shows DB or OTHER, check:
+   - Valkey/Redis service is running and reachable
+   - For TLS, use `valkeys://` not `valkey://`
+   - Firewall/network allows access to the Valkey port
+
+5. **Stale content after save**  
+   If content doesn't update after saving in admin:
+   - Check that signals are loaded (e.g. `overslot.signals` is imported in `overslot/__init__.py`)
+   - Use "Bust homepage cache" for homepage-specific issues
+   - Wait for TTL (5–10 min) or restart the app to clear in-memory caches
+
+6. **Database cache**  
+   When using database cache, ensure the cache table exists:
+   ```bash
+   django-admin createcachetable
+   # or
+   django-admin setup_cache  # project-specific command
+   ```
 
 **Search Performance**
 The real-time search across multiple models can become expensive with large datasets. Consider implementing database indexes on commonly searched fields and potentially moving to dedicated search infrastructure (Elasticsearch) as content volume grows.

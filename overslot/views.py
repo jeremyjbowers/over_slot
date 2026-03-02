@@ -11,6 +11,8 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import JsonResponse
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib import messages
 from decimal import *
 from django.utils.timezone import template_localtime, now
 from django.template.response import TemplateResponse
@@ -20,131 +22,158 @@ import json
 
 from overslot import models, utils
 from overslot.decorators import subscription_required
+from overslot.cache_utils import get_cached, bust_homepage, HOMEPAGE_TIMEOUT, ARTICLE_TIMEOUT, RANKING_TIMEOUT
+
+
+@staff_member_required
+def bust_homepage_cache(request):
+    """Staff-only: clear homepage cache and redirect to homepage."""
+    bust_homepage()
+    messages.success(request, 'Homepage cache cleared.')
+    return redirect('index')
+
 
 def index(request):
     context = {}
+
     # Carousel: stock watch first, then articles, then rankings, then games
-    latest_stock_watch = models.StockWatchArticle.objects.filter(
-        publish=True, active=True, is_carousel=True
-    ).select_related('author').order_by('-date', '-created')[:5]
-    context['latest_stock_watch'] = latest_stock_watch
+    def _latest_stock_watch():
+        return list(models.StockWatchArticle.objects.filter(
+            publish=True, active=True, is_carousel=True
+        ).select_related('author').order_by('-date', '-created')[:5])
+    context['latest_stock_watch'] = get_cached('overslot:homepage:stock_watch', _latest_stock_watch, HOMEPAGE_TIMEOUT)
 
-    latest_articles_qs = models.Article.objects.filter(
-        publish=True, active=True, is_carousel=True
-    ).prefetch_related('authors')
-    latest_articles = latest_articles_qs.order_by('-created')[:5]
-    for article in latest_articles:
-        article.active_players = article.players.filter(active=True)
-        article.active_teams = article.teams.filter(active=True)
-    context['latest_articles'] = latest_articles
+    def _latest_articles():
+        qs = models.Article.objects.filter(
+            publish=True, active=True, is_carousel=True
+        ).prefetch_related('authors', 'players', 'teams').order_by('-created')[:5]
+        articles = list(qs)
+        for a in articles:
+            a.active_players = [p for p in a.players.all() if p.active]
+            a.active_teams = [t for t in a.teams.all() if t.active]
+        return articles
+    context['latest_articles'] = get_cached('overslot:homepage:articles', _latest_articles, HOMEPAGE_TIMEOUT)
 
-    latest_rankings = models.Ranking.objects.filter(
-        publish=True, is_carousel=True
-    ).annotate(
-        level_order=Case(
-            When(draft_level='Overall', then=Value(0)),
-            When(draft_level='College', then=Value(1)),
-            When(draft_level='High School', then=Value(2)),
-            default=Value(99),
-            output_field=IntegerField(),
-        )
-    ).order_by('-created')[:5]
-    context['latest_rankings'] = latest_rankings
+    def _latest_rankings():
+        return list(models.Ranking.objects.filter(
+            publish=True, is_carousel=True
+        ).annotate(
+            level_order=Case(
+                When(draft_level='Overall', then=Value(0)),
+                When(draft_level='College', then=Value(1)),
+                When(draft_level='High School', then=Value(2)),
+                default=Value(99),
+                output_field=IntegerField(),
+            )
+        ).order_by('-created')[:5])
+    context['latest_rankings'] = get_cached('overslot:homepage:rankings_carousel', _latest_rankings, HOMEPAGE_TIMEOUT)
 
-    # Carousel games: only current and future games, ordered by start time
-    # Filter to ensure games have at least a name and streaming URL
-    latest_games = models.Game.objects.filter(
-        active=True,
-        is_carousel=True
-    ).exclude(
-        status='past'
-    ).exclude(
-        name__isnull=True
-    ).exclude(
-        name=''
-    ).exclude(
-        streaming_url__isnull=True
-    ).exclude(
-        streaming_url=''
-    ).select_related('home_team', 'away_team').order_by('start_datetime')[:5]
-    context['latest_games'] = latest_games
+    def _latest_games():
+        return list(models.Game.objects.filter(
+            active=True, is_carousel=True
+        ).exclude(status='past').exclude(name__isnull=True).exclude(name='').exclude(
+            streaming_url__isnull=True
+        ).exclude(streaming_url='').select_related(
+            'home_team', 'away_team'
+        ).order_by('start_datetime')[:5])
+    context['latest_games'] = get_cached('overslot:homepage:games', _latest_games, HOMEPAGE_TIMEOUT)
 
     # Flanking lists: left = scouting articles; right = non-scouting
-    scouting_articles = models.Article.objects.filter(
-        publish=True, active=True, article_type='scouting'
-    ).prefetch_related('authors').order_by('-created')[:3]
-    for a in scouting_articles:
-        a.active_players = a.players.filter(active=True)
-    context['scouting_articles'] = scouting_articles
+    def _scouting_articles():
+        qs = models.Article.objects.filter(
+            publish=True, active=True, article_type='scouting'
+        ).prefetch_related('authors', 'players').order_by('-created')[:3]
+        articles = list(qs)
+        for a in articles:
+            a.active_players = [p for p in a.players.all() if p.active]
+        return articles
+    context['scouting_articles'] = get_cached('overslot:homepage:scouting', _scouting_articles, HOMEPAGE_TIMEOUT)
 
-    non_scouting_articles = models.Article.objects.filter(
-        publish=True, active=True
-    ).exclude(article_type='scouting').prefetch_related('authors').order_by('-created')[:3]
-    for a in non_scouting_articles:
-        a.active_players = a.players.filter(active=True)
-    context['non_scouting_articles'] = non_scouting_articles
+    def _non_scouting_articles():
+        qs = models.Article.objects.filter(
+            publish=True, active=True
+        ).exclude(article_type='scouting').prefetch_related('authors', 'players').order_by('-created')[:3]
+        articles = list(qs)
+        for a in articles:
+            a.active_players = [p for p in a.players.all() if p.active]
+        return articles
+    context['non_scouting_articles'] = get_cached('overslot:homepage:non_scouting', _non_scouting_articles, HOMEPAGE_TIMEOUT)
 
-    # Rankings grid below: split into current (ordered by year ascending) and archived
-    context['current_rankings'] = models.Ranking.objects.filter(
-        is_mock_draft=False, publish=True, current=True
-    ).annotate(
-        level_order=Case(
-            When(draft_level='Overall', then=Value(0)),
-            When(draft_level='College', then=Value(1)),
-            When(draft_level='High School', then=Value(2)),
-            default=Value(99),
-            output_field=IntegerField(),
-        )
-    ).order_by('year', 'level_order')
-    context['archived_rankings'] = models.Ranking.objects.filter(
-        is_mock_draft=False, publish=True, current=False
-    ).annotate(
-        level_order=Case(
-            When(draft_level='Overall', then=Value(0)),
-            When(draft_level='College', then=Value(1)),
-            When(draft_level='High School', then=Value(2)),
-            default=Value(99),
-            output_field=IntegerField(),
-        )
-    ).order_by('-year', 'level_order')
-    context['rankings_count'] = models.Ranking.objects.filter(
-        is_mock_draft=False, publish=True
-    ).count()
+    # Rankings grid: current and archived
+    def _current_rankings():
+        return list(models.Ranking.objects.filter(
+            is_mock_draft=False, publish=True, current=True
+        ).annotate(
+            level_order=Case(
+                When(draft_level='Overall', then=Value(0)),
+                When(draft_level='College', then=Value(1)),
+                When(draft_level='High School', then=Value(2)),
+                default=Value(99),
+                output_field=IntegerField(),
+            )
+        ).order_by('year', 'level_order'))
+    context['current_rankings'] = get_cached('overslot:homepage:current_rankings', _current_rankings, HOMEPAGE_TIMEOUT)
 
-    # Player videos sidebar: active players with a video_url
-    videos_qs = models.Player.objects.filter(
-        active=True
-    ).exclude(video_url__isnull=True).exclude(video_url="")\
-     .exclude(photo_url__isnull=True).exclude(photo_url="")
-    # Randomize selection for spotlight interviews
-    context['player_videos'] = videos_qs.order_by('?')[:9]
-    context['videos_count'] = videos_qs.count()
+    def _archived_rankings():
+        return list(models.Ranking.objects.filter(
+            is_mock_draft=False, publish=True, current=False
+        ).annotate(
+            level_order=Case(
+                When(draft_level='Overall', then=Value(0)),
+                When(draft_level='College', then=Value(1)),
+                When(draft_level='High School', then=Value(2)),
+                default=Value(99),
+                output_field=IntegerField(),
+            )
+        ).order_by('-year', 'level_order'))
+    context['archived_rankings'] = get_cached('overslot:homepage:archived_rankings', _archived_rankings, HOMEPAGE_TIMEOUT)
 
-    # Featured games belt: only current and future games, ordered by start time
+    def _rankings_count():
+        return models.Ranking.objects.filter(is_mock_draft=False, publish=True).count()
+    context['rankings_count'] = get_cached('overslot:homepage:rankings_count', _rankings_count, HOMEPAGE_TIMEOUT)
+
+    # Player videos sidebar - cache the random selection (re-randomizes on TTL expiry)
+    def _player_videos():
+        qs = models.Player.objects.filter(
+            active=True
+        ).exclude(video_url__isnull=True).exclude(video_url="").exclude(
+            photo_url__isnull=True
+        ).exclude(photo_url="")
+        return list(qs.order_by('?')[:9])
+    context['player_videos'] = get_cached('overslot:homepage:player_videos', _player_videos, HOMEPAGE_TIMEOUT)
+
+    def _videos_count():
+        return models.Player.objects.filter(
+            active=True
+        ).exclude(video_url__isnull=True).exclude(video_url="").exclude(
+            photo_url__isnull=True
+        ).exclude(photo_url="").count()
+    context['videos_count'] = get_cached('overslot:homepage:videos_count', _videos_count, HOMEPAGE_TIMEOUT)
+
+    # Featured games belt
     from django.utils import timezone
     now = timezone.now()
-    featured_games = models.Game.objects.filter(
-        active=True,
-        featured=True
-    ).exclude(
-        status='past'
-    ).select_related('home_team', 'away_team').order_by('start_datetime')
-    context['featured_games'] = featured_games
+    def _featured_games():
+        return list(models.Game.objects.filter(
+            active=True, featured=True
+        ).exclude(status='past').select_related(
+            'home_team', 'away_team'
+        ).order_by('start_datetime'))
+    context['featured_games'] = get_cached('overslot:homepage:featured_games', _featured_games, HOMEPAGE_TIMEOUT)
 
-    # Podcast belt: top 5, prioritize featured then newest
-    context['latest_podcasts'] = models.PodcastEpisode.objects.filter(
-        publish=True
-    ).order_by('-featured', '-published_at')[:5]
+    # Podcast belt
+    def _latest_podcasts():
+        return list(models.PodcastEpisode.objects.filter(
+            publish=True
+        ).order_by('-featured', '-published_at')[:5])
+    context['latest_podcasts'] = get_cached('overslot:homepage:podcasts', _latest_podcasts, HOMEPAGE_TIMEOUT)
 
     return render(request, "index.html", context)
 
-def articles_list(request):
-    context = {}
-    # Build combined list of articles and stock watch articles, sorted by date (newest first)
+def _build_news_items():
+    """Build combined articles + stock watch list, sorted by date. Cached."""
     articles_qs = models.Article.objects.filter(publish=True, active=True).prefetch_related('authors', 'players')
     stock_watch_qs = models.StockWatchArticle.objects.filter(publish=True, active=True).select_related('author').prefetch_related('stock_watch_players__player')
-
-    # Build unified items: each has url, headline, subhead, featured_image, author_display, date, players
     items = []
     for a in articles_qs:
         items.append({
@@ -169,8 +198,6 @@ def articles_list(request):
             'players': [swp.player for swp in sw.stock_watch_players.all() if swp.active],
         })
 
-    # Sort by date descending (stock watch uses date, articles use created)
-    # Use timestamp for sort key to avoid naive/aware and date/datetime comparison issues
     def _news_sort_key(item):
         d = item['date']
         if d is None:
@@ -184,11 +211,12 @@ def articles_list(request):
         except (TypeError, OSError):
             return 0.0
     items.sort(key=_news_sort_key, reverse=True)
-    context['news_items'] = items
+    return items
 
-    # Add recent rankings for sidebar - same order as non-archived on homepage:
-    # 2026 Overall first, then 2026 College/High School, then 2027, then 2028
-    context['recent_rankings'] = models.Ranking.objects.filter(
+
+def _recent_rankings():
+    """Recent rankings for sidebar. Cached."""
+    return list(models.Ranking.objects.filter(
         is_mock_draft=False, publish=True, current=True
     ).annotate(
         level_order=Case(
@@ -198,23 +226,33 @@ def articles_list(request):
             default=Value(99),
             output_field=IntegerField(),
         )
-    ).order_by('year', 'level_order')
+    ).order_by('year', 'level_order'))
 
+
+def articles_list(request):
+    context = {}
+    context['news_items'] = get_cached('overslot:articles:list_items', _build_news_items, ARTICLE_TIMEOUT)
+    context['recent_rankings'] = get_cached('overslot:articles:recent_rankings', _recent_rankings, ARTICLE_TIMEOUT)
     return render(request, "articles_list.html", context)
+
+
+def _article_detail_context(slug):
+    """Fetch article with active players/teams. Cached per slug. Raises Http404 if not found."""
+    article = models.Article.objects.filter(
+        slug=slug, publish=True, active=True
+    ).prefetch_related('players', 'teams', 'authors').first()
+    if not article:
+        from django.http import Http404
+        raise Http404("Article not found")
+    article.active_players = [p for p in article.players.all() if p.active]
+    article.active_teams = [t for t in article.teams.all() if t.active]
+    return article
 
 
 @subscription_required
 def articles_detail(request, slug):
     context = {}
-    # Only allow access to published articles
-    context['article'] = get_object_or_404(models.Article, slug=slug, publish=True, active=True)
-    
-    # Filter out inactive players from the article
-    context['article'].active_players = context['article'].players.filter(active=True)
-    
-    # Filter out inactive teams from the article
-    context['article'].active_teams = context['article'].teams.filter(active=True)
-
+    context['article'] = get_cached(f'overslot:article:{slug}', lambda: _article_detail_context(slug), ARTICLE_TIMEOUT)
     return render(request, "articles_detail.html", context)
 
 
@@ -294,62 +332,81 @@ def _get_player_statline(player):
     return None
 
 
-@subscription_required
-def stock_watch_detail(request, slug):
-    context = {}
-    context['article'] = get_object_or_404(
-        models.StockWatchArticle,
-        slug=slug,
-        publish=True,
-        active=True
-    )
-    # Get stock watch players (active only) with player prefetched
-    sw_players = (
-        context['article'].stock_watch_players.filter(active=True)
+def _stock_watch_detail_context(slug):
+    """Fetch stock watch article with players and statlines. Cached per slug. Raises Http404 if not found."""
+    article = models.StockWatchArticle.objects.filter(
+        slug=slug, publish=True, active=True
+    ).prefetch_related('stock_watch_players__player').first()
+    if not article:
+        from django.http import Http404
+        raise Http404("Stock watch article not found")
+    sw_players = list(
+        article.stock_watch_players.filter(active=True)
         .select_related('player')
-        .order_by('-direction', 'player__name')  # up first, then down; alphabetically within
+        .order_by('-direction', 'player__name')
     )
-    # Attach statline to each (college players only; hide stats for high school players)
     for swp in sw_players:
         statline = _get_player_statline(swp.player)
         if statline and statline.get('level') == 'High School':
             statline = None
         swp.statline = statline
+    return article, sw_players
+
+
+@subscription_required
+def stock_watch_detail(request, slug):
+    context = {}
+    article, sw_players = get_cached(
+        f'overslot:stock_watch:{slug}',
+        lambda: _stock_watch_detail_context(slug),
+        ARTICLE_TIMEOUT
+    )
+    context['article'] = article
     context['stock_watch_players'] = sw_players
     return render(request, "stock_watch_detail.html", context)
 
 
+def _rankings_list_data():
+    """Current + archived rankings for main rankings list. Cached."""
+    current = list(models.Ranking.objects.filter(
+        is_mock_draft=False, publish=True, current=True
+    ).annotate(
+        level_order=Case(
+            When(draft_level='Overall', then=Value(0)),
+            When(draft_level='College', then=Value(1)),
+            When(draft_level='High School', then=Value(2)),
+            default=Value(99),
+            output_field=IntegerField(),
+        )
+    ).order_by('year', 'level_order'))
+    archived = list(models.Ranking.objects.filter(
+        is_mock_draft=False, publish=True, current=False
+    ).annotate(
+        level_order=Case(
+            When(draft_level='Overall', then=Value(0)),
+            When(draft_level='College', then=Value(1)),
+            When(draft_level='High School', then=Value(2)),
+            default=Value(99),
+            output_field=IntegerField(),
+        )
+    ).order_by('-year', 'level_order'))
+    return current + archived
+
+
 def rankings_list(request):
     context = {}
-    # Only show published rankings - show current first (ascending by year), then archived
-    current_qs = models.Ranking.objects.filter(is_mock_draft=False, publish=True, current=True).annotate(
-        level_order=Case(
-            When(draft_level='Overall', then=Value(0)),
-            When(draft_level='College', then=Value(1)),
-            When(draft_level='High School', then=Value(2)),
-            default=Value(99),
-            output_field=IntegerField(),
-        )
-    ).order_by('year', 'level_order')
-    archived_qs = models.Ranking.objects.filter(is_mock_draft=False, publish=True, current=False).annotate(
-        level_order=Case(
-            When(draft_level='Overall', then=Value(0)),
-            When(draft_level='College', then=Value(1)),
-            When(draft_level='High School', then=Value(2)),
-            default=Value(99),
-            output_field=IntegerField(),
-        )
-    ).order_by('-year', 'level_order')
-    context['rankings'] = list(current_qs) + list(archived_qs)
-
+    context['rankings'] = get_cached('overslot:rankings:list', _rankings_list_data, RANKING_TIMEOUT)
     return render(request, "rankings_list.html", context)
+
+
+def _mock_drafts_list_data():
+    """Published mock drafts. Cached."""
+    return list(models.Ranking.objects.filter(is_mock_draft=True, publish=True))
 
 
 def mock_drafts_list(request):
     context = {}
-    # Only show published mock drafts
-    context['rankings'] = models.Ranking.objects.filter(is_mock_draft=True, publish=True)
-
+    context['rankings'] = get_cached('overslot:rankings:mock_drafts', _mock_drafts_list_data, RANKING_TIMEOUT)
     return render(request, "rankings_list.html", context)
 
 
@@ -643,27 +700,25 @@ def team_detail(request, slug):
     return render(request, "team_detail.html", context)
 
 
-@subscription_required
-def rankings_detail(request, slug):
-    context = {}
-    # Only allow access to published rankings
-    ranking = get_object_or_404(models.Ranking, slug=slug, publish=True, is_mock_draft=False)
-    context['ranking'] = ranking
-    
-    # Get all player rankings for this ranking
-    player_rankings = ranking.get_playerrankings()
-    
-    # Get unique values for filters (sorted alphabetically)
+def _ranking_detail_context(slug, is_mock_draft):
+    """Build full ranking detail context. Cached per slug. Raises Http404 if not found."""
+    from django.http import Http404
+    ranking = models.Ranking.objects.filter(
+        slug=slug, publish=True, is_mock_draft=is_mock_draft
+    ).first()
+    if not ranking:
+        raise Http404("Ranking not found")
+    player_rankings = list(
+        models.PlayerRanking.objects.filter(ranking=ranking, active=True)
+        .select_related('player')
+        .order_by('rank')
+    )
     schools = sorted([pr.school for pr in player_rankings if pr.school])
     commitments = sorted([pr.commitment for pr in player_rankings if pr.commitment])
-    states = sorted([pr.player.state for pr in player_rankings if pr.player.state])
-    
-    # Remove duplicates while preserving order
+    states = sorted([pr.player.state for pr in player_rankings if pr.player and pr.player.state])
     schools = list(dict.fromkeys(schools))
     commitments = list(dict.fromkeys(commitments))
     states = list(dict.fromkeys(states))
-    
-    # Create simplified position categories in baseball positional order
     position_mapping = [
         ('P', ['P', 'RHP', 'LHP']),
         ('C', ['C']),
@@ -675,83 +730,53 @@ def rankings_detail(request, slug):
         ('INF', ['INF']),
         ('UTL', ['UTL', 'UTIL'])
     ]
-    
-    # Find which simplified positions are actually present in the data
     all_positions = [pr.position for pr in player_rankings if pr.position]
     positions = []
-    
     for simple_pos, variants in position_mapping:
-        # Check if any player has a position that contains any of the variants
         for player_pos in all_positions:
             if any(variant in player_pos.upper() for variant in variants):
                 if simple_pos not in positions:
                     positions.append(simple_pos)
                 break
-    
-    context['filter_positions'] = positions
-    context['filter_schools'] = schools
-    context['filter_commitments'] = commitments
-    context['filter_states'] = states
-    
-    # Add recent articles for sidebar - only published
-    context['recent_articles'] = models.Article.objects.filter(publish=True, active=True).order_by('-created')[:5]
+    recent_articles = list(models.Article.objects.filter(publish=True, active=True).order_by('-created')[:5])
+    return (ranking, player_rankings, positions, schools, commitments, states, recent_articles)
 
+
+@subscription_required
+def rankings_detail(request, slug):
+    context = {}
+    data = get_cached(
+        f'overslot:ranking:{slug}',
+        lambda: _ranking_detail_context(slug, is_mock_draft=False),
+        RANKING_TIMEOUT
+    )
+    ranking = data[0]
+    ranking.get_playerrankings = lambda: data[1]  # Use cached list so template avoids DB query
+    context['ranking'] = ranking
+    context['filter_positions'] = data[2]
+    context['filter_schools'] = data[3]
+    context['filter_commitments'] = data[4]
+    context['filter_states'] = data[5]
+    context['recent_articles'] = data[6]
     return render(request, "rankings_detail.html", context)
 
 
 @subscription_required
 def mock_drafts_detail(request, slug):
     context = {}
-    # Only allow access to published mock drafts
-    ranking = get_object_or_404(models.Ranking, slug=slug, publish=True, is_mock_draft=True)
+    data = get_cached(
+        f'overslot:mock_draft:{slug}',
+        lambda: _ranking_detail_context(slug, is_mock_draft=True),
+        RANKING_TIMEOUT
+    )
+    ranking = data[0]
+    ranking.get_playerrankings = lambda: data[1]
     context['ranking'] = ranking
-    
-    # Get all player rankings for this mock draft
-    player_rankings = ranking.get_playerrankings()
-    
-    # Get unique values for filters (sorted alphabetically)
-    schools = sorted([pr.school for pr in player_rankings if pr.school])
-    commitments = sorted([pr.commitment for pr in player_rankings if pr.commitment])
-    states = sorted([pr.player.state for pr in player_rankings if pr.player.state])
-    
-    # Remove duplicates while preserving order
-    schools = list(dict.fromkeys(schools))
-    commitments = list(dict.fromkeys(commitments))
-    states = list(dict.fromkeys(states))
-    
-    # Create simplified position categories in baseball positional order
-    position_mapping = [
-        ('P', ['P', 'RHP', 'LHP']),
-        ('C', ['C']),
-        ('1B', ['1B']),
-        ('2B', ['2B']),
-        ('3B', ['3B']),
-        ('SS', ['SS']),
-        ('OF', ['OF', 'LF', 'CF', 'RF']),
-        ('INF', ['INF']),
-        ('UTL', ['UTL', 'UTIL'])
-    ]
-    
-    # Find which simplified positions are actually present in the data
-    all_positions = [pr.position for pr in player_rankings if pr.position]
-    positions = []
-    
-    for simple_pos, variants in position_mapping:
-        # Check if any player has a position that contains any of the variants
-        for player_pos in all_positions:
-            if any(variant in player_pos.upper() for variant in variants):
-                if simple_pos not in positions:
-                    positions.append(simple_pos)
-                break
-    
-    context['filter_positions'] = positions
-    context['filter_schools'] = schools
-    context['filter_commitments'] = commitments
-    context['filter_states'] = states
-    
-    # Add recent articles for sidebar - only published
-    context['recent_articles'] = models.Article.objects.filter(publish=True, active=True).order_by('-created')[:5]
-
+    context['filter_positions'] = data[2]
+    context['filter_schools'] = data[3]
+    context['filter_commitments'] = data[4]
+    context['filter_states'] = data[5]
+    context['recent_articles'] = data[6]
     return render(request, "rankings_detail.html", context)
 
 

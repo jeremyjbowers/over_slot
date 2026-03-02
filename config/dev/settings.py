@@ -102,6 +102,25 @@ DATABASES = {
     }
 }
 
+# Cache - Valkey when VALKEY_URL is set, else LocMem (dev default)
+VALKEY_URL = os.environ.get('VALKEY_URL', '')
+if VALKEY_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_valkey.cache.ValkeyCache',
+            'LOCATION': VALKEY_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_valkey.client.DefaultClient',
+            },
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
+
 # Password validators removed - using magic link authentication only
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"

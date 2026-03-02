@@ -13,6 +13,7 @@ from .sitemaps import StaticViewSitemap, ArticleSitemap, StockWatchArticleSitema
 urlpatterns = [
     # Internal data status (admin only)
     path('admin/data-status/', duplicate_views.data_status, name='data_status'),
+    path('admin/bust-homepage-cache/', views.bust_homepage_cache, name='bust_homepage_cache'),
     # Duplicate Management URLs (admin only)
     path('admin/duplicates/', duplicate_views.duplicate_dashboard, name='duplicate_dashboard'),
     path('admin/duplicates/review/', duplicate_views.review_duplicate, name='review_duplicate'),

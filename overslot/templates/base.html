@@ -580,6 +580,15 @@
         {% include "includes/nav.html" %}
         
         <main>
+            {% if messages %}
+            <div class="container" style="padding-top: 1rem;">
+                {% for message in messages %}
+                <div class="notification is-success is-light" style="background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3);">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
             {% block content %}{% endblock %}
         </main>
 

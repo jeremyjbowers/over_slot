@@ -94,14 +94,27 @@ CSRF_TRUSTED_ORIGINS = [
     "https://the-over-slot.nyc3.cdn.digitaloceanspaces.com",
 ]
 
-# Cache configuration - use database for simplicity in multi-pod setup
-# For better performance, consider Redis or Memcached in the future
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'cache_table',
+# Cache configuration - Valkey (Redis-compatible) when VALKEY_URL is set, else database
+# Env var: VALKEY_URL - e.g. valkey://localhost:6379/0 or valkey://:password@host:6379/0
+# For TLS: valkeys://host:6379/0
+VALKEY_URL = os.environ.get('VALKEY_URL', '')
+if VALKEY_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_valkey.cache.ValkeyCache',
+            'LOCATION': VALKEY_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_valkey.client.DefaultClient',
+            },
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+            'LOCATION': 'cache_table',
+        }
+    }
 
 # CSRF settings for multi-pod deployment
 CSRF_COOKIE_SECURE = True

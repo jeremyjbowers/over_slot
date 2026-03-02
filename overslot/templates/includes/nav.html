@@ -1,6 +1,9 @@
 <nav class="navbar has-shadow" role="navigation" aria-label="main navigation" style="background: var(--dark-surface); border-bottom: 1px solid var(--dark-border); min-height: 3.5rem; padding: 0; position: fixed; top: 0; left: 0; right: 0; z-index: 1000;">
     <div class="container">
         <div class="navbar-brand" style="min-height: 3.5rem; display: flex; align-items: center;">
+            {% if cache_backend %}
+            <span class="cache-badge cache-badge-{{ cache_backend }}" title="Cache backend: {{ cache_backend|upper }}">{{ cache_backend|upper }}</span>
+            {% endif %}
             <a class="navbar-item logo" href="/">
                 <div class="logo-content">
                     <figure class="image is-32x32">
@@ -134,6 +137,9 @@
                                         <a class="navbar-item" href="{% url 'data_status' %}">
                                             Data status
                                         </a>
+                                        <a class="navbar-item" href="{% url 'bust_homepage_cache' %}" title="Clear homepage cache so fresh content is shown">
+                                            <i class="fas fa-sync-alt"></i> Bust homepage cache
+                                        </a>
                                     {% endif %}
                                     <hr class="navbar-divider">
                                     <a class="navbar-item" href="{% url 'account_logout' %}">
@@ -221,6 +227,32 @@
 
 .navbar-item.logo:hover .nav-logo {
     transform: scale(1.05);
+}
+
+/* Staff-only cache backend indicator */
+.cache-badge {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+}
+.cache-badge-valkey {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+.cache-badge-db {
+    background: rgba(234, 179, 8, 0.2);
+    color: #eab308;
+}
+.cache-badge-local {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+}
+.cache-badge-other {
+    background: rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
 }
 
 /* Mobile menu styles */

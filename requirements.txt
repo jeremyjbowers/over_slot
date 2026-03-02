@@ -16,6 +16,7 @@ django-js-asset==3.1.2
 django-prose-editor==0.16.1
 django-sesame==3.2.3
 django-storages==1.14.6
+django-valkey>=0.4.0
 django-summernote==0.8.20.0
 google-api-core==2.24.2
 google-api-python-client==2.169.0
