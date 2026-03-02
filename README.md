@@ -275,10 +275,11 @@ Staff users see a "Bust homepage cache" option in the user dropdown (top right).
    ```
 
 4. **Connection issues**  
-   If Valkey is configured but the badge shows DB or OTHER, check:
+   If Valkey is configured but the badge shows DB or OTHER, or you see 500s on cache-heavy pages:
    - Valkey/Redis service is running and reachable
    - For TLS, use `valkeys://` not `valkey://`
    - Firewall/network allows access to the Valkey port
+   - **DigitalOcean App Platform**: Add the managed Valkey database as a component to your app (link it in the App Spec) so the connection string is injected and networking is configured. Private hostnames require the DB to be in the same project. If using a manually set `VALKEY_URL` with a private hostname, ensure the app and DB can reach each other.
 
 5. **Stale content after save**  
    If content doesn't update after saving in admin:

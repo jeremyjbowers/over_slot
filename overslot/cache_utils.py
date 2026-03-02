@@ -26,11 +26,29 @@ def get_cached(key, compute_fn, timeout=DEFAULT_TIMEOUT):
     """
     Get value from cache, or compute and cache it.
     compute_fn is a callable that returns the value (e.g. list(queryset)).
+    If the cache backend is unreachable (connection refused, timeout, etc.),
+    falls back to computing the value so the site stays up.
     """
     try:
         return cache.get_or_set(key, compute_fn, timeout)
     except Exception:
         return compute_fn()
+
+
+def _safe_delete_many(keys):
+    """Delete cache keys; no-op if cache backend is unreachable."""
+    try:
+        cache.delete_many(keys)
+    except Exception:
+        pass
+
+
+def _safe_delete(key):
+    """Delete cache key; no-op if cache backend is unreachable."""
+    try:
+        cache.delete(key)
+    except Exception:
+        pass
 
 
 def bust_homepage():
@@ -50,33 +68,33 @@ def bust_homepage():
         f'{KEY_HOMEPAGE}:featured_games',
         f'{KEY_HOMEPAGE}:podcasts',
     ]
-    cache.delete_many(keys)
+    _safe_delete_many(keys)
 
 
 def bust_articles_list():
     """Invalidate articles list and sidebar."""
-    cache.delete_many([f'{KEY_ARTICLES}:list_items', f'{KEY_ARTICLES}:recent_rankings'])
+    _safe_delete_many([f'{KEY_ARTICLES}:list_items', f'{KEY_ARTICLES}:recent_rankings'])
 
 
 def bust_article(slug):
     """Invalidate a single article detail."""
     if slug:
-        cache.delete(f'{KEY_ARTICLE}:{slug}')
+        _safe_delete(f'{KEY_ARTICLE}:{slug}')
 
 
 def bust_stock_watch(slug):
     """Invalidate a single stock watch article detail."""
     if slug:
-        cache.delete(f'{KEY_STOCK_WATCH}:{slug}')
+        _safe_delete(f'{KEY_STOCK_WATCH}:{slug}')
 
 
 def bust_rankings_list():
     """Invalidate rankings list and mock drafts list."""
-    cache.delete_many([f'{KEY_RANKINGS}:list', f'{KEY_RANKINGS}:mock_drafts'])
+    _safe_delete_many([f'{KEY_RANKINGS}:list', f'{KEY_RANKINGS}:mock_drafts'])
 
 
 def bust_ranking(slug, is_mock_draft=False):
     """Invalidate a single ranking or mock draft detail."""
     if slug:
         key = f'{KEY_MOCK_DRAFT}:{slug}' if is_mock_draft else f'{KEY_RANKING}:{slug}'
-        cache.delete(key)
+        _safe_delete(key)

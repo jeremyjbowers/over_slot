@@ -105,6 +105,8 @@ if VALKEY_URL:
             'LOCATION': VALKEY_URL,
             'OPTIONS': {
                 'CLIENT_CLASS': 'django_valkey.client.DefaultClient',
+                # Fail fast (5s) if Valkey unreachable; avoids gunicorn timeout killing worker
+                'CONNECTION_POOL_KWARGS': {'socket_connect_timeout': 5},
             },
         }
     }
