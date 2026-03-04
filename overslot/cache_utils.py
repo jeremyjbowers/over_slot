@@ -37,11 +37,11 @@ def get_cached(key, compute_fn, timeout=DEFAULT_TIMEOUT):
 
 
 def _safe_delete_many(keys):
-    """Delete cache keys; no-op if cache backend is unreachable."""
-    try:
-        cache.delete_many(keys)
-    except Exception:
-        pass
+    """Delete cache keys; no-op if cache backend is unreachable.
+    Uses individual deletes for robustness across backends (some may have
+    delete_many quirks)."""
+    for key in keys:
+        _safe_delete(key)
 
 
 def _safe_delete(key):
