@@ -1,0 +1,192 @@
+{% extends "admin/duplicate_base.html" %}
+
+{% block title %}Cache Management{% endblock %}
+
+{% block breadcrumb %}
+    <span class="breadcrumb-separator">›</span>
+    <span>Cache Management</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-title">Cache Management</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ total_keys }}</div>
+        <div class="stat-label">Cached Keys (overslot)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label" style="font-size: 1rem; margin-top: 0;">{{ cache_backend }}</div>
+        <div class="stat-label">Cache Backend</div>
+    </div>
+</div>
+
+<!-- Bulk Actions -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <div class="card-title">Bulk Invalidation</div>
+    </div>
+    <div class="card-body">
+        <p style="margin-bottom: 1rem; color: #718096;">Clear entire cache groups at once:</p>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <form method="post" action="{% url 'cache_bust_homepage' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Bust Homepage Cache</button>
+            </form>
+            <form method="post" action="{% url 'cache_bust_articles' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline">Bust Articles List</button>
+            </form>
+            <form method="post" action="{% url 'cache_bust_rankings' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline">Bust Rankings List</button>
+            </form>
+            <form method="post" action="{% url 'cache_bust_all' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Bust All Known Caches</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete by Key -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <div class="card-title">Delete by Key</div>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{% url 'cache_delete_key' %}" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            {% csrf_token %}
+            <input type="text" name="key" class="form-input" placeholder="e.g. overslot:homepage:stock_watch" 
+                   style="max-width: 400px; flex: 1; min-width: 200px;">
+            <button type="submit" class="btn btn-danger">Delete Key</button>
+        </form>
+    </div>
+</div>
+
+<!-- Cached Keys List -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <div class="card-title">Cached Keys</div>
+        {% if total_keys == 0 %}
+        <div style="font-size: 0.9rem; color: #718096;">No keys found (or backend cannot list keys)</div>
+        {% else %}
+        <div style="font-size: 0.9rem; color: #718096;">{{ total_keys }} overslot key{{ total_keys|pluralize }}</div>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <form method="get" style="margin-bottom: 1.5rem;">
+            <div class="form-group">
+                <input type="text" name="search" value="{{ search|default:'' }}" 
+                       class="form-input" placeholder="Filter keys..." 
+                       style="max-width: 400px;">
+                <button type="submit" class="btn btn-outline" style="margin-left: 0.5rem;">Search</button>
+                {% if search %}
+                <a href="{% url 'cache_dashboard' %}" class="btn btn-secondary" style="margin-left: 0.5rem;">Clear</a>
+                {% endif %}
+            </div>
+        </form>
+
+        {% if keys_page %}
+        <div style="overflow-x: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Key</th>
+                        <th style="width: 120px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key in keys_page %}
+                    <tr>
+                        <td>
+                            <code style="font-size: 0.85rem; word-break: break-all;">{{ key }}</code>
+                        </td>
+                        <td>
+                            <form method="post" action="{% url 'cache_delete_key' %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="key" value="{{ key }}">
+                                <button type="submit" class="btn btn-danger" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;"
+                                        onclick="return confirm('Delete cache key {{ key|escapejs }}?');">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" style="text-align: center; color: #718096; padding: 2rem;">
+                            {% if search %}
+                            No keys matching "{{ search }}"
+                            {% else %}
+                            No cached keys found
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if keys_page.has_other_pages %}
+        <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 2rem;">
+            {% if keys_page.has_previous %}
+                <a href="?page={{ keys_page.previous_page_number }}{% if search %}&search={{ search }}{% endif %}" 
+                   class="btn btn-outline">Previous</a>
+            {% endif %}
+            <span style="color: #718096;">
+                Page {{ keys_page.number }} of {{ keys_page.paginator.num_pages }}
+                ({{ keys_page.paginator.count }} total)
+            </span>
+            {% if keys_page.has_next %}
+                <a href="?page={{ keys_page.next_page_number }}{% if search %}&search={{ search }}{% endif %}" 
+                   class="btn btn-outline">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% endif %}
+        {% if total_keys == 0 %}
+        <div class="card" style="margin-top: 1rem;">
+            <div class="card-header" style="background: #f7fafc;">
+                <div class="card-title" style="font-size: 1rem;">Known Static Keys</div>
+            </div>
+            <div class="card-body">
+                <p style="margin-bottom: 1rem; color: #718096; font-size: 0.9rem;">
+                    {% if cache_backend == 'Database' %}This backend cannot list keys. {% endif %}
+                    You can delete these known keys manually:
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    {% for key in known_static_keys %}
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e2e8f0;">
+                        <code style="font-size: 0.85rem;">{{ key }}</code>
+                        <form method="post" action="{% url 'cache_delete_key' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="key" value="{{ key }}">
+                            <button type="submit" class="btn btn-danger" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;">Delete</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">Key Patterns</div>
+    </div>
+    <div class="card-body">
+        <p style="margin-bottom: 1rem; color: #718096; font-size: 0.9rem;">
+            Dynamic keys (article/ranking slugs) use these patterns:
+        </p>
+        <ul style="color: #4a5568; font-size: 0.9rem; line-height: 1.8;">
+            <li><code>overslot:article:{slug}</code> — Article detail</li>
+            <li><code>overslot:stock_watch:{slug}</code> — Stock watch detail</li>
+            <li><code>overslot:ranking:{slug}</code> — Ranking detail</li>
+            <li><code>overslot:mock_draft:{slug}</code> — Mock draft detail</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

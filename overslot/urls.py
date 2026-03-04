@@ -5,7 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 
-from overslot import views, subscription_views, duplicate_views, account_views, team_duplicate_views
+from overslot import views, subscription_views, duplicate_views, account_views, team_duplicate_views, cache_admin_views
 from overslot.admin import admin_site
 from . import auth
 from .sitemaps import StaticViewSitemap, ArticleSitemap, StockWatchArticleSitemap, RankingSitemap, PlayerSitemap, MockDraftSitemap, GamesSitemap
@@ -14,6 +14,13 @@ urlpatterns = [
     # Internal data status (admin only)
     path('admin/data-status/', duplicate_views.data_status, name='data_status'),
     path('admin/bust-homepage-cache/', views.bust_homepage_cache, name='bust_homepage_cache'),
+    # Cache Management URLs (admin only)
+    path('admin/cache/', cache_admin_views.cache_dashboard, name='cache_dashboard'),
+    path('admin/cache/delete/', cache_admin_views.cache_delete_key, name='cache_delete_key'),
+    path('admin/cache/bust-homepage/', cache_admin_views.cache_bust_homepage, name='cache_bust_homepage'),
+    path('admin/cache/bust-articles/', cache_admin_views.cache_bust_articles, name='cache_bust_articles'),
+    path('admin/cache/bust-rankings/', cache_admin_views.cache_bust_rankings, name='cache_bust_rankings'),
+    path('admin/cache/bust-all/', cache_admin_views.cache_bust_all, name='cache_bust_all'),
     # Duplicate Management URLs (admin only)
     path('admin/duplicates/', duplicate_views.duplicate_dashboard, name='duplicate_dashboard'),
     path('admin/duplicates/review/', duplicate_views.review_duplicate, name='review_duplicate'),
