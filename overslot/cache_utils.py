@@ -8,10 +8,10 @@ from django.core.cache import cache
 
 # Default TTL for queryset/data caches (seconds)
 # With admin-triggered cache busting, TTL mainly handles edge cases.
-DEFAULT_TIMEOUT = 86400   # 24 hours
-HOMEPAGE_TIMEOUT = 86400  # 24 hours
-RANKING_TIMEOUT = 86400   # 24 hours
-ARTICLE_TIMEOUT = 86400   # 24 hours
+DEFAULT_TIMEOUT = 900   # 15 minutes
+HOMEPAGE_TIMEOUT = 900  # 15 minutes
+RANKING_TIMEOUT = 900   # 15 minutes
+ARTICLE_TIMEOUT = 900   # 15 minutes
 
 # Cache key prefixes - centralize for invalidation
 KEY_HOMEPAGE = 'overslot:homepage'

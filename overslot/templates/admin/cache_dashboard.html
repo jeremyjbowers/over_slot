@@ -19,6 +19,10 @@
         <div class="stat-label" style="font-size: 1rem; margin-top: 0;">{{ cache_backend }}</div>
         <div class="stat-label">Cache Backend</div>
     </div>
+    <div class="stat-card">
+        <div class="stat-number">15 min</div>
+        <div class="stat-label">Cache TTL</div>
+    </div>
 </div>
 
 <!-- Bulk Actions -->
@@ -46,6 +50,25 @@
                 <button type="submit" class="btn btn-danger">Bust All Known Caches</button>
             </form>
         </div>
+    </div>
+</div>
+
+<!-- Clear Entire Cache - Nuclear Option -->
+<div class="card" style="margin-bottom: 2rem; border: 2px solid #e53e3e;">
+    <div class="card-header" style="background: #fff5f5;">
+        <div class="card-title" style="color: #c53030;">⚠️ Clear Entire Cache</div>
+    </div>
+    <div class="card-body">
+        <p style="margin-bottom: 1rem; color: #742a2a; font-weight: 500;">
+            This will delete <strong>every key</strong> in the cache — including rate limits, sessions, and any other application data stored here. Use only when you are sure.
+        </p>
+        <form method="post" action="{% url 'cache_clear_all' %}" style="display: inline;" 
+              onsubmit="return confirm('Are you absolutely sure? This will clear ALL cache keys (rate limits, sessions, everything). There is no undo.');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger" style="background: #c53030;">
+                Clear Entire Cache
+            </button>
+        </form>
     </div>
 </div>
 

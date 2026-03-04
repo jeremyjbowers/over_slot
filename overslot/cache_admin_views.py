@@ -173,3 +173,15 @@ def cache_bust_all(request):
     bust_rankings_list()
     messages.success(request, 'All known caches cleared (homepage, articles, rankings).')
     return redirect('cache_dashboard')
+
+
+@staff_member_required
+@require_POST
+def cache_clear_all(request):
+    """Clear the entire cache. Affects ALL keys including rate limits, sessions, etc."""
+    try:
+        cache.clear()
+        messages.success(request, 'Entire cache cleared.')
+    except Exception as e:
+        messages.error(request, f'Failed to clear cache: {e}')
+    return redirect('cache_dashboard')

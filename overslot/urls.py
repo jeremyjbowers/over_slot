@@ -21,6 +21,7 @@ urlpatterns = [
     path('admin/cache/bust-articles/', cache_admin_views.cache_bust_articles, name='cache_bust_articles'),
     path('admin/cache/bust-rankings/', cache_admin_views.cache_bust_rankings, name='cache_bust_rankings'),
     path('admin/cache/bust-all/', cache_admin_views.cache_bust_all, name='cache_bust_all'),
+    path('admin/cache/clear-all/', cache_admin_views.cache_clear_all, name='cache_clear_all'),
     # Duplicate Management URLs (admin only)
     path('admin/duplicates/', duplicate_views.duplicate_dashboard, name='duplicate_dashboard'),
     path('admin/duplicates/review/', duplicate_views.review_duplicate, name='review_duplicate'),
