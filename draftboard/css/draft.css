@@ -9,6 +9,45 @@ html, body {
   display: none !important;
 }
 
+/* Player list rank: explicit colors (Tailwind CDN may not apply JS-injected bg-white/text-black) */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 1.5rem;
+  padding: 0 0.15rem;
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  text-align: center;
+  color: #fff;
+  background-color: #dc2626;
+}
+.rank-badge--chalk {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+/* Human pick: native selects in dark UI */
+.player-filter-select {
+  color-scheme: dark;
+}
+
+/* Round nav / board: avoid top clipping in viewport framing */
+#round-breadcrumbs {
+  padding-top: 0.25rem;
+  scroll-margin-top: 0.25rem;
+}
+#board {
+  padding-top: 0.25rem;
+  scroll-padding-top: 0.35rem;
+}
+[data-round-section] > h3:first-child {
+  scroll-margin-top: 0.35rem;
+}
+
 .status.picking {
   color: #ffffff;
   font-weight: 500;

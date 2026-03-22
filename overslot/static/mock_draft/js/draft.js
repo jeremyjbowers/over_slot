@@ -10,6 +10,8 @@
   /** Random senior sign amount and per-future-pick reserve (no pass picks — always sign someone). */
   const RANDOM_SENIOR_SIGN = 150000;
   const MIN_SLOT_PCT_TOP3 = 0.75; // First 3 rounds: teams cannot spend less than 75% of slot (MLB Combine rule)
+  /** After Round 2 ends: chance that 1–3 top remaining HS players “go to college” and leave the pool. */
+  const HS_GTC_AFTER_R2_CHANCE = 0.08;
 
   const TEAM_LOGO_BASE = 'https://www.mlbstatic.com/team-logos/team-cap-on-dark';
   const TEAM_LOGO_PLACEHOLDER = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5 text-neutral-300"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
@@ -22,6 +24,13 @@
   const MOCK_DRAFT_CANONICAL_ORIGIN = 'https://overslotbaseball.com';
   const MOCK_DRAFT_UUID_PATH =
     /^\/my-mock-draft\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/?$/i;
+
+  /** Single in-flight POST to save share; copy/address bar wait on this so URLs use UUID, not /s/… payload. */
+  let sharePersistPromise = null;
+
+  function isDraftCompleteForShare() {
+    return state.currentPickIndex >= state.picks.length;
+  }
 
   function getCsrfToken() {
     const m = typeof document !== 'undefined' && document.cookie
@@ -85,7 +94,11 @@
 
   function getShareableDraftUrl() {
     const home = getMockDraftHomePath();
-    const uuid = parseUuidFromMockDraftPath() || (typeof window.__MOCK_DRAFT_SHARE_UUID__ === 'string' ? window.__MOCK_DRAFT_SHARE_UUID__ : null);
+    const uuid =
+      parseUuidFromMockDraftPath() ||
+      (typeof window.__MOCK_DRAFT_SHARE_UUID__ === 'string' && window.__MOCK_DRAFT_SHARE_UUID__.length
+        ? window.__MOCK_DRAFT_SHARE_UUID__
+        : null);
     if (uuid) {
       const sharePath = `${home}/${uuid}/`;
       if (onMockDraftSimulatorPage()) return `${location.origin}${sharePath}`;
@@ -120,6 +133,10 @@
     weirdPickChance: WEIRD_LEVELS.default,
     currentPickIndex: 0,
     drafted: new Set(), // player rank
+    /** HS players who left the pool (enrolled in college); same effect as drafted for availability. */
+    hsGoToCollege: new Set(),
+    _hsGtcAppliedThisDraft: false,
+    _draftNewsFlash: '',
     boardRows: [],
     visibleRound: 1,
     pickIndexToRow: {}, // pickIndex -> { row, roundEl }
@@ -135,9 +152,7 @@
     /** After draft: which endgame tab is active. */
     endgameTab: 'my', // 'my' | 'team' | 'browse'
     endgameTeamChoice: null, // string | null — "Any team" brag sheet
-    endgameBrowseIndex: 0, // pick index in state.picks
-    /** Set after first share URL write for this completed draft; endgame UI changes must not re-POST or change the URL. */
-    _endgameShareUrlPersisted: false
+    endgameBrowseIndex: 0 // pick index in state.picks
   };
 
   function resetPhraseEntropy() {
@@ -328,6 +343,7 @@
         }
         recordPick(pick, result.player, row, result.reason, { weirdEvent: result.weirdEvent, isHuman: false, effectiveCost });
         state.currentPickIndex++;
+        maybeHsGoToCollegeAfterRound2();
         renderHumanBudgetSummary();
         processNextPick();
       }
@@ -427,6 +443,49 @@
     return fullLabel;
   }
 
+  function getLastPickIndexForRound(roundLabel) {
+    let last = -1;
+    state.picks.forEach((p, i) => {
+      if (p.round === roundLabel) last = i;
+    });
+    return last;
+  }
+
+  function isPlayerSelectableInPool(p) {
+    return !state.drafted.has(p.rank) && !state.hsGoToCollege.has(p.rank);
+  }
+
+  function consumeDraftNewsFlash() {
+    const s = state._draftNewsFlash || '';
+    state._draftNewsFlash = '';
+    return s;
+  }
+
+  /**
+   * Once per draft, right after the last Round 2 pick resolves: low chance that 1–3 top
+   * remaining HS players commit to school and are removed from the board (not drafted).
+   */
+  function maybeHsGoToCollegeAfterRound2() {
+    const lastR2 = getLastPickIndexForRound('Round 2');
+    if (lastR2 < 0) return;
+    const justFinished = state.currentPickIndex - 1;
+    if (justFinished !== lastR2) return;
+    if (state._hsGtcAppliedThisDraft) return;
+    state._hsGtcAppliedThisDraft = true;
+    if (Math.random() >= HS_GTC_AFTER_R2_CHANCE) return;
+
+    const hs = state.players
+      .filter(p => p.class === 'H' && isPlayerSelectableInPool(p))
+      .sort((a, b) => a.rank - b.rank);
+    if (hs.length === 0) return;
+
+    const n = Math.min(1 + Math.floor(Math.random() * 3), hs.length);
+    const chosen = hs.slice(0, n);
+    chosen.forEach(p => state.hsGoToCollege.add(p.rank));
+    const names = chosen.map(p => p.name).join(', ');
+    state._draftNewsFlash = `Commitment news: ${names} ${n === 1 ? 'heads' : 'head'} to college — off the board. `;
+  }
+
   function getPicksForRound(roundLabel) {
     return state.picks
       .map((p, i) => ({ pick: p, index: i }))
@@ -523,6 +582,9 @@
     state.originalHumanTeams = new Set([...state.humanTeams]);
     state.currentPickIndex = 0;
     state.drafted = new Set();
+    state.hsGoToCollege = new Set();
+    state._hsGtcAppliedThisDraft = false;
+    state._draftNewsFlash = '';
     state.teamSpent = {};
     state.teamPicks = {};
     state.boardRows = [];
@@ -536,7 +598,7 @@
     state.endgameTab = 'my';
     state.endgameTeamChoice = null;
     state.endgameBrowseIndex = 0;
-    state._endgameShareUrlPersisted = false;
+    sharePersistPromise = null;
     try {
       delete window.__MOCK_DRAFT_SHARE_UUID__;
       delete window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__;
@@ -602,6 +664,7 @@
       }
       recordPick(pending.pick, pending.result.player, pending.row, pending.result.reason, { weirdEvent: pending.result.weirdEvent, isHuman: false, effectiveCost: pending.effectiveCost });
       state.currentPickIndex++;
+      maybeHsGoToCollegeAfterRound2();
       renderHumanBudgetSummary();
     }
 
@@ -620,6 +683,9 @@
     state.paused = false;
     state.currentPickIndex = 0;
     state.drafted = new Set();
+    state.hsGoToCollege = new Set();
+    state._hsGtcAppliedThisDraft = false;
+    state._draftNewsFlash = '';
     state.teamSpent = {};
     state.teamPicks = {};
     state.boardRows = [];
@@ -629,7 +695,7 @@
     state.endgameTab = 'my';
     state.endgameTeamChoice = null;
     state.endgameBrowseIndex = 0;
-    state._endgameShareUrlPersisted = false;
+    sharePersistPromise = null;
     try {
       delete window.__MOCK_DRAFT_SHARE_UUID__;
       delete window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__;
@@ -869,16 +935,30 @@
     history.replaceState(null, '', newPath + newSearch + nextHash);
   }
 
-  function hasStableShareUrl() {
-    if (parseUuidFromMockDraftPath()) return true;
-    if (typeof window.__MOCK_DRAFT_SHARE_UUID__ === 'string' && window.__MOCK_DRAFT_SHARE_UUID__.length) return true;
-    if (/\/my-mock-draft\/s\/[^/]+\/?$/.test(location.pathname)) return true;
-    if (state._endgameShareUrlPersisted) return true;
-    return false;
-  }
+  /**
+   * Saves finished draft to the server and rewrites the URL to <code>/my-mock-draft/&lt;uuid&gt;/</code>.
+   * Returns the same Promise while a request is in flight so callers (copy button) await one save.
+   * On failure, falls back to legacy <code>/my-mock-draft/s/&lt;payload&gt;/</code>.
+   */
+  function ensureSharePersisted() {
+    if (!isDraftCompleteForShare()) {
+      return Promise.resolve({ uuid: null });
+    }
+    const pathUuid = parseUuidFromMockDraftPath();
+    if (pathUuid) {
+      return Promise.resolve({ uuid: pathUuid });
+    }
+    const winUuid = typeof window.__MOCK_DRAFT_SHARE_UUID__ === 'string' && window.__MOCK_DRAFT_SHARE_UUID__.length
+      ? window.__MOCK_DRAFT_SHARE_UUID__
+      : null;
+    if (winUuid) {
+      return Promise.resolve({ uuid: winUuid });
+    }
+    if (sharePersistPromise) {
+      return sharePersistPromise;
+    }
 
-  function replaceEndgameStateInUrl() {
-    void (async () => {
+    sharePersistPromise = (async () => {
       try {
         const bin = buildEndgamePayloadBinary();
         const enc = bytesToBase64Url(bin);
@@ -899,13 +979,16 @@
         const data = await res.json();
         const id = data && data.id;
         if (!id || typeof id !== 'string') throw new Error('missing id');
+        if (!isDraftCompleteForShare()) return { uuid: null };
         history.replaceState(null, '', `${home}/${id}/`);
         window.__MOCK_DRAFT_SHARE_UUID__ = id;
         try {
           delete window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__;
         } catch (_) { window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__ = ''; }
+        return { uuid: id };
       } catch (e) {
         console.warn('Could not persist share URL; using inline path', e);
+        if (!isDraftCompleteForShare()) return { uuid: null };
         try {
           const payload = buildEndgamePayloadBinary();
           const enc = bytesToBase64Url(payload);
@@ -914,19 +997,22 @@
         } catch (e2) {
           console.warn('Could not update URL with draft state', e2);
         }
+        return { uuid: null };
+      } finally {
+        sharePersistPromise = null;
       }
     })();
+
+    return sharePersistPromise;
   }
 
   /**
-   * Runs once when the draft is complete: persist share URL. Re-renders from endgame tabs / team
-   * changes must not call this again — the encoded draft is the same; only UI selection differs.
+   * When the draft is complete, persist UUID share URL once (re-renders share the same in-flight Promise).
    */
   function ensureEndgameShareUrl() {
-    if (state.currentPickIndex < state.picks.length) return;
-    if (hasStableShareUrl()) return;
-    state._endgameShareUrlPersisted = true;
-    replaceEndgameStateInUrl();
+    if (state.currentPickIndex >= state.picks.length) {
+      void ensureSharePersisted();
+    }
   }
 
   function buildDraftShareCallout() {
@@ -947,6 +1033,7 @@
     const labelDefault = 'Copy URL to my draft';
     btn.textContent = labelDefault;
     btn.addEventListener('click', async () => {
+      await ensureSharePersisted();
       const url = getShareableDraftUrl();
       try {
         await navigator.clipboard.writeText(url);
@@ -1535,17 +1622,35 @@
     return r === 'Competitive Balance Round A' || r === 'Round 2' || r === 'Round 3';
   }
 
+  function isRound1(pick) {
+    const r = (pick?.round || '').trim();
+    return r === 'Round 1';
+  }
+
   /** College-only: signing cost scales vs draft pick # (player rank). */
   function getCollegeRankVsPickMultiplier(player, pick) {
     if (player.class !== 'C' || !pick || pick.pick == null) return 1;
     const pickNum = pick.pick;
     const rank = player.rank;
     const spotsBelow = rank - pickNum;
+    const spotsAbove = pickNum - rank;
+
+    // Round 1: keep bonuses closer to slot when a player slides or is reached for
+    if (isRound1(pick)) {
+      if (spotsBelow >= 150) return 0.96;
+      if (spotsBelow >= 100) return 0.97;
+      if (spotsBelow >= 60) return 0.98;
+      if (spotsBelow >= 30) return 0.99;
+      if (spotsAbove >= 150) return 1.04;
+      if (spotsAbove >= 100) return 1.03;
+      if (spotsAbove >= 50) return 1.02;
+      return 1;
+    }
+
     if (spotsBelow >= 150) return 0.75;
     if (spotsBelow >= 100) return 0.80;
     if (spotsBelow >= 60) return 0.90;
     if (spotsBelow >= 30) return 0.95;
-    const spotsAbove = pickNum - rank;
     if (spotsAbove >= 150) return 1.25;
     if (spotsAbove >= 100) return 1.20;
     if (spotsAbove >= 50) return 1.10;
@@ -1562,7 +1667,16 @@
     if (!player || !slotValue) return player?.cost ?? 0;
     if (player.class !== 'C') return player.cost;
     let base = player.cost;
-    if (isCompAOrRound2Or3(pick)) {
+    if (isRound1(pick)) {
+      const roll = Math.random();
+      if (roll < 0.62) base = slotValue;
+      else if (roll < 0.88) {
+        base = Math.floor(slotValue * (0.97 + Math.random() * 0.06));
+      } else {
+        const discountPct = 0.01 + Math.random() * 0.02;
+        base = Math.floor(slotValue * (1 - discountPct));
+      }
+    } else if (isCompAOrRound2Or3(pick)) {
       if (Math.random() < 0.6) base = slotValue;
       else {
         const discountPct = 0.01 + Math.random() * 0.02;
@@ -1574,8 +1688,8 @@
 
   /**
    * @param {object} [opts]
-   * @param {boolean} [opts.useFullRemainingPoolForCap] — Human board only: cap by total pool left so you can see
-   *   players you could sign by going over slot now and saving later (senior/underslot). AI uses conservative cap.
+   * @param {boolean} [opts.useFullRemainingPoolForCap] — If true, cap by raw pool left (misleading vs Plan max).
+   *   Default false: same cap as resolvePickForPool / human “Plan max”.
    */
   function getAvailablePlayers(slotValue, team, pickIndex, opts = {}) {
     const idx = pickIndex ?? state.currentPickIndex;
@@ -1589,14 +1703,11 @@
       ? Math.floor(slotValue * MIN_SLOT_PCT_TOP3)
       : 0;
     return state.players
-      .filter(p => !state.drafted.has(p.rank))
+      .filter(p => isPlayerSelectableInPool(p))
       .filter(p => {
-        const effectiveMax = (p.class === 'C' && pick && isCompAOrRound2Or3(pick))
-          ? slotValue
-          : p.cost;
-        const effectiveMin = (p.class === 'C' && pick && isCompAOrRound2Or3(pick))
-          ? Math.floor(slotValue * 0.97)
-          : p.cost;
+        const collegeSlotBand = pick && p.class === 'C' && isCompAOrRound2Or3(pick);
+        const effectiveMax = collegeSlotBand ? slotValue : p.cost;
+        const effectiveMin = collegeSlotBand ? Math.floor(slotValue * 0.97) : p.cost;
         return effectiveMax <= maxSpend && effectiveMin >= minSpend;
       })
       .sort((a, b) => a.rank - b.rank);
@@ -2378,7 +2489,7 @@
 
   function getUndraftedByCostAsc() {
     return state.players
-      .filter(p => !state.drafted.has(p.rank))
+      .filter(p => isPlayerSelectableInPool(p))
       .sort((a, b) => a.cost - b.cost);
   }
 
@@ -2455,6 +2566,7 @@
     }
 
     const pick = state.picks[state.currentPickIndex];
+    const newsPrefix = consumeDraftNewsFlash();
     ensureRoundVisible(pick.round);
     const { row } = state.pickIndexToRow[state.currentPickIndex];
     const isHuman = state.humanTeams.has(pick.team);
@@ -2471,14 +2583,14 @@
     if (isHuman) {
       state._pendingAdvance = null;
       state._pickTimeoutId = null;
-      $status.textContent = `Waiting for ${pick.team} to pick...`;
+      $status.textContent = newsPrefix + `Waiting for ${pick.team} to pick...`;
       $status.classList.add('picking');
       $currentPick.classList.remove('hidden');
       if ($aiReasoning) $aiReasoning.classList.add('hidden');
       updatePauseButtonUI();
       showHumanPickUI(pick);
     } else {
-      $status.textContent = `${pick.team} are picking...`;
+      $status.textContent = newsPrefix + `${pick.team} are picking...`;
       $status.classList.add('picking');
       $currentPick.classList.add('hidden');
       const result = aiPick(pick, pick.value, state.currentPickIndex);
@@ -2533,6 +2645,7 @@
         }
         recordPick(pending.pick, pending.result.player, pending.row, pending.result.reason, { weirdEvent: pending.result.weirdEvent, isHuman: false, effectiveCost: pending.effectiveCost });
         state.currentPickIndex++;
+        maybeHsGoToCollegeAfterRound2();
         renderHumanBudgetSummary();
         processNextPick();
       }, state.pickDelay);
@@ -2600,6 +2713,83 @@
     });
   }
 
+  function getTokensFromPositionString(pos) {
+    if (!pos || typeof pos !== 'string') return [];
+    return pos.split(/[\/]/).map(s => s.trim().toUpperCase()).filter(Boolean);
+  }
+
+  /** Aligns with team-fit logic: primary slot is pitching if position starts with RHP/LHP. */
+  function isPitcherPlayerProfile(p) {
+    return /^(RHP|LHP|RHP\/|LHP\/)/.test(p.position || '');
+  }
+
+  function tokenIsPitcherOnly(t) {
+    return t === 'RHP' || t === 'LHP';
+  }
+
+  /** True if the player has a mound profile (listed arm or RHP/LHP token). */
+  function hasPitcherSide(p) {
+    if (isPitcherPlayerProfile(p)) return true;
+    return getTokensFromPositionString(p.position).some(tokenIsPitcherOnly);
+  }
+
+  /** True if the player has a non-pitching position (e.g. OF on RHP/OF). Pure RHP/LHP only → false. */
+  function hasHitterSide(p) {
+    const tokens = getTokensFromPositionString(p.position);
+    if (tokens.length === 0) return !isPitcherPlayerProfile(p);
+    return tokens.some(t => !tokenIsPitcherOnly(t));
+  }
+
+  function positionMatchesQuickFilter(player, posVal) {
+    if (!posVal || posVal === 'all') return true;
+    if (posVal === 'hitter') return hasHitterSide(player);
+    if (posVal === 'pitcher') return hasPitcherSide(player);
+    const want = String(posVal).toUpperCase();
+    return getTokensFromPositionString(player.position).includes(want);
+  }
+
+  function pathMatchesQuickFilter(player, pathVal) {
+    if (!pathVal || pathVal === 'all') return true;
+    if (pathVal === 'college') return player.class === 'C';
+    if (pathVal === 'hs') return player.class === 'H';
+    return true;
+  }
+
+  function passesPlayerQuickFilters(player) {
+    const posSel = $('player-filter-position');
+    const pathSel = $('player-filter-path');
+    const posVal = posSel ? posSel.value : 'all';
+    const pathVal = pathSel ? pathSel.value : 'all';
+    return pathMatchesQuickFilter(player, pathVal) && positionMatchesQuickFilter(player, posVal);
+  }
+
+  function uniquePositionTokensForFilter() {
+    const seen = new Set();
+    state.players.forEach(p => {
+      getTokensFromPositionString(p.position).forEach(t => seen.add(t));
+    });
+    return [...seen].sort((a, b) => a.localeCompare(b));
+  }
+
+  function populatePlayerFilterPositionSelect() {
+    const posSel = $('player-filter-position');
+    if (!posSel) return;
+    posSel.innerHTML = '';
+    const add = (v, label) => {
+      const o = document.createElement('option');
+      o.value = v;
+      o.textContent = label;
+      posSel.appendChild(o);
+    };
+    add('all', 'All positions');
+    add('hitter', 'Hitters');
+    add('pitcher', 'Pitchers');
+    uniquePositionTokensForFilter().forEach(t => {
+      add(t, t);
+    });
+    posSel.value = 'all';
+  }
+
   function showHumanPickUI(pick) {
     $currentPick.classList.remove('hidden');
     const pool = getTeamPool(pick.team);
@@ -2612,7 +2802,6 @@
     const reserveNote = picksLeft > 1
       ? ` · reserves ${fmt(futureReserve)} for ${picksLeft - 1} pick${picksLeft - 1 !== 1 ? 's' : ''} after this`
       : '';
-    const minNote = isTopThreeRounds(pick) && pick.value ? ` · min ${fmt(Math.floor(pick.value * MIN_SLOT_PCT_TOP3))}` : '';
     const headerArea = $currentPick.querySelector('#pick-header-area');
     if (headerArea) {
       headerArea.innerHTML = `
@@ -2625,22 +2814,33 @@
             <span>Pool ${fmt(pool)}</span>
             <span>Spent ${fmt(spent)}</span>
             <span class="text-white font-medium">Remaining ${fmt(remaining)}</span>
-            <span class="text-overslot-red/90" title="Pool left if you reserve money for remaining picks (AI uses this)">Plan max ${fmt(maxThisPick)}</span>${reserveNote ? `<span class="text-neutral-400">${reserveNote}</span>` : ''}${minNote ? `<span class="text-neutral-400">${minNote}</span>` : ''}
-            <span class="text-neutral-400">· list is everyone ≤ ${fmt(remaining)}</span>
+            <span class="text-overslot-red/90" title="Pool left if you reserve money for remaining picks (AI uses this)">Plan max ${fmt(maxThisPick)}</span>${reserveNote ? `<span class="text-neutral-400">${reserveNote}</span>` : ''}
           </div>
         </div>`;
     }
 
-    const available = getAvailablePlayers(pick.value, pick.team, state.currentPickIndex, {
-      useFullRemainingPoolForCap: true
-    });
+    const available = getAvailablePlayers(pick.value, pick.team, state.currentPickIndex);
     const fitSorted = getTeamFitCandidates(available, pick.team, state.currentPickIndex, pick.value);
     const rankSorted = [...available].sort((a, b) => a.rank - b.rank);
     const filterInput = $('player-filter');
     if (filterInput) filterInput.value = '';
+    populatePlayerFilterPositionSelect();
+    const pathSel = $('player-filter-path');
+    if (pathSel) pathSel.value = 'all';
 
     const labelEl = $('player-list-label');
     const availableEl = $availablePlayers;
+
+    const playerSelectionEl = document.querySelector('.player-selection');
+    if (playerSelectionEl && !playerSelectionEl.dataset.playerFilterSelectListeners) {
+      playerSelectionEl.dataset.playerFilterSelectListeners = '1';
+      playerSelectionEl.addEventListener('change', e => {
+        const id = e.target && e.target.id;
+        if (id === 'player-filter-position' || id === 'player-filter-path') {
+          state._topViewRefresh?.();
+        }
+      });
+    }
 
     function updateTopViewButtons() {
       document.querySelectorAll('.top-view-btn').forEach(btn => {
@@ -2659,35 +2859,50 @@
           const div = document.createElement('div');
           div.className = playerCardClass;
           const isChalk = chalk && p.rank === chalk.rank;
-          const rankClass = isChalk ? 'bg-white text-black' : 'bg-overslot-red text-white';
-          const baseListCost = (p.class === 'C' && isCompAOrRound2Or3(pick)) ? pick.value : p.cost;
+          const rankClass = isChalk ? 'rank-badge rank-badge--chalk' : 'rank-badge';
+          const baseListCost = (p.class === 'C' && (isCompAOrRound2Or3(pick) || isRound1(pick))) ? pick.value : p.cost;
           const listCost = p.class === 'C' ? applyCollegeRankVsPickToCost(baseListCost, p, pick) : baseListCost;
           const costClass = listCost > pick.value ? 'text-overslot-red' : listCost < pick.value ? 'text-green-400' : 'text-white';
-          div.innerHTML = `${playerPhotoHtml(p)}<span class="w-8 flex-shrink-0 ${rankClass} font-bold text-center">${p.rank}</span><span>${escapeHtml(p.position)} ${escapeHtml(p.name)}, ${escapeHtml(p.school)} » <span class="${costClass}">${fmt(listCost)}</span></span>`;
+          div.innerHTML = `${playerPhotoHtml(p)}<span class="${rankClass}">${p.rank}</span><span>${escapeHtml(p.position)} ${escapeHtml(p.name)}, ${escapeHtml(p.school)} » <span class="${costClass}">${fmt(listCost)}</span></span>`;
           div.dataset.rank = String(p.rank);
           div.addEventListener('click', () => makeHumanPick(p));
           availableEl.appendChild(div);
         });
       };
 
+      function textMatchesPlayer(p, query) {
+        if (!query) return true;
+        return p.name.toLowerCase().includes(query) ||
+          (p.school || '').toLowerCase().includes(query) ||
+          (p.position || '').toLowerCase().includes(query);
+      }
+
+      const rankFiltered = rankSorted.filter(passesPlayerQuickFilters);
+      const fitFiltered = fitSorted.filter(passesPlayerQuickFilters);
+
       if (q) {
-        const filtered = fitSorted.filter(p =>
-          p.name.toLowerCase().includes(q) ||
-          (p.school || '').toLowerCase().includes(q) ||
-          (p.position || '').toLowerCase().includes(q)
-        );
-        if (labelEl) labelEl.textContent = `Search results (${filtered.length})`;
-        const searchHighest = filtered.length ? filtered.reduce((best, p) => (!best || p.rank < best.rank ? p : best)) : null;
-        const orderedFiltered = [...filtered].sort((a, b) => a.rank - b.rank);
+        const pool = fitSorted.filter(passesPlayerQuickFilters).filter(p => textMatchesPlayer(p, q));
+        const orderedFiltered = [...pool].sort((a, b) => a.rank - b.rank);
+        if (labelEl) labelEl.textContent = `Search results (${orderedFiltered.length})`;
+        const searchHighest = orderedFiltered.length
+          ? orderedFiltered.reduce((best, p) => (!best || p.rank < best.rank ? p : best))
+          : null;
         renderPlayers(orderedFiltered, searchHighest);
       } else {
-        const highestRanked = rankSorted.length ? rankSorted[0] : null;
         const labelText = state.topViewMode === 'highestRanked' ? 'Highest ranked:' : 'Best fits for ' + pick.team + ':';
-        if (labelEl) labelEl.textContent = labelText;
-        const orderedAvailable = state.topViewMode === 'highestRanked'
-          ? rankSorted
-          : (highestRanked ? [highestRanked, ...fitSorted.filter(p => p.rank !== highestRanked.rank)] : fitSorted);
-        renderPlayers(orderedAvailable, highestRanked);
+        if (labelEl) labelEl.textContent = rankFiltered.length ? labelText : 'No players match filters';
+        if (!rankFiltered.length) {
+          renderPlayers([], null);
+          return;
+        }
+        if (state.topViewMode === 'highestRanked') {
+          const chalk = rankFiltered[0];
+          renderPlayers(rankFiltered, chalk);
+        } else {
+          const highestRanked = rankFiltered[0];
+          const orderedAvailable = [highestRanked, ...fitFiltered.filter(p => p.rank !== highestRanked.rank)];
+          renderPlayers(orderedAvailable, highestRanked);
+        }
       }
     }
 
@@ -2729,6 +2944,7 @@
     }
     recordPick(pick, chosen, row, reason, { isHuman: true });
     state.currentPickIndex++;
+    maybeHsGoToCollegeAfterRound2();
     $currentPick.classList.add('hidden');
     renderHumanBudgetSummary();
     processNextPick();
