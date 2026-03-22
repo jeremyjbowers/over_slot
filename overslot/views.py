@@ -12,14 +12,12 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import JsonResponse
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import AnonymousUser
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from decimal import *
 from django.utils.timezone import template_localtime, now
 from django.template.loader import render_to_string
 from django.template.response import TemplateResponse
-from django.test import RequestFactory
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
@@ -439,31 +437,29 @@ def mock_drafts_list(request):
     return render(request, "rankings_list.html", context)
 
 
-def _render_my_mock_draft_html():
-    """
-    Build public HTML for Valkey. Uses a synthetic request only so context processors run;
-    output must not depend on any incoming request path (share URLs use a separate view).
-    """
-    rf = RequestFactory()
-    req = rf.get("/my-mock-draft/")
-    req.user = AnonymousUser()
-    return render_to_string(
-        "mock_draft_sim.html",
-        {"hide_nav_account": True},
-        request=req,
-    )
-
-
 @ensure_csrf_cookie
 @require_GET
 def my_mock_draft(request):
     """
     Simulator landing page. Valkey stores one HTML string under a fixed key (no path/query
     variation). Share URLs (/my-mock-draft/s/…/, /my-mock-draft/<uuid>/) are never cached.
+
+    The cached HTML must be rendered with the real incoming request. A synthetic
+    RequestFactory request uses Host ``testserver``, which is not in ALLOWED_HOSTS; templates
+    that call ``request.build_absolute_uri()`` (e.g. ``og:url`` in base) then raise
+    ``DisallowedHost`` and Django returns 400.
     """
+
+    def compute_cached_html():
+        return render_to_string(
+            "mock_draft_sim.html",
+            {"hide_nav_account": True},
+            request=request,
+        )
+
     html = get_cached(
         KEY_MY_MOCK_DRAFT_HTML,
-        _render_my_mock_draft_html,
+        compute_cached_html,
         MOCK_DRAFT_SIM_PAGE_TIMEOUT,
     )
     return HttpResponse(html)
