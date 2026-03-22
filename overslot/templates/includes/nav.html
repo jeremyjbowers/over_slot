@@ -109,6 +109,7 @@
                         </div>
                     </div>
                 </div>
+                {% if not hide_nav_account %}
                 <div class="navbar-item">
                     <div class="buttons">
                         {% if user.is_authenticated %}
@@ -160,6 +161,7 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>

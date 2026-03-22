@@ -21,6 +21,7 @@ from overslot.cache_utils import (
     KEY_RANKINGS,
     KEY_RANKING,
     KEY_MOCK_DRAFT,
+    KEY_MY_MOCK_DRAFT_HTML,
 )
 
 
@@ -113,6 +114,7 @@ def cache_dashboard(request):
         f'{KEY_ARTICLES}:recent_rankings',
         f'{KEY_RANKINGS}:list',
         f'{KEY_RANKINGS}:mock_drafts',
+        KEY_MY_MOCK_DRAFT_HTML,
     ]
 
     return render(request, 'admin/cache_dashboard.html', context)

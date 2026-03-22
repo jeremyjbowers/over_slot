@@ -1328,3 +1328,17 @@ class Game(BaseModel):
             self.status = 'future'
         
         super().save(*args, **kwargs)
+
+
+class MockDraftShare(models.Model):
+    """
+    Finished mock-draft simulator state for short share URLs (/my-mock-draft/<uuid>/).
+    Payload matches the client binary format (magic OSD1 + version + picks).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    payload = models.BinaryField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.id)

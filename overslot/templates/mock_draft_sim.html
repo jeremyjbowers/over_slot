@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}2026 MLB Mock Draft Simulator{% endblock %}
+
+{% block meta_description %}Run a full first-round style MLB draft simulator with slot values, team tendencies, and shareable results — right in your browser.{% endblock %}
+
+{% block og_title %}2026 MLB Mock Draft Simulator | Over Slot{% endblock %}
+{% block og_description %}Run a full first-round style MLB draft simulator with slot values, team tendencies, and shareable results — right in your browser.{% endblock %}
+{% block twitter_title %}2026 MLB Mock Draft Simulator | Over Slot{% endblock %}
+{% block twitter_description %}Run a full first-round style MLB draft simulator with slot values, team tendencies, and shareable results — right in your browser.{% endblock %}
+
+{% block extra_head %}
+{{ block.super }}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          overslot: {
+            black: '#000000',
+            red: '#dc2626',
+            'red-hover': '#ef4444',
+            grey: '#1a1a1a',
+            'grey-border': '#262626',
+            'grey-muted': '#737373',
+            amber: '#f59e0b',
+          }
+        }
+      }
+    }
+  };
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script>
+  (function () {
+    try {
+      if (/\/my-mock-draft\/s\/[A-Za-z0-9_-]+\/?$/.test(location.pathname)) {
+        document.documentElement.classList.add('endgame-pending');
+        return;
+      }
+      if (/\/my-mock-draft\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/?$/i.test(location.pathname)) {
+        document.documentElement.classList.add('endgame-pending');
+        return;
+      }
+      var s = location.search;
+      if (s.length > 1) {
+        var b = s.slice(1);
+        if (b.indexOf('d=') === 0) {
+          document.documentElement.classList.add('endgame-pending');
+          return;
+        }
+        if (b.indexOf('=') < 0 && /^[A-Za-z0-9_-]+$/.test(b)) {
+          document.documentElement.classList.add('endgame-pending');
+          return;
+        }
+      }
+    } catch (e) { /* ignore */ }
+    if (location.hash && location.hash.indexOf('#d=') === 0) {
+      document.documentElement.classList.add('endgame-pending');
+    }
+  })();
+</script>
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'mock_draft/css/draft.css' %}">
+<style>
+  /* Embedded under site chrome: keep page scrollable; confine simulator to viewport below fixed nav */
+  body > main {
+    padding-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    min-height: 100%;
+  }
+  .mock-draft-viewport {
+    flex: 1;
+    min-height: 0;
+    height: calc(100vh - 3.5rem);
+    max-height: calc(100vh - 3.5rem);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  /* Site navbar is z-index 1000; draft modal must sit above it */
+  #modal-draft-money {
+    z-index: 1002 !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mock-draft-viewport bg-overslot-black text-white">
+  <div class="flex-1 min-h-0 flex flex-col overflow-hidden max-w-[1920px] mx-auto w-full px-2 py-2">
+    <div class="draft-sim-main flex-1 min-h-0 overflow-hidden flex flex-col">
+      <section id="setup" class="bg-overslot-grey border border-overslot-grey-border p-4 flex-1 min-h-0 overflow-y-auto">
+        <div class="mb-4">
+          <h2 class="text-base font-semibold text-overslot-red mb-2">Select Your Team</h2>
+          <div id="human-teams" class="team-select-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            <div id="draft-money-primer" class="draft-money-primer col-span-2 row-span-1 row-start-1 sm:col-span-3 sm:row-span-3 sm:row-start-1 md:col-start-2 md:col-span-3 md:row-span-3 md:row-start-1 lg:col-start-3 lg:col-span-3 lg:row-span-3 lg:row-start-1 p-3 border border-overslot-grey-border bg-black/40 rounded-sm flex flex-col min-h-0 min-w-0 self-stretch">
+              <h3 class="text-sm font-semibold text-neutral-100 mb-2 flex-shrink-0 leading-snug">How money in the MLB draft works</h3>
+              <ul class="text-sm text-neutral-300 space-y-1.5 list-disc list-inside mb-3 flex-1 min-h-0 overflow-y-auto pr-0.5 draft-money-primer-list">
+                <li>Each pick in the first 10 rounds carries an MLB-assigned <strong class="text-neutral-100 font-medium">slot value</strong>; your team’s bonus pool is the sum of those slots.</li>
+                <li>Teams pay <strong class="text-neutral-100 font-medium">over slot</strong> to land some players and <strong class="text-neutral-100 font-medium">under slot</strong> on others—moving money around within the pool.</li>
+                <li><strong class="text-neutral-100 font-medium">Leverage</strong> varies by path: many high school commits need a big number to skip school; college seniors often sign for far less and free up pool elsewhere.</li>
+              </ul>
+              <button type="button" id="btn-draft-money-read-more" class="flex-shrink-0 self-start text-sm px-3 py-1.5 border border-overslot-grey-border bg-overslot-grey hover:border-neutral-500 text-neutral-100 font-medium cursor-pointer">Read more</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="p-3 border border-overslot-grey-border bg-overslot-grey">
+            <label class="block text-sm font-medium text-neutral-100 mb-2">Pace (delay between AI picks)</label>
+            <div class="flex flex-wrap gap-2 items-center">
+              <button type="button" id="btn-pace-0.5" class="pace-btn text-sm px-3 py-1.5 border border-overslot-grey-border bg-overslot-grey hover:border-neutral-500 text-neutral-100 font-medium" data-ms="500">0.5 sec</button>
+              <button type="button" id="btn-pace-1" class="pace-btn selected text-sm px-3 py-1.5 border border-overslot-grey-border bg-overslot-grey hover:border-neutral-500 text-neutral-100 font-medium" data-ms="1000">1 sec</button>
+              <button type="button" id="btn-pace-2" class="pace-btn text-sm px-3 py-1.5 border border-overslot-grey-border bg-overslot-grey hover:border-neutral-500 text-neutral-100 font-medium" data-ms="2000">2 sec</button>
+              <button type="button" id="btn-pace-5" class="pace-btn text-sm px-3 py-1.5 border border-overslot-grey-border bg-overslot-grey hover:border-neutral-500 text-neutral-100 font-medium" data-ms="5000">5 sec</button>
+            </div>
+          </div>
+          <div class="p-3 border border-amber-500/40 bg-amber-950/30">
+            <label class="block text-sm font-medium text-amber-200 mb-2">Weird events (surprise picks, owner overrides)</label>
+            <div class="flex flex-wrap gap-2 items-center">
+              <button type="button" id="btn-weird-default" class="weird-btn text-sm px-3 py-1.5 border border-amber-500/50 bg-amber-900/30 hover:bg-amber-800/40 text-amber-100 font-medium" data-level="default">Default</button>
+              <button type="button" id="btn-weird-more" class="weird-btn text-sm px-3 py-1.5 border border-amber-500/50 bg-amber-900/30 hover:bg-amber-800/40 text-amber-100 font-medium" data-level="more">More</button>
+              <button type="button" id="btn-weird-crazy" class="weird-btn text-sm px-3 py-1.5 border border-amber-500/50 bg-amber-900/30 hover:bg-amber-800/40 text-amber-100 font-medium" data-level="crazy">Let's get crazy</button>
+            </div>
+          </div>
+          <button id="btn-start" type="button" class="bg-overslot-red hover:bg-overslot-red-hover text-white font-medium px-5 py-2.5 cursor-pointer">Start Draft</button>
+        </div>
+      </section>
+
+      <section id="draft" class="hidden flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden min-h-0">
+        <div id="draft-complete" class="hidden flex-shrink-0 w-full border border-overslot-red/40 bg-gradient-to-b from-red-950/40 to-overslot-grey border-b-overslot-grey-border shadow-[0_0_40px_-8px_rgba(220,38,38,0.35)]">
+          <div id="draft-complete-inner" class="draft-complete-inner max-w-5xl mx-auto w-full px-2 py-3 sm:px-4 sm:py-4 overflow-x-hidden flex flex-col gap-4" style="scrollbar-width: thin"></div>
+        </div>
+        <div id="draft-body" class="flex-1 min-h-0 flex gap-3 flex-col lg:flex-row overflow-hidden min-h-0">
+          <div class="lg:flex-1 lg:min-w-0 flex flex-col gap-2 overflow-hidden min-h-0">
+            <div id="round-breadcrumbs" class="hidden flex flex-wrap items-baseline gap-x-1.5 gap-y-0 text-sm leading-tight mb-1 flex-shrink-0"></div>
+            <div id="board" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-2" style="scrollbar-width: thin"></div>
+            <div class="mt-2 flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0">
+              <div id="status" class="flex-1 min-w-[8rem] text-neutral-100 text-base font-medium"></div>
+              <button type="button" id="btn-simulate-rest" class="hidden text-sm px-3 py-1.5 border border-neutral-500 bg-overslot-grey hover:border-neutral-400 text-neutral-100 font-medium cursor-pointer" title="Let the simulator pick for every team (including yours) until the draft finishes">Simulate to end</button>
+              <button type="button" id="btn-pause" class="hidden px-4 py-1.5 border border-amber-500/60 bg-amber-900/40 hover:bg-amber-800/50 text-amber-100 font-medium text-sm cursor-pointer">Pause</button>
+              <button type="button" id="btn-resume" class="hidden px-4 py-1.5 border border-overslot-red bg-overslot-red hover:bg-overslot-red-hover text-white font-medium text-sm cursor-pointer">Resume</button>
+              <button type="button" id="btn-restart" class="hidden flex-shrink-0 text-sm px-3 py-1.5 border border-amber-500/80 bg-amber-950/55 text-amber-100 font-semibold cursor-pointer hover:bg-amber-900/70 hover:border-amber-400 transition-colors">Restart</button>
+            </div>
+          </div>
+
+          <div id="draft-side" class="lg:flex-1 lg:min-w-0 flex flex-col gap-2 overflow-hidden min-h-0">
+            <div id="human-budget-summary" class="hidden p-2 bg-overslot-grey border border-overslot-grey-border text-xs flex-shrink-0"></div>
+
+            <div id="pick-panel" class="flex-1 min-h-0 flex flex-col overflow-hidden min-h-0">
+              <div id="ai-reasoning" class="hidden relative bg-overslot-grey border border-overslot-grey-border flex flex-col overflow-hidden">
+                <div class="flex-1 flex flex-col justify-center p-4 min-h-0">
+                  <div id="ai-reasoning-team" class="hidden"></div>
+                  <div class="ai-reasoning-text" id="ai-reasoning-text"></div>
+                </div>
+                <div class="weird-event-label hidden flex-shrink-0 bg-overslot-amber text-white text-center font-semibold py-2 text-sm w-full">Weird event</div>
+              </div>
+              <div id="current-pick" class="hidden flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div class="flex-1 min-h-0 flex flex-col gap-3 bg-overslot-grey border border-overslot-grey-border overflow-hidden">
+                  <div id="pick-header-area" class="p-3 flex-shrink-0"></div>
+                  <div class="player-selection flex-1 min-h-0 flex flex-col px-4 pb-4 overflow-hidden">
+                    <div class="flex flex-wrap gap-2 items-center mb-2">
+                      <button id="btn-skip" type="button" class="flex-shrink-0 bg-overslot-red hover:bg-overslot-red-hover text-white font-medium px-4 py-1.5 cursor-pointer text-sm">Take best available</button>
+                      <button id="btn-show-highest" type="button" class="top-view-btn flex-shrink-0 text-sm px-3 py-1.5 border border-overslot-grey-border bg-overslot-grey hover:border-neutral-500 text-neutral-100 font-medium" data-mode="highestRanked">Show highest ranked</button>
+                      <button id="btn-show-bestfit" type="button" class="top-view-btn flex-shrink-0 text-sm px-3 py-1.5 border border-overslot-grey-border bg-overslot-grey hover:border-neutral-500 text-neutral-100 font-medium" data-mode="bestFit">Show best fit</button>
+                    </div>
+                    <input type="text" id="player-filter" placeholder="Filter: name, school, position..." autocomplete="off" class="w-full mb-2 bg-overslot-grey border-2 border-neutral-500 px-3 py-1.5 text-sm text-white placeholder-neutral-300 rounded focus:border-overslot-red focus:outline-none">
+                    <div class="player-list-container flex-1 min-h-0 flex flex-col overflow-hidden">
+                      <div id="player-list-label" class="text-neutral-100 text-sm mb-1 flex-shrink-0">Best fits</div>
+                      <div id="available-players" class="flex-1 min-h-0 overflow-y-auto space-y-1 overflow-x-hidden"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div id="modal-draft-money" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75" role="dialog" aria-modal="true" aria-labelledby="modal-draft-money-title">
+  <div class="absolute inset-0" id="modal-draft-money-backdrop" aria-hidden="true"></div>
+  <div class="relative z-10 w-full max-w-2xl max-h-[min(90vh,40rem)] flex flex-col bg-overslot-grey border border-overslot-grey-border shadow-xl rounded-sm">
+    <div class="flex-shrink-0 flex items-start justify-between gap-3 p-4 border-b border-overslot-grey-border">
+      <h2 id="modal-draft-money-title" class="text-lg font-semibold text-white pr-2">How MLB draft money works</h2>
+      <button type="button" id="modal-draft-money-close" class="flex-shrink-0 text-sm px-2 py-1 border border-overslot-grey-border bg-black/30 hover:border-neutral-500 text-neutral-100 font-medium cursor-pointer" aria-label="Close">Close</button>
+    </div>
+    <div class="flex-1 min-h-0 overflow-y-auto p-4 text-sm text-neutral-300 space-y-4" style="scrollbar-width: thin">
+      <p class="text-neutral-200">The draft is primarily a <strong class="text-white font-medium">budget puzzle</strong>. Want to know more about the game board and the pieces? Here’s how it all works.</p>
+
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-1">Slot value &amp; the bonus pool</h3>
+        <p>MLB assigns a <strong class="text-neutral-100">slot value</strong> to each pick in rounds 1–10 (and some related picks). A team’s <strong class="text-neutral-100">bonus pool</strong> is essentially the sum of those slots. What you actually pay each signee counts against that pool (with some technical exceptions below).</p>
+      </div>
+
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-1">Over slot vs. under slot</h3>
+        <p>If you sign someone <strong class="text-neutral-100">over slot</strong>, you’re paying above that pick’s assigned number—usually to beat a college commitment or buy talent down the board. If you sign someone <strong class="text-neutral-100">under slot</strong>, you pay less and <strong class="text-neutral-100">bank savings</strong> for other picks. Teams routinely mix both in the same draft class.</p>
+        <p class="mt-2 text-neutral-400 text-xs">Edge case: pool overages trigger taxes and can cost future picks if you blow past limits—this simulator simplifies real-world penalties, but the core idea is “you only have so much room to shuffle.”</p>
+      </div>
+
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-1">Leverage: high school vs. college seniors</h3>
+        <p><strong class="text-neutral-100">High schoolers</strong> with strong college options often need <strong class="text-neutral-100">full slot or well over slot</strong> to skip school—otherwise they enroll. That’s why prep bats and arms “cost more” in negotiation even when the pick number looks the same on paper.</p>
+        <p class="mt-2"><strong class="text-neutral-100">College seniors</strong> (and many fourth-year players) have <strong class="text-neutral-100">little leverage</strong>: no NCAA eligibility left, clock is ticking. They frequently sign for <strong class="text-neutral-100">well under slot</strong>—sometimes tiny numbers in later rounds—so teams can redirect pool money to harder signs.</p>
+      </div>
+
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-1">Sophomores &amp; “extra year” paths</h3>
+        <p><strong class="text-neutral-100">Junior-college sophomores</strong> are a classic draft path: they can turn pro after two years at a JC. At four-year schools, eligibility rules (e.g. turning 21 before draft day, or completing three years) mean some players are in the draft as <strong class="text-neutral-100">sophomores or “young” juniors</strong>—their ask depends on how much they like their remaining NCAA runway vs. the offer.</p>
+        <p class="mt-2 text-neutral-400 text-xs">Edge case: the COVID-era extra year of eligibility blurred class labels for a while; the money story is still leverage—how many real alternatives the player has.</p>
+      </div>
+
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-1">Schools that often keep their commits</h3>
+        <p>Some programs are especially good at getting recruits to campus even when they’re on draft radars—strong development reputations, facilities, education, and culture all matter. Fans often mention schools like <strong class="text-neutral-100">Vanderbilt, LSU, Florida, UCLA, Stanford, Virginia (UVA), Mississippi State, Arkansas, Texas, and TCU</strong> among the programs that regularly “land” tough commits—but any year can produce surprises.</p>
+        <p class="mt-2 text-neutral-400 text-xs">Edge case: NIL and transfer rules have changed the college calculus a bit, but the draft is still “show me the bonus” vs. “I’ll take the NCAA path.”</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+window.__MOCK_DRAFT_SHARE_CREATE_URL__ = "{% url 'mock_draft_share_create' %}";
+{% if mock_draft_share_id %}
+window.__MOCK_DRAFT_SHARE_UUID__ = "{{ mock_draft_share_id }}";
+window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__ = "{{ mock_draft_share_payload_b64 }}";
+{% endif %}
+</script>
+<script src="{% static 'mock_draft/js/data.js' %}"></script>
+<script src="{% static 'mock_draft/js/draft.js' %}"></script>
+{% endblock %}

@@ -147,7 +147,8 @@ from overslot.models import (
     Team,
     TeamDuplicateDecision,
     PotentialTeamDuplicate,
-    Game
+    Game,
+    MockDraftShare,
 )
 
 
@@ -913,6 +914,18 @@ class HasRankedTeamFilter(SimpleListFilter):
                 Q(away_team_ranking__isnull=False)
             ).distinct()
         return queryset
+
+
+@admin.register(MockDraftShare, site=admin_site)
+class MockDraftShareAdmin(admin.ModelAdmin):
+    list_display = ['id', 'created_at', 'payload_size']
+    list_filter = ['created_at']
+    readonly_fields = ['id', 'created_at', 'payload']
+    ordering = ['-created_at']
+
+    @staticmethod
+    def payload_size(obj):
+        return len(obj.payload) if obj.payload else 0
 
 
 @admin.register(Game, site=admin_site)

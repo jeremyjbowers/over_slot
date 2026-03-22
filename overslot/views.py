@@ -1,3 +1,4 @@
+import base64
 import csv
 import os
 import datetime
@@ -11,18 +12,46 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import JsonResponse
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 from decimal import *
 from django.utils.timezone import template_localtime, now
+from django.template.loader import render_to_string
 from django.template.response import TemplateResponse
+from django.test import RequestFactory
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_GET, require_POST
 from dateutil import parser
 from datetime import timedelta
 import json
 
 from overslot import models, utils
 from overslot.decorators import subscription_required
-from overslot.cache_utils import get_cached, bust_homepage, HOMEPAGE_TIMEOUT, ARTICLE_TIMEOUT, RANKING_TIMEOUT
+from overslot.cache_utils import (
+    get_cached,
+    bust_homepage,
+    HOMEPAGE_TIMEOUT,
+    ARTICLE_TIMEOUT,
+    RANKING_TIMEOUT,
+    MOCK_DRAFT_SIM_PAGE_TIMEOUT,
+    KEY_MY_MOCK_DRAFT_HTML,
+)
+
+# Client endgame binary (mock_draft/js/draft.js): magic OSD1 + version + picks.
+_ENDGAME_MAGIC = b'OSD1'
+_MAX_MOCK_DRAFT_SHARE_BYTES = 32768
+
+
+def _mock_draft_share_b64url(payload: bytes) -> str:
+    return base64.urlsafe_b64encode(payload).decode('ascii').rstrip('=')
+
+
+def _validate_mock_draft_share_payload(payload: bytes) -> bool:
+    if len(payload) < 9 or len(payload) > _MAX_MOCK_DRAFT_SHARE_BYTES:
+        return False
+    return payload[:4] == _ENDGAME_MAGIC
 
 
 @staff_member_required
@@ -408,6 +437,90 @@ def mock_drafts_list(request):
     context = {}
     context['rankings'] = get_cached('overslot:rankings:mock_drafts', _mock_drafts_list_data, RANKING_TIMEOUT)
     return render(request, "rankings_list.html", context)
+
+
+def _render_my_mock_draft_html():
+    """
+    Build public HTML for Valkey. Uses a synthetic request only so context processors run;
+    output must not depend on any incoming request path (share URLs use a separate view).
+    """
+    rf = RequestFactory()
+    req = rf.get("/my-mock-draft/")
+    req.user = AnonymousUser()
+    return render_to_string(
+        "mock_draft_sim.html",
+        {"hide_nav_account": True},
+        request=req,
+    )
+
+
+@ensure_csrf_cookie
+@require_GET
+def my_mock_draft(request):
+    """
+    Simulator landing page. Valkey stores one HTML string under a fixed key (no path/query
+    variation). Share URLs (/my-mock-draft/s/…/, /my-mock-draft/<uuid>/) are never cached.
+    """
+    html = get_cached(
+        KEY_MY_MOCK_DRAFT_HTML,
+        _render_my_mock_draft_html,
+        MOCK_DRAFT_SIM_PAGE_TIMEOUT,
+    )
+    return HttpResponse(html)
+
+
+@ensure_csrf_cookie
+@never_cache
+@require_GET
+def my_mock_draft_share(request, draft_share):
+    """
+    Same template as my_mock_draft; payload lives in the URL path for chat clients.
+    Intentionally not cached in Valkey (infinite distinct payloads). draft_share is only
+    for URL routing — the client reads the payload from location.pathname. never_cache
+    avoids edge/CDN caches treating each share URL as a cacheable document.
+    """
+    return render(request, "mock_draft_sim.html", {"hide_nav_account": True})
+
+
+@ensure_csrf_cookie
+@never_cache
+@require_GET
+def my_mock_draft_share_by_uuid(request, share_id):
+    """
+    Share link with payload loaded from DB (short URL for chat clients).
+    """
+    share = get_object_or_404(models.MockDraftShare, pk=share_id)
+    payload = bytes(share.payload)
+    return render(
+        request,
+        "mock_draft_sim.html",
+        {
+            "hide_nav_account": True,
+            "mock_draft_share_id": str(share.id),
+            "mock_draft_share_payload_b64": _mock_draft_share_b64url(payload),
+        },
+    )
+
+
+@require_POST
+def mock_draft_share_create(request):
+    """Persist finished draft binary; returns UUID for /my-mock-draft/<uuid>/"""
+    try:
+        body = json.loads(request.body.decode('utf-8'))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': 'invalid json'}, status=400)
+    enc = body.get('payload')
+    if not isinstance(enc, str) or not enc:
+        return JsonResponse({'error': 'missing payload'}, status=400)
+    pad = '=' * (-len(enc) % 4)
+    try:
+        payload = base64.urlsafe_b64decode(enc + pad)
+    except Exception:
+        return JsonResponse({'error': 'invalid base64'}, status=400)
+    if not _validate_mock_draft_share_payload(payload):
+        return JsonResponse({'error': 'invalid payload'}, status=400)
+    share = models.MockDraftShare.objects.create(payload=payload)
+    return JsonResponse({'id': str(share.id)})
 
 
 def videos_list(request):

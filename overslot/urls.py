@@ -56,6 +56,12 @@ urlpatterns = [
     path("mock-drafts/", views.mock_drafts_list, name="mock_drafts_list"),
     path("mock-drafts/<slug:slug>/", views.mock_drafts_detail, name="mock_drafts_detail"),
 
+    # Share links: legacy /s/<base64url>/ or DB-backed /my-mock-draft/<uuid>/ (short, chat-friendly).
+    path("my-mock-draft/s/<str:draft_share>/", views.my_mock_draft_share, name="my_mock_draft_shared"),
+    path("my-mock-draft/<uuid:share_id>/", views.my_mock_draft_share_by_uuid, name="my_mock_draft_shared_uuid"),
+    path("my-mock-draft/", views.my_mock_draft, name="my_mock_draft"),
+    path("api/my-mock-draft/share/", views.mock_draft_share_create, name="mock_draft_share_create"),
+
     path("players/<slug:slug>/", views.players_detail, name="players_detail"),
 
     # Hitters lists

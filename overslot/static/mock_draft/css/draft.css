@@ -1,0 +1,502 @@
+/* Minimal overrides - Tailwind handles layout and theme */
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.status.picking {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+/* Board row grid - responsive */
+@media (max-width: 768px) {
+  .board-row > div:last-child {
+    grid-template-columns: minmax(5rem,1fr) 4rem minmax(6rem,1fr) 4rem;
+  }
+}
+
+/* Compact draft board in narrow left column */
+.draft-board-narrow [data-round-section] > .grid {
+  grid-template-columns: 2rem 3.5rem 2rem 4rem 2rem !important;
+  gap: 0.2rem !important;
+  font-size: 0.6rem !important;
+}
+.draft-board-narrow .board-row > div:last-child {
+  grid-template-columns: 2rem 3.5rem 4rem 2rem !important;
+  gap: 0.2rem !important;
+  font-size: 0.6rem !important;
+}
+.draft-board-narrow .board-row > div:first-child {
+  width: 1.25rem !important;
+  min-width: 1.25rem !important;
+  font-size: 0.6rem !important;
+}
+
+/* Ensure overslot colors work with Tailwind CDN */
+.bg-overslot-black { background-color: #000000; }
+.bg-overslot-grey { background-color: #1a1a1a; }
+.bg-overslot-red { background-color: #dc2626; }
+.text-overslot-red { color: #dc2626; }
+.text-overslot-amber { color: #f59e0b; }
+.bg-overslot-amber { background-color: #f59e0b; }
+.border-overslot-grey-border { border-color: #262626; }
+.border-overslot-red { border-color: #dc2626; }
+.ring-overslot-red { --tw-ring-color: #dc2626; }
+
+/* Past pick rows: clickable to review rationale */
+.board-row.past-pick {
+  cursor: pointer;
+}
+.board-row.past-pick:hover {
+  background-color: rgba(38, 38, 38, 0.8);
+}
+
+/* Human pick highlight */
+.board-row.human-pick > div:last-child {
+  background-color: rgba(254, 249, 195, 0.4);
+  border-left: 3px solid rgba(245, 158, 11, 0.8);
+}
+
+/* AI reasoning: compact layout, clear hierarchy */
+.ai-reasoning-text {
+  font-family: 'Zilla Slab', Georgia, 'Times New Roman', serif;
+  font-weight: 600;
+}
+.ai-reasoning-pick {
+  max-width: 100%;
+}
+.ai-reasoning-quote {
+  font-family: 'Zilla Slab', Georgia, 'Times New Roman', serif;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+.ai-reasoning-text.reasoning-appear {
+  animation: reasoning-fade-in 0.4s ease-out;
+}
+@keyframes reasoning-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* Weird event: amber highlight on pick panel when AI makes a surprising pick */
+#ai-reasoning.weird-event {
+  border-width: 4px;
+  border-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.08);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Team names: never truncate, allow wrap */
+.col-team,
+.team-square span.break-words,
+.team-chip .font-semibold {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+}
+
+/* Pace button selection */
+.pace-btn.selected {
+  border-color: #dc2626;
+  background-color: rgba(127, 29, 29, 0.3);
+  box-shadow: 0 0 0 2px #dc2626;
+}
+
+/* Top view mode button selection */
+.top-view-btn.selected {
+  border-color: #dc2626;
+  background-color: rgba(127, 29, 29, 0.3);
+  box-shadow: 0 0 0 2px #dc2626;
+}
+
+/* Weird events button selection */
+.weird-btn.selected {
+  border-color: rgba(245, 158, 11, 0.8);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5);
+  background-color: rgba(245, 158, 11, 0.2);
+}
+
+/* Pick cards in human budget summary */
+.pick-card {
+  min-height: 4rem;
+}
+.pick-card .break-words {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+/* Team square selection */
+.team-square.selected {
+  border-color: #dc2626;
+  background-color: rgba(127, 29, 29, 0.3);
+  box-shadow: 0 0 0 2px #dc2626;
+}
+.hover\:bg-overslot-red-hover:hover { background-color: #ef4444; }
+.hover\:border-overslot-grey-border:hover { border-color: #262626; }
+
+/* Draft money primer: scroll inside 3×3 grid cell; team cards auto-place around it */
+.draft-money-primer-list {
+  scrollbar-width: thin;
+}
+
+.team-select-grid {
+  align-items: stretch;
+}
+
+/* Post-draft brag sheet (screenshot to share) */
+.brag-sheet-team-title {
+  font-family: 'Zilla Slab', Georgia, 'Times New Roman', serif;
+}
+.brag-sheet-export img {
+  max-width: none;
+}
+
+/* Tool URL — full-width band (legacy) or compact block in brag header row */
+.brag-share-url-banner {
+  margin: 0 0 0.4rem;
+  padding: 0.45rem 0.35rem 0.5rem;
+  text-align: center;
+  border-top: 2px solid rgba(220, 38, 38, 0.55);
+  border-bottom: 2px solid rgba(220, 38, 38, 0.55);
+  background: rgba(127, 29, 29, 0.28);
+}
+.brag-share-url-banner--header {
+  margin: 0;
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.4rem 0.45rem 0.45rem;
+  text-align: left;
+  box-sizing: border-box;
+  border-top: 1px solid rgba(220, 38, 38, 0.45);
+  border-bottom: 1px solid rgba(220, 38, 38, 0.45);
+  border-left: 1px solid rgba(220, 38, 38, 0.35);
+  border-radius: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+@media (min-width: 640px) {
+  .brag-share-url-banner--header {
+    width: auto;
+    max-width: min(48rem, 58%);
+    flex: 0 1 auto;
+    text-align: right;
+    align-self: flex-start;
+  }
+}
+.brag-share-url-label {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #fecaca;
+  margin-bottom: 0.2rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.brag-share-url-banner--header .brag-share-url-label {
+  margin-bottom: 0.15rem;
+}
+.brag-share-url-link {
+  display: inline-block;
+  max-width: 100%;
+  font-size: clamp(1.2rem, 4.5vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.2;
+  color: #fff;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+}
+.brag-share-url-banner--header .brag-share-url-link {
+  font-size: clamp(0.7rem, 2.1vw, 0.95rem);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  max-width: none;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+.brag-share-url-link:hover {
+  color: #fecaca;
+}
+
+/* Share card: 3-column grid — larger type, tighter gaps (overall height ~unchanged) */
+.brag-sheet-export--share {
+  max-width: 1200px;
+  box-sizing: border-box;
+}
+.brag-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.22rem 0.3rem;
+}
+@media (max-width: 520px) {
+  .brag-pick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.brag-pick-cell {
+  min-width: 0;
+}
+.brag-pick-cell-inner {
+  border: 1px solid #333;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.22rem 0.3rem;
+  border-radius: 2px;
+  height: 100%;
+  box-sizing: border-box;
+}
+.brag-pick-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+.brag-pick-no {
+  flex-shrink: 0;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dc2626;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 2px;
+}
+.brag-pick-photo {
+  flex-shrink: 0;
+}
+.brag-pick-photo .player-photo-wrap,
+.brag-pick-photo span[class^='w-'] {
+  border-radius: 2px !important;
+}
+.brag-pick-meta {
+  flex: 1;
+  min-width: 0;
+}
+.brag-pick-name {
+  font-size: clamp(15px, 2.6vw, 18px);
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.15;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.brag-pick-rank-pos {
+  font-size: 12px;
+  color: #a3a3a3;
+  margin-top: 0;
+  line-height: 1.15;
+}
+.brag-pick-school {
+  font-size: 10px;
+  color: #737373;
+  margin-top: 0;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.brag-pick-cost {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  line-height: 1.1;
+  align-self: flex-start;
+}
+.brag-pick-bottom {
+  font-size: 10px;
+  color: #737373;
+  margin-top: 0.15rem;
+  padding-top: 0.12rem;
+  line-height: 1.1;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.brag-pick-cell-inner.brag-pick-pass {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 2.85rem;
+  gap: 0.1rem;
+}
+.brag-pick-pass .brag-pick-pass-label {
+  font-size: 13px;
+  color: #737373;
+}
+.brag-pick-pass .brag-pick-slot {
+  font-size: 10px;
+  color: #525252;
+}
+
+/* Endgame: full pick-by-pick list (one row per pick, long scroll) */
+.endgame-browse-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #333;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.25);
+}
+.endgame-browse-header,
+.endgame-browse-row {
+  display: grid;
+  grid-template-columns:
+    2.35rem 2.75rem minmax(5.5rem, 1fr) 4.25rem minmax(8rem, 1.35fr) 4.25rem;
+  gap: 0.22rem 0.35rem;
+  align-items: center;
+  font-size: 13px;
+  line-height: 1.15;
+  min-width: min(100%, 820px);
+}
+.endgame-browse-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #141414;
+  border-bottom: 1px solid #404040;
+  padding: 0.25rem 0.35rem;
+  font-weight: 600;
+  color: #a3a3a3;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+.endgame-browse-row {
+  border-bottom: 1px solid #262626;
+  padding: 0.22rem 0.35rem;
+}
+.endgame-browse-row:last-child {
+  border-bottom: none;
+}
+.endgame-browse-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+.browse-cell {
+  min-width: 0;
+}
+.browse-cell-pick {
+  font-weight: 700;
+  color: #fff;
+}
+.browse-cell-round {
+  color: #a3a3a3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.browse-cell-team {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.browse-team-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #e5e5e5;
+}
+.browse-cell-slot {
+  color: #d4d4d4;
+}
+.browse-cell-player {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.browse-player-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.05rem;
+}
+.browse-player-name {
+  color: #fff;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.browse-player-pos {
+  font-size: 11px;
+  color: #737373;
+  line-height: 1.1;
+}
+.browse-cell-sign {
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Endgame: shareable draft URL (/my-mock-draft/s/…/ or legacy ? / #) */
+.draft-share-callout {
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.12);
+}
+
+.draft-complete-hero-appear {
+  animation: draft-hero-in 0.55s ease-out both;
+}
+@keyframes draft-hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Finished draft: board column uses full width; keep board readable */
+#draft.draft-finished #draft-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Shared path / query / hash: hide setup before draft.js (html.endgame-pending) */
+html.endgame-pending #setup {
+  display: none !important;
+}
+html.endgame-pending #draft {
+  display: flex !important;
+  flex-direction: column;
+}
+html.endgame-pending #draft #draft-body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+html.endgame-pending #draft-complete {
+  display: block !important;
+}
+html.endgame-pending #draft-side {
+  display: none !important;
+}
+html.endgame-pending #btn-restart {
+  display: inline-flex !important;
+}

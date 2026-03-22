@@ -12,6 +12,9 @@ DEFAULT_TIMEOUT = 900   # 15 minutes
 HOMEPAGE_TIMEOUT = 900  # 15 minutes
 RANKING_TIMEOUT = 900   # 15 minutes
 ARTICLE_TIMEOUT = 900   # 15 minutes
+# Single cached HTML blob for GET /my-mock-draft/ only (anonymous nav chrome).
+# MUST NOT include share payload: /my-mock-draft/s/<payload>/ and /my-mock-draft/<uuid>/ are uncached.
+MOCK_DRAFT_SIM_PAGE_TIMEOUT = 3600  # 1 hour; bust when rankings/mock lists change
 
 # Cache key prefixes - centralize for invalidation
 KEY_HOMEPAGE = 'overslot:homepage'
@@ -21,6 +24,8 @@ KEY_STOCK_WATCH = 'overslot:stock_watch'
 KEY_RANKINGS = 'overslot:rankings'
 KEY_RANKING = 'overslot:ranking'
 KEY_MOCK_DRAFT = 'overslot:mock_draft'
+# Fixed string only — never vary by URL path, query, or draft_share payload.
+KEY_MY_MOCK_DRAFT_HTML = 'overslot:my_mock_draft:html:v1'
 
 
 def get_cached(key, compute_fn, timeout=DEFAULT_TIMEOUT):
@@ -90,8 +95,14 @@ def bust_stock_watch(slug):
 
 
 def bust_rankings_list():
-    """Invalidate rankings list and mock drafts list."""
-    _safe_delete_many([f'{KEY_RANKINGS}:list', f'{KEY_RANKINGS}:mock_drafts'])
+    """Invalidate rankings list, mock drafts list, and cached mock-draft simulator HTML."""
+    _safe_delete_many(
+        [
+            f'{KEY_RANKINGS}:list',
+            f'{KEY_RANKINGS}:mock_drafts',
+            KEY_MY_MOCK_DRAFT_HTML,
+        ]
+    )
 
 
 def bust_ranking(slug, is_mock_draft=False):
