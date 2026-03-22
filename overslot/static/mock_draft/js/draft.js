@@ -2744,6 +2744,14 @@
     if (!posVal || posVal === 'all') return true;
     if (posVal === 'hitter') return hasHitterSide(player);
     if (posVal === 'pitcher') return hasPitcherSide(player);
+    if (posVal === 'RHP') {
+      const raw = (player.position || '').trim();
+      return /^RHP/i.test(raw) || getTokensFromPositionString(player.position).includes('RHP');
+    }
+    if (posVal === 'LHP') {
+      const raw = (player.position || '').trim();
+      return /^LHP/i.test(raw) || getTokensFromPositionString(player.position).includes('LHP');
+    }
     const want = String(posVal).toUpperCase();
     return getTokensFromPositionString(player.position).includes(want);
   }
@@ -2763,31 +2771,9 @@
     return pathMatchesQuickFilter(player, pathVal) && positionMatchesQuickFilter(player, posVal);
   }
 
-  function uniquePositionTokensForFilter() {
-    const seen = new Set();
-    state.players.forEach(p => {
-      getTokensFromPositionString(p.position).forEach(t => seen.add(t));
-    });
-    return [...seen].sort((a, b) => a.localeCompare(b));
-  }
-
-  function populatePlayerFilterPositionSelect() {
+  function resetPlayerFilterPositionSelect() {
     const posSel = $('player-filter-position');
-    if (!posSel) return;
-    posSel.innerHTML = '';
-    const add = (v, label) => {
-      const o = document.createElement('option');
-      o.value = v;
-      o.textContent = label;
-      posSel.appendChild(o);
-    };
-    add('all', 'All positions');
-    add('hitter', 'Hitters');
-    add('pitcher', 'Pitchers');
-    uniquePositionTokensForFilter().forEach(t => {
-      add(t, t);
-    });
-    posSel.value = 'all';
+    if (posSel) posSel.value = 'all';
   }
 
   function showHumanPickUI(pick) {
@@ -2824,7 +2810,7 @@
     const rankSorted = [...available].sort((a, b) => a.rank - b.rank);
     const filterInput = $('player-filter');
     if (filterInput) filterInput.value = '';
-    populatePlayerFilterPositionSelect();
+    resetPlayerFilterPositionSelect();
     const pathSel = $('player-filter-path');
     if (pathSel) pathSel.value = 'all';
 
