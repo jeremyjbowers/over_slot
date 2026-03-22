@@ -475,6 +475,15 @@
                 background: var(--dark-surface) !important;
             }
 
+            /* Mock draft: global rule above remaps Tailwind .bg-white for subscription UIs; restore real white in the simulator. */
+            .mock-draft-viewport .bg-white {
+                background: #ffffff !important;
+                background-color: #ffffff !important;
+            }
+            .mock-draft-viewport .text-black {
+                color: #000000 !important;
+            }
+
             .text-gray-900,
             .text-blue-900,
             .text-green-900,
