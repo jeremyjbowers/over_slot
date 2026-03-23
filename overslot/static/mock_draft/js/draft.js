@@ -1688,8 +1688,8 @@
 
   /**
    * @param {object} [opts]
-   * @param {boolean} [opts.useFullRemainingPoolForCap] — If true, cap by raw pool left (misleading vs Plan max).
-   *   Default false: same cap as resolvePickForPool / human “Plan max”.
+   * @param {boolean} [opts.useFullRemainingPoolForCap] — If true, cap by raw pool left (misleading vs Max).
+   *   Default false: same cap as resolvePickForPool / human “Max”.
    */
   function getAvailablePlayers(slotValue, team, pickIndex, opts = {}) {
     const idx = pickIndex ?? state.currentPickIndex;
@@ -2832,22 +2832,30 @@
     const picksLeft = getPicksRemaining(pick.team, state.currentPickIndex);
     const teamData = state.teams.find(t => t.name === pick.team);
     const futureReserve = getFuturePickReserve(picksLeft);
-    const reserveNote = picksLeft > 1
-      ? ` · reserves ${fmt(futureReserve)} for ${picksLeft - 1} pick${picksLeft - 1 !== 1 ? 's' : ''} after this`
+    const minFloor = pick.value && isTopThreeRounds(pick)
+      ? Math.floor(pick.value * MIN_SLOT_PCT_TOP3)
+      : 0;
+    const reserveSeg = picksLeft > 1
+      ? `<span title="Held back for your remaining picks (~$150k minimum each)."><span class="text-neutral-400">Reserve</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(futureReserve)}</span> <span class="text-neutral-500">(${picksLeft - 1})</span></span>`
+      : '';
+    const floorSeg = minFloor > 0
+      ? `<span title="Rounds 1–3: signing must be at least 75% of slot."><span class="text-neutral-400">Floor</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(minFloor)}</span></span>`
       : '';
     const headerArea = $currentPick.querySelector('#pick-header-area');
     if (headerArea) {
       headerArea.innerHTML = `
-        <div class="flex items-center gap-3 flex-wrap">
-          <div class="flex items-center gap-2">
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             ${teamLogoHtml(pick.teamId || teamData?.id, 'w-8 h-8')}
-            <span class="text-overslot-red font-semibold">Pick #${pick.pick} ${escapeHtml(pick.team)}</span>
+            <span class="text-overslot-red font-semibold text-base">Pick #${pick.pick} ${escapeHtml(pick.team)}</span>
           </div>
-          <div class="flex items-center gap-4 text-xs text-neutral-200 border-l border-overslot-grey-border pl-3">
-            <span>Pool ${fmt(pool)}</span>
-            <span>Spent ${fmt(spent)}</span>
-            <span class="text-white font-medium">Remaining ${fmt(remaining)}</span>
-            <span class="text-overslot-red/90" title="Pool left if you reserve money for remaining picks (AI uses this)">Plan max ${fmt(maxThisPick)}</span>${reserveNote ? `<span class="text-neutral-400">${reserveNote}</span>` : ''}
+          <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 text-sm text-neutral-200 border-l border-overslot-grey-border pl-3">
+            <span><span class="text-neutral-400">Pool</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(pool)}</span></span>
+            <span><span class="text-neutral-400">Spent</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(spent)}</span></span>
+            <span><span class="text-neutral-400">Left</span> <span class="text-neutral-100 font-semibold tabular-nums">${fmt(remaining)}</span></span>
+            <span class="text-overslot-red/90 font-medium tabular-nums" title="Top offer this pick while keeping the reserve for later picks.">Max ${fmt(maxThisPick)}</span>
+            ${reserveSeg}
+            ${floorSeg}
           </div>
         </div>`;
     }
@@ -2899,7 +2907,7 @@
           : null;
         renderPlayers(orderedFiltered, searchHighest);
       } else {
-        const labelText = state.topViewMode === 'highestRanked' ? 'Highest ranked:' : 'Best fits for ' + pick.team + ':';
+        const labelText = state.topViewMode === 'highestRanked' ? 'Ranked' : 'Best fit';
         if (labelEl) labelEl.textContent = rankSorted.length ? labelText : 'No players available';
         if (!rankSorted.length) {
           renderPlayers([], null);

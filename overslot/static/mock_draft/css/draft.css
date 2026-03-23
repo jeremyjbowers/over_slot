@@ -1,8 +1,16 @@
 /* Minimal overrides - Tailwind handles layout and theme */
 
+html {
+  background-color: #000000;
+}
+
 html, body {
   height: 100%;
   overflow: hidden;
+}
+
+body {
+  background-color: #000000;
 }
 
 .hidden {
@@ -156,7 +164,7 @@ html, body {
 }
 
 /*
- * View mode toggles: secondary to solid red “Take best available” — neutral chrome, white on hover.
+ * View mode toggles: secondary to solid red “Best available” — neutral chrome, white on hover.
  * No outer box-shadow (clipped by overflow:hidden on pick panel). 1px border so height matches primary CTA.
  */
 .top-view-btn {
@@ -167,11 +175,11 @@ html, body {
   border: 1px solid #404040;
   background-color: #141414;
   color: #d4d4d4;
-  font-size: 0.875rem;
+  font-size: 1rem;
   line-height: 1.25;
-  padding: 0.4375rem 0.875rem;
+  padding: 0.5rem 1rem;
   font-weight: 500;
-  min-height: 2.25rem;
+  min-height: 2.5rem;
   transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 .top-view-btn:hover {
