@@ -2740,40 +2740,87 @@
     return tokens.some(t => !tokenIsPitcherOnly(t));
   }
 
-  function positionMatchesQuickFilter(player, posVal) {
-    if (!posVal || posVal === 'all') return true;
-    if (posVal === 'hitter') return hasHitterSide(player);
-    if (posVal === 'pitcher') return hasPitcherSide(player);
-    if (posVal === 'RHP') {
-      const raw = (player.position || '').trim();
-      return /^RHP/i.test(raw) || getTokensFromPositionString(player.position).includes('RHP');
+  function positionTokenMatchesPlayer(p, token) {
+    const u = String(token).toUpperCase();
+    if (u === 'RHP') {
+      const raw = (p.position || '').trim();
+      return /^RHP/i.test(raw) || getTokensFromPositionString(p.position).includes('RHP');
     }
-    if (posVal === 'LHP') {
-      const raw = (player.position || '').trim();
-      return /^LHP/i.test(raw) || getTokensFromPositionString(player.position).includes('LHP');
+    if (u === 'LHP') {
+      const raw = (p.position || '').trim();
+      return /^LHP/i.test(raw) || getTokensFromPositionString(p.position).includes('LHP');
     }
-    const want = String(posVal).toUpperCase();
-    return getTokensFromPositionString(player.position).includes(want);
+    return getTokensFromPositionString(p.position).includes(u);
   }
 
-  function pathMatchesQuickFilter(player, pathVal) {
-    if (!pathVal || pathVal === 'all') return true;
-    if (pathVal === 'college') return player.class === 'C';
-    if (pathVal === 'hs') return player.class === 'H';
+  function playerSearchTextIncludes(p, t) {
+    const low = t.toLowerCase();
+    return (p.name || '').toLowerCase().includes(low) ||
+      (p.school || '').toLowerCase().includes(low) ||
+      (p.position || '').toLowerCase().includes(low);
+  }
+
+  /**
+   * Parse the human pick search box: keywords (college, high school, hs, hitter, pitcher, 1b, ss, …)
+   * plus leftover words matched as substrings on name/school/position. All parts are ANDed.
+   */
+  function parsePlayerSearchQuery(rawQ) {
+    let q = (rawQ || '').trim().toLowerCase();
+    const spec = {
+      wantHs: false,
+      wantCollege: false,
+      wantHitter: false,
+      wantPitcher: false,
+      positions: [],
+      freeTokens: []
+    };
+    if (!q) return spec;
+
+    if (/\bhigh\s+school\b/.test(q)) {
+      spec.wantHs = true;
+      q = q.replace(/\bhigh\s+school\b/g, ' ');
+    }
+    if (/\bhs\b/.test(q)) {
+      spec.wantHs = true;
+      q = q.replace(/\bhs\b/g, ' ');
+    }
+    if (/\bcollege\b/.test(q)) {
+      spec.wantCollege = true;
+      q = q.replace(/\bcollege\b/g, ' ');
+    }
+    if (/\bhitters?\b/.test(q)) {
+      spec.wantHitter = true;
+      q = q.replace(/\bhitters?\b/g, ' ');
+    }
+    if (/\bpitchers?\b/.test(q)) {
+      spec.wantPitcher = true;
+      q = q.replace(/\bpitchers?\b/g, ' ');
+    }
+
+    const posRe = /\b(1b|2b|3b|ss|of|rhp|lhp|c|dh)\b/gi;
+    const posHits = q.match(posRe);
+    if (posHits) {
+      posHits.forEach(m => spec.positions.push(m.toUpperCase()));
+      q = q.replace(posRe, ' ');
+    }
+    spec.positions = [...new Set(spec.positions)];
+
+    spec.freeTokens = q.trim().split(/\s+/).filter(Boolean);
+    return spec;
+  }
+
+  function playerMatchesSearchSpec(p, spec) {
+    if (spec.wantHs && p.class !== 'H') return false;
+    if (spec.wantCollege && p.class !== 'C') return false;
+    if (spec.wantHitter && !hasHitterSide(p)) return false;
+    if (spec.wantPitcher && !hasPitcherSide(p)) return false;
+    for (let i = 0; i < spec.positions.length; i++) {
+      if (!positionTokenMatchesPlayer(p, spec.positions[i])) return false;
+    }
+    for (let i = 0; i < spec.freeTokens.length; i++) {
+      if (!playerSearchTextIncludes(p, spec.freeTokens[i])) return false;
+    }
     return true;
-  }
-
-  function passesPlayerQuickFilters(player) {
-    const posSel = $('player-filter-position');
-    const pathSel = $('player-filter-path');
-    const posVal = posSel ? posSel.value : 'all';
-    const pathVal = pathSel ? pathSel.value : 'all';
-    return pathMatchesQuickFilter(player, pathVal) && positionMatchesQuickFilter(player, posVal);
-  }
-
-  function resetPlayerFilterPositionSelect() {
-    const posSel = $('player-filter-position');
-    if (posSel) posSel.value = 'all';
   }
 
   function showHumanPickUI(pick) {
@@ -2810,23 +2857,9 @@
     const rankSorted = [...available].sort((a, b) => a.rank - b.rank);
     const filterInput = $('player-filter');
     if (filterInput) filterInput.value = '';
-    resetPlayerFilterPositionSelect();
-    const pathSel = $('player-filter-path');
-    if (pathSel) pathSel.value = 'all';
 
     const labelEl = $('player-list-label');
     const availableEl = $availablePlayers;
-
-    const playerSelectionEl = document.querySelector('.player-selection');
-    if (playerSelectionEl && !playerSelectionEl.dataset.playerFilterSelectListeners) {
-      playerSelectionEl.dataset.playerFilterSelectListeners = '1';
-      playerSelectionEl.addEventListener('change', e => {
-        const id = e.target && e.target.id;
-        if (id === 'player-filter-position' || id === 'player-filter-path') {
-          state._topViewRefresh?.();
-        }
-      });
-    }
 
     function updateTopViewButtons() {
       document.querySelectorAll('.top-view-btn').forEach(btn => {
@@ -2856,18 +2889,9 @@
         });
       };
 
-      function textMatchesPlayer(p, query) {
-        if (!query) return true;
-        return p.name.toLowerCase().includes(query) ||
-          (p.school || '').toLowerCase().includes(query) ||
-          (p.position || '').toLowerCase().includes(query);
-      }
-
-      const rankFiltered = rankSorted.filter(passesPlayerQuickFilters);
-      const fitFiltered = fitSorted.filter(passesPlayerQuickFilters);
-
       if (q) {
-        const pool = fitSorted.filter(passesPlayerQuickFilters).filter(p => textMatchesPlayer(p, q));
+        const spec = parsePlayerSearchQuery(q);
+        const pool = available.filter(p => playerMatchesSearchSpec(p, spec));
         const orderedFiltered = [...pool].sort((a, b) => a.rank - b.rank);
         if (labelEl) labelEl.textContent = `Search results (${orderedFiltered.length})`;
         const searchHighest = orderedFiltered.length
@@ -2876,17 +2900,17 @@
         renderPlayers(orderedFiltered, searchHighest);
       } else {
         const labelText = state.topViewMode === 'highestRanked' ? 'Highest ranked:' : 'Best fits for ' + pick.team + ':';
-        if (labelEl) labelEl.textContent = rankFiltered.length ? labelText : 'No players match filters';
-        if (!rankFiltered.length) {
+        if (labelEl) labelEl.textContent = rankSorted.length ? labelText : 'No players available';
+        if (!rankSorted.length) {
           renderPlayers([], null);
           return;
         }
         if (state.topViewMode === 'highestRanked') {
-          const chalk = rankFiltered[0];
-          renderPlayers(rankFiltered, chalk);
+          const chalk = rankSorted[0];
+          renderPlayers(rankSorted, chalk);
         } else {
-          const highestRanked = rankFiltered[0];
-          const orderedAvailable = [highestRanked, ...fitFiltered.filter(p => p.rank !== highestRanked.rank)];
+          const highestRanked = rankSorted[0];
+          const orderedAvailable = [highestRanked, ...fitSorted.filter(p => p.rank !== highestRanked.rank)];
           renderPlayers(orderedAvailable, highestRanked);
         }
       }

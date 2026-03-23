@@ -140,34 +140,7 @@
                       <button id="btn-show-highest" type="button" class="top-view-btn flex-shrink-0" data-mode="highestRanked">Show highest ranked</button>
                       <button id="btn-show-bestfit" type="button" class="top-view-btn flex-shrink-0" data-mode="bestFit">Show best fit</button>
                     </div>
-                    <div class="flex flex-col gap-2 mb-2">
-                      <input type="text" id="player-filter" placeholder="Search name, school, position..." autocomplete="off" class="w-full bg-overslot-grey border-2 border-neutral-500 px-3 py-1.5 text-sm text-white placeholder-neutral-300 rounded focus:border-overslot-red focus:outline-none">
-                      <div class="flex flex-wrap gap-2 sm:gap-3 items-end">
-                        <label class="flex flex-col gap-0.5 min-w-0 flex-1 sm:max-w-[min(100%,14rem)]">
-                          <span class="text-[11px] text-neutral-400 font-medium uppercase tracking-wide">Position</span>
-                          <select id="player-filter-position" aria-label="Filter by position" class="player-filter-select w-full bg-black/40 border border-overslot-grey-border text-white text-sm px-2 py-1.5 rounded focus:border-overslot-red focus:outline-none">
-                            <option value="all">All positions</option>
-                            <option value="1B">1B</option>
-                            <option value="2B">2B</option>
-                            <option value="3B">3B</option>
-                            <option value="SS">SS</option>
-                            <option value="OF">OF</option>
-                            <option value="hitter">Hitter</option>
-                            <option value="RHP">RHP</option>
-                            <option value="LHP">LHP</option>
-                            <option value="pitcher">Pitcher</option>
-                          </select>
-                        </label>
-                        <label class="flex flex-col gap-0.5 min-w-0 flex-1 sm:max-w-[min(100%,12rem)]">
-                          <span class="text-[11px] text-neutral-400 font-medium uppercase tracking-wide">Path</span>
-                          <select id="player-filter-path" aria-label="Filter college or high school" class="player-filter-select w-full bg-black/40 border border-overslot-grey-border text-white text-sm px-2 py-1.5 rounded focus:border-overslot-red focus:outline-none">
-                            <option value="all">College &amp; HS</option>
-                            <option value="college">College only</option>
-                            <option value="hs">HS only</option>
-                          </select>
-                        </label>
-                      </div>
-                    </div>
+                    <input type="text" id="player-filter" placeholder="Name, school, SS, college, hs, hitter, pitcher…" autocomplete="off" class="w-full mb-2 bg-overslot-grey border-2 border-neutral-500 px-3 py-1.5 text-sm text-white placeholder-neutral-300 rounded focus:border-overslot-red focus:outline-none">
                     <div class="player-list-container flex-1 min-h-0 flex flex-col overflow-hidden">
                       <div id="player-list-label" class="text-neutral-100 text-sm mb-1 flex-shrink-0">Best fits</div>
                       <div id="available-players" class="flex-1 min-h-0 overflow-y-auto space-y-1 overflow-x-hidden"></div>

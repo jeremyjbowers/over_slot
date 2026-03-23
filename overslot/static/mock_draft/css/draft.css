@@ -34,11 +34,6 @@ html, body {
   box-sizing: border-box;
 }
 
-/* Human pick: native selects in dark UI */
-.player-filter-select {
-  color-scheme: dark;
-}
-
 /* Round nav / board: avoid top clipping in viewport framing */
 #round-breadcrumbs {
   padding-top: 0.25rem;
