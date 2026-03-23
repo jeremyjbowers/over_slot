@@ -7,7 +7,15 @@ from django.db import transaction
 from django.core.paginator import Paginator
 from collections import defaultdict
 import difflib
-from overslot.models import Player, DuplicateDecision, PlayerRanking, Article, PotentialDuplicate, PlayerStatSeason
+from overslot.models import (
+    Player,
+    DuplicateDecision,
+    PlayerRanking,
+    Article,
+    PotentialDuplicate,
+    PlayerStatSeason,
+    Player643StatSeason,
+)
 from django.views.decorators.http import require_POST
 
 
@@ -252,8 +260,8 @@ def mark_separate(request, player1_uuid, player2_uuid):
 @staff_member_required
 def data_status(request):
     """
-    Internal status page: shows PlayerStatSeason counts by stat year
-    and level breakdowns. Draft year is intentionally not shown.
+    Internal status page: season-row counts for Trackman/sheet data (PlayerStatSeason)
+    and for 6-4-3 API data (Player643StatSeason). Draft year is not shown.
     """
     by_year = (
         PlayerStatSeason.objects.values('year')
@@ -264,8 +272,18 @@ def data_status(request):
         )
         .order_by('-year')
     )
+    by_year_643 = (
+        Player643StatSeason.objects.values('year')
+        .annotate(
+            total=Count('id'),
+            hitting=Count('id', filter=Q(hit_plate_appearances__gt=0)),
+            pitching=Count('id', filter=Q(pitch_innings_pitched__gt=0)),
+        )
+        .order_by('-year')
+    )
     context = {
         'by_year': by_year,
+        'by_year_643': by_year_643,
     }
     return render(request, 'admin/data_status.html', context)
 

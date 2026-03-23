@@ -41,6 +41,39 @@
             </table>
         </div>
     </div>
+
+    <div class="card" style="margin-top: 1.5rem;">
+        <div class="card-header">
+            <div class="card-title">6-4-3 Charts API — rows by stat year</div>
+            <div class="meta-text">Player643StatSeason (separate from Trackman/sheet seasons above)</div>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Stat Year</th>
+                        <th>Total rows</th>
+                        <th>With hitting</th>
+                        <th>With pitching</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in by_year_643 %}
+                    <tr>
+                        <td>{{ row.year }}</td>
+                        <td>{{ row.total }}</td>
+                        <td>{{ row.hitting }}</td>
+                        <td>{{ row.pitching }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">No 643 stat season rows found. Run <code>load_643_stats</code> if you expect data.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 {% endblock %}
 
 

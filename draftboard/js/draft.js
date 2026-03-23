@@ -7,8 +7,10 @@
 
   const MIN_COLLEGE = 150000;
   const MIN_HS = 400000;
-  /** Random senior sign amount and per-future-pick reserve (no pass picks — always sign someone). */
+  /** Random senior sign amount and cheap-pick floor (no pass picks — always sign someone). */
   const RANDOM_SENIOR_SIGN = 150000;
+  /** Only budget this many future picks at the senior floor; rest of the pool stays usable earlier (make up $ on last picks). */
+  const MAKEUP_RESERVE_PICKS = 3;
   const MIN_SLOT_PCT_TOP3 = 0.75; // First 3 rounds: teams cannot spend less than 75% of slot (MLB Combine rule)
   /** After Round 2 ends: chance that 1–3 top remaining HS players “go to college” and leave the pool. */
   const HS_GTC_AFTER_R2_CHANCE = 0.08;
@@ -1544,10 +1546,15 @@
     return totalPicksForTeam - picksMadeSoFar;
   }
 
-  /** Pool reserved for picks after this one: $150k per future pick (random senior sign floor). */
+  /**
+   * Pool held back for cheap late picks: $150k × min(future picks, MAKEUP_RESERVE_PICKS).
+   * Avoids reserving for every remaining pick (which forced random seniors in rounds 3–4).
+   */
   function getFuturePickReserve(picksLeft) {
     if (picksLeft <= 1) return 0;
-    return (picksLeft - 1) * RANDOM_SENIOR_SIGN;
+    const futurePicks = picksLeft - 1;
+    const reserveSlots = Math.min(futurePicks, MAKEUP_RESERVE_PICKS);
+    return reserveSlots * RANDOM_SENIOR_SIGN;
   }
 
   function isSyntheticRandomSeniorRank(rank) {
@@ -1569,7 +1576,7 @@
 
   /**
    * Never returns pass — teams always sign (Random senior sign if no named player fits or pool is tight).
-   * Reserve leaves at least RANDOM_SENIOR_SIGN per future pick; emergency fallback uses remaining pool up to that amount.
+   * getMaxSpendThisPick uses a capped reserve so teams can spend up mid-draft and balance on last picks.
    */
   function resolvePickForPool(pick, player, prefCost, pickIndex) {
     const team = pick.team;
@@ -1627,6 +1634,31 @@
     return r === 'Round 1';
   }
 
+  function isRound2(pick) {
+    const r = (pick?.round || '').trim();
+    return r === 'Round 2';
+  }
+
+  function isCompetitiveBalanceA(pick) {
+    const r = (pick?.round || '').trim();
+    return r === 'Competitive Balance Round A';
+  }
+
+  function isRound3(pick) {
+    const r = (pick?.round || '').trim();
+    return r === 'Round 3';
+  }
+
+  /** Teams that deliberately shave R1–2/CB-A to redeploy pool (explicit big-discount strategy in rules). */
+  function teamPrefersEarlyUnderslotStrategy(teamName) {
+    if (!teamName) return false;
+    if (/\bbrewers\b/i.test(teamName)) return true;
+    const t = state.teams.find(x => x.name === teamName);
+    const rules = ((t && t.rules) || '').toLowerCase();
+    if (!rules) return false;
+    return /big discount pick|always do a big discount|always.*big discount/.test(rules);
+  }
+
   /** College-only: signing cost scales vs draft pick # (player rank). */
   function getCollegeRankVsPickMultiplier(player, pick) {
     if (player.class !== 'C' || !pick || pick.pick == null) return 1;
@@ -1663,20 +1695,50 @@
     return Math.floor(baseCost * m);
   }
 
-  function getEffectiveSigningCost(player, pick, slotValue) {
+  function getEffectiveSigningCost(player, pick, slotValue, teamName) {
     if (!player || !slotValue) return player?.cost ?? 0;
     if (player.class !== 'C') return player.cost;
+    const team = teamName != null ? teamName : pick?.team;
+    const poolSaver = teamPrefersEarlyUnderslotStrategy(team);
+
     let base = player.cost;
     if (isRound1(pick)) {
       const roll = Math.random();
-      if (roll < 0.62) base = slotValue;
-      else if (roll < 0.88) {
-        base = Math.floor(slotValue * (0.97 + Math.random() * 0.06));
+      if (poolSaver) {
+        if (roll < 0.5) base = slotValue;
+        else if (roll < 0.75) {
+          base = Math.floor(slotValue * (0.97 + Math.random() * 0.06));
+        } else {
+          const discountPct = 0.015 + Math.random() * 0.045;
+          base = Math.floor(slotValue * (1 - discountPct));
+        }
       } else {
-        const discountPct = 0.01 + Math.random() * 0.02;
-        base = Math.floor(slotValue * (1 - discountPct));
+        if (roll < 0.9) base = slotValue;
+        else if (roll < 0.98) {
+          base = Math.floor(slotValue * (0.97 + Math.random() * 0.06));
+        } else {
+          const discountPct = 0.01 + Math.random() * 0.02;
+          base = Math.floor(slotValue * (1 - discountPct));
+        }
       }
-    } else if (isCompAOrRound2Or3(pick)) {
+    } else if (isRound2(pick) || isCompetitiveBalanceA(pick)) {
+      const roll = Math.random();
+      if (poolSaver) {
+        if (roll < 0.48) base = slotValue;
+        else {
+          const discountPct = 0.01 + Math.random() * 0.04;
+          base = Math.floor(slotValue * (1 - discountPct));
+        }
+      } else {
+        if (roll < 0.85) base = slotValue;
+        else if (roll < 0.96) {
+          base = Math.floor(slotValue * (0.97 + Math.random() * 0.06));
+        } else {
+          const discountPct = 0.01 + Math.random() * 0.02;
+          base = Math.floor(slotValue * (1 - discountPct));
+        }
+      }
+    } else if (isRound3(pick)) {
       if (Math.random() < 0.6) base = slotValue;
       else {
         const discountPct = 0.01 + Math.random() * 0.02;
@@ -2832,11 +2894,12 @@
     const picksLeft = getPicksRemaining(pick.team, state.currentPickIndex);
     const teamData = state.teams.find(t => t.name === pick.team);
     const futureReserve = getFuturePickReserve(picksLeft);
+    const reserveSlots = picksLeft > 1 ? Math.min(picksLeft - 1, MAKEUP_RESERVE_PICKS) : 0;
     const minFloor = pick.value && isTopThreeRounds(pick)
       ? Math.floor(pick.value * MIN_SLOT_PCT_TOP3)
       : 0;
-    const reserveSeg = picksLeft > 1
-      ? `<span title="Held back for your remaining picks (~$150k minimum each)."><span class="text-neutral-400">Reserve</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(futureReserve)}</span> <span class="text-neutral-500">(${picksLeft - 1})</span></span>`
+    const reserveSeg = reserveSlots > 0
+      ? `<span title="Budget for up to ${reserveSlots} late pick(s) at the cheap senior floor (~$150k each). The rest of your pool is available for this pick."><span class="text-neutral-400">Reserve</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(futureReserve)}</span> <span class="text-neutral-500">(${reserveSlots})</span></span>`
       : '';
     const floorSeg = minFloor > 0
       ? `<span title="Rounds 1–3: signing must be at least 75% of slot."><span class="text-neutral-400">Floor</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(minFloor)}</span></span>`
@@ -2853,7 +2916,7 @@
             <span><span class="text-neutral-400">Pool</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(pool)}</span></span>
             <span><span class="text-neutral-400">Spent</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(spent)}</span></span>
             <span><span class="text-neutral-400">Left</span> <span class="text-neutral-100 font-semibold tabular-nums">${fmt(remaining)}</span></span>
-            <span class="text-overslot-red/90 font-medium tabular-nums" title="Top offer this pick while keeping the reserve for later picks.">Max ${fmt(maxThisPick)}</span>
+            <span class="text-overslot-red/90 font-medium tabular-nums" title="Top offer this pick after setting aside the small reserve for cheap late picks (last few rounds).">Max ${fmt(maxThisPick)}</span>
             ${reserveSeg}
             ${floorSeg}
           </div>
