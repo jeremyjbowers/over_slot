@@ -9,14 +9,14 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-01';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-02';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
 
   const MIN_COLLEGE = 150000;
   const MIN_HS = 400000;
-  /** Random senior sign amount and cheap-pick floor (no pass picks — always sign someone). */
+  /** Random senior sign amount; also MLB-realistic floor for any signing in rounds 1–10 when pool allows. */
   const RANDOM_SENIOR_SIGN = 150000;
   /** Only budget this many future picks at the senior floor; rest of the pool stays usable earlier (make up $ on last picks). */
   const MAKEUP_RESERVE_PICKS = 3;
@@ -475,6 +475,62 @@
       if (p.round === roundLabel) last = i;
     });
     return last;
+  }
+
+  /** Through last pick of Round 10 (includes comp / sandwich sections before that point in order). */
+  function isWithinFirstTenRoundsPickIndex(pickIndex) {
+    const lastR10 = getLastPickIndexForRound('Round 10');
+    if (lastR10 < 0 || pickIndex < 0) return false;
+    return pickIndex <= lastR10;
+  }
+
+  /** No MLB signing in rounds 1–10 below ~$150k when this pick’s max spend allows it. */
+  function floorSigningBonusFirstTenRounds(effectiveCost, pickIndex, maxThisPick) {
+    if (!isWithinFirstTenRoundsPickIndex(pickIndex)) return effectiveCost;
+    if (effectiveCost <= 0) return effectiveCost;
+    if (effectiveCost >= RANDOM_SENIOR_SIGN) return effectiveCost;
+    if (maxThisPick >= RANDOM_SENIOR_SIGN) return RANDOM_SENIOR_SIGN;
+    return effectiveCost;
+  }
+
+  /** Cumulative (slot − bonus) for this team before pickIndex — positive means underslot savings to spend on overs. */
+  function getNetSlotSavingsVsOverspend(team, beforePickIndex) {
+    let net = 0;
+    for (let i = 0; i < beforePickIndex; i++) {
+      if (state.picks[i].team !== team) continue;
+      const p = state.picks[i];
+      const r = state.pickRationales[i];
+      const c = r && r.effectiveCost != null ? r.effectiveCost : null;
+      if (c == null || p.value == null) continue;
+      net += p.value - c;
+    }
+    return net;
+  }
+
+  /**
+   * CPU only: drop candidates whose modeled bonus is far over slot unless the team has underslot headroom
+   * (or Brewers-style pool-saver slack). Stops back-to-back $1M-over-slot picks without early savings.
+   */
+  function filterAiCandidatesBySlotBudget(candidates, pick, pickIndex, team, slotValue) {
+    if (!candidates.length || !team || slotValue == null) return candidates;
+    const net = getNetSlotSavingsVsOverspend(team, pickIndex);
+    const saver = teamPrefersEarlyUnderslotStrategy(team);
+    const smallOverFrac = saver ? 0.065 : 0.035;
+    const slackFrac = saver ? 0.11 : 0.045;
+    const ok = [];
+    for (let i = 0; i < candidates.length; i++) {
+      const p = candidates[i];
+      const est = getEffectiveSigningCost(p, pick, slotValue, team);
+      const over = est - slotValue;
+      const smallOver = Math.floor(slotValue * smallOverFrac);
+      if (over <= smallOver) {
+        ok.push(p);
+        continue;
+      }
+      const slack = Math.floor(slotValue * slackFrac);
+      if (over <= net + slack) ok.push(p);
+    }
+    return ok.length ? ok : candidates;
   }
 
   function isPlayerSelectableInPool(p) {
@@ -1627,6 +1683,7 @@
       } else if (remaining > 0) {
         cost = Math.min(RANDOM_SENIOR_SIGN, remaining);
       }
+      cost = floorSigningBonusFirstTenRounds(cost, pickIndex, maxThisPick);
       return { player: senior, effectiveCost: cost };
     }
 
@@ -1642,7 +1699,10 @@
     }
 
     if (effectiveCost <= maxThisPick) {
-      return { player, effectiveCost };
+      const floored = floorSigningBonusFirstTenRounds(effectiveCost, pickIndex, maxThisPick);
+      if (floored <= maxThisPick) {
+        return { player, effectiveCost: floored };
+      }
     }
     return randomSeniorNoPass();
   }
@@ -2640,6 +2700,7 @@
     }
     let { candidates: filtered, reason, weirdPick } = applyTeamRules(candidates, pick.team, pickIndex, slotValue);
     if (filtered.length === 0) filtered = candidates;
+    filtered = filterAiCandidatesBySlotBudget(filtered, pick, pickIndex, pick.team, pick.value);
     let chosen = pickFromTopWithRandomness(filtered, 5) || filtered[0] || candidates[0];
     if (!chosen) chosen = firstAffordableUndrafted(pick.team, pickIndex, slotValue);
     if (!chosen) chosen = makeRandomSeniorSignPlayer(pickIndex);
