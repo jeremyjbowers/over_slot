@@ -1,9 +1,18 @@
 /**
  * Mock Draft Simulator - client-side only, no server
+ *
+ * Version: bump MOCK_DRAFT_JS_VERSION when you ship JS changes (check in DevTools:
+ *   window.__MOCK_DRAFT_JS_VERSION
+ * With collectstatic, the script URL also gets a content hash, e.g. draft.a1b2c3d4e5f6.js).
  */
 
 (function () {
   'use strict';
+
+  const MOCK_DRAFT_JS_VERSION = '2026-04-01';
+  if (typeof window !== 'undefined') {
+    window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
+  }
 
   const MIN_COLLEGE = 150000;
   const MIN_HS = 400000;
