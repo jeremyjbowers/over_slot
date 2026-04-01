@@ -141,7 +141,9 @@ else:
 
 # CSRF settings for multi-pod deployment
 CSRF_COOKIE_SECURE = True
-CSRF_COOKIE_HTTPONLY = True
+# Must be False so client JS can read csrftoken for X-CSRFToken (mock draft share POST, etc.).
+# Session cookies stay HttpOnly; CSRF token is not session-equivalent. See Django CSRF docs.
+CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_DOMAIN = '.overslotbaseball.com'  # Match session cookie domain
 

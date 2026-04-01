@@ -45,9 +45,14 @@
   }
 
   function getCsrfToken() {
-    const m = typeof document !== 'undefined' && document.cookie
-      ? document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/)
-      : null;
+    if (typeof document === 'undefined') return '';
+    const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (input && input.value) return input.value;
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    const metaVal = meta && meta.getAttribute('content');
+    if (metaVal) return metaVal;
+    if (!document.cookie) return '';
+    const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
     return m ? decodeURIComponent(m[1]) : '';
   }
 
