@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-02';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-03';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -1870,8 +1870,9 @@
    * @param {object} [opts]
    * @param {boolean} [opts.useFullRemainingPoolForCap] — If true, cap by raw pool left (misleading vs Max).
    *   Default false: same cap as resolvePickForPool / human “Max”.
+   * @returns {{ signable: boolean, reason: string }}
    */
-  function getAvailablePlayers(slotValue, team, pickIndex, opts = {}) {
+  function getPlayerSignabilityForPick(p, slotValue, team, pickIndex, opts = {}) {
     const idx = pickIndex ?? state.currentPickIndex;
     const pick = state.picks[idx];
     const maxSpend = team
@@ -1882,18 +1883,46 @@
     const minSpend = (pick && slotValue && isTopThreeRounds(pick))
       ? Math.floor(slotValue * MIN_SLOT_PCT_TOP3)
       : 0;
+    if (!isPlayerSelectableInPool(p)) {
+      return { signable: false, reason: 'Already drafted or off the board.' };
+    }
+    const collegeSlotBand = pick && p.class === 'C' && isCompAOrRound2Or3(pick);
+    const signingMax =
+      pick && p.class === 'C'
+        ? upperBoundSigningCostForFilter(p, pick, slotValue, team)
+        : p.cost;
+    const effectiveMin = collegeSlotBand ? Math.floor(slotValue * 0.97) : p.cost;
+    if (signingMax > maxSpend) {
+      return {
+        signable: false,
+        reason: `Not signable: bonus would exceed Max for this pick (${fmt(maxSpend)}).`
+      };
+    }
+    if (effectiveMin < minSpend) {
+      return {
+        signable: false,
+        reason: `Not signable: below rounds 1–3 slot floor (${fmt(minSpend)}).`
+      };
+    }
+    return { signable: true, reason: '' };
+  }
+
+  /**
+   * @param {object} [opts]
+   * @param {boolean} [opts.useFullRemainingPoolForCap] — If true, cap by raw pool left (misleading vs Max).
+   *   Default false: same cap as resolvePickForPool / human “Max”.
+   */
+  function getAvailablePlayers(slotValue, team, pickIndex, opts = {}) {
+    const idx = pickIndex ?? state.currentPickIndex;
     return state.players
       .filter(p => isPlayerSelectableInPool(p))
-      .filter(p => {
-        const collegeSlotBand = pick && p.class === 'C' && isCompAOrRound2Or3(pick);
-        const signingMax =
-          pick && p.class === 'C'
-            ? upperBoundSigningCostForFilter(p, pick, slotValue, team)
-            : p.cost;
-        const effectiveMin = collegeSlotBand ? Math.floor(slotValue * 0.97) : p.cost;
-        return signingMax <= maxSpend && effectiveMin >= minSpend;
-      })
+      .filter(p => getPlayerSignabilityForPick(p, slotValue, team, idx, opts).signable)
       .sort((a, b) => a.rank - b.rank);
+  }
+
+  /** Undrafted players still on the board (excludes college-commit removals), rank order — for human UI. */
+  function getHumanBoardPoolPlayers() {
+    return state.players.filter(p => isPlayerSelectableInPool(p)).sort((a, b) => a.rank - b.rank);
   }
 
   function getTeamFitScore(player, team, pickIndex, slotValue) {
@@ -3050,14 +3079,20 @@
         </div>`;
     }
 
-    const available = getAvailablePlayers(pick.value, pick.team, state.currentPickIndex);
-    const fitSorted = getTeamFitCandidates(available, pick.team, state.currentPickIndex, pick.value);
+    const pickIdx = state.currentPickIndex;
+    const available = getAvailablePlayers(pick.value, pick.team, pickIdx);
+    const fullBoard = getHumanBoardPoolPlayers();
+    const fitSorted = getTeamFitCandidates(available, pick.team, pickIdx, pick.value);
     const rankSorted = [...available].sort((a, b) => a.rank - b.rank);
     const filterInput = $('player-filter');
     if (filterInput) filterInput.value = '';
 
     const labelEl = $('player-list-label');
     const availableEl = $availablePlayers;
+
+    function signability(p) {
+      return getPlayerSignabilityForPick(p, pick.value, pick.team, pickIdx);
+    }
 
     function updateTopViewButtons() {
       document.querySelectorAll('.top-view-btn').forEach(btn => {
@@ -3067,49 +3102,87 @@
 
     function renderList(filter) {
       const q = (filter || '').trim().toLowerCase();
-      const playerCardClass = 'flex items-center gap-3 py-2 px-2 cursor-pointer hover:bg-overslot-grey border border-transparent hover:border-overslot-grey-border text-sm';
+      const rowEnabledClass =
+        'player-pool-row flex items-center gap-3 py-2 px-2 cursor-pointer hover:bg-overslot-grey border border-transparent hover:border-overslot-grey-border text-sm';
+      const rowDisabledClass =
+        'player-pool-row player-pool-row--not-signable flex items-center gap-3 py-2 px-2 cursor-default opacity-[0.42] border border-transparent text-sm text-neutral-500';
 
-      const renderPlayers = (players, chalk) => {
+      const appendPlayerRows = (entries, chalk, clearFirst) => {
         if (!availableEl) return;
-        availableEl.innerHTML = '';
-        players.forEach(p => {
+        if (clearFirst) availableEl.innerHTML = '';
+        entries.forEach(({ player: p, signable: canPick, reason }) => {
           const div = document.createElement('div');
-          div.className = playerCardClass;
-          const isChalk = chalk && p.rank === chalk.rank;
+          div.className = canPick ? rowEnabledClass : rowDisabledClass;
+          const isChalk = canPick && chalk && p.rank === chalk.rank;
           const rankClass = isChalk ? 'rank-badge rank-badge--chalk' : 'rank-badge';
           const baseListCost = (p.class === 'C' && (isCompAOrRound2Or3(pick) || isRound1(pick))) ? pick.value : p.cost;
           const listCost = p.class === 'C' ? applyCollegeRankVsPickToCost(baseListCost, p, pick) : baseListCost;
           const costClass = listCost > pick.value ? 'text-overslot-red' : listCost < pick.value ? 'text-green-400' : 'text-white';
-          div.innerHTML = `${playerPhotoHtml(p)}<span class="${rankClass}">${p.rank}</span><span>${escapeHtml(p.position)} ${escapeHtml(p.name)}, ${escapeHtml(p.school)} » <span class="${costClass}">${fmt(listCost)}</span></span>`;
+          const dimCostClass = canPick ? costClass : 'text-neutral-500';
+          const badge = !canPick
+            ? '<span class="flex-shrink-0 text-[10px] font-semibold uppercase tracking-wide text-neutral-500 border border-neutral-600 px-1 py-0.5 rounded-sm">Not signable</span>'
+            : '';
+          div.innerHTML = `${playerPhotoHtml(p)}<span class="${rankClass}">${p.rank}</span><span class="min-w-0 flex-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">${escapeHtml(p.position)} ${escapeHtml(p.name)}, ${escapeHtml(p.school)} » <span class="${dimCostClass}">${fmt(listCost)}</span></span>${badge}`;
           div.dataset.rank = String(p.rank);
-          div.addEventListener('click', () => makeHumanPick(p));
+          if (canPick) {
+            div.addEventListener('click', () => makeHumanPick(p));
+          } else {
+            div.setAttribute('role', 'presentation');
+            div.title = reason;
+          }
           availableEl.appendChild(div);
         });
       };
 
+      const toEntries = players =>
+        players.map(p => {
+          const { signable: canPick, reason } = signability(p);
+          return { player: p, signable: canPick, reason };
+        });
+
       if (q) {
         const spec = parsePlayerSearchQuery(q);
-        const pool = available.filter(p => playerMatchesSearchSpec(p, spec));
+        const pool = fullBoard.filter(p => playerMatchesSearchSpec(p, spec));
         const orderedFiltered = [...pool].sort((a, b) => a.rank - b.rank);
+        const entries = toEntries(orderedFiltered);
         if (labelEl) labelEl.textContent = `Search results (${orderedFiltered.length})`;
-        const searchHighest = orderedFiltered.length
-          ? orderedFiltered.reduce((best, p) => (!best || p.rank < best.rank ? p : best))
-          : null;
-        renderPlayers(orderedFiltered, searchHighest);
+        const searchChalk = entries.find(e => e.signable)?.player || null;
+        appendPlayerRows(entries, searchChalk, true);
       } else {
         const labelText = state.topViewMode === 'highestRanked' ? 'Ranked' : 'Best fit';
-        if (labelEl) labelEl.textContent = rankSorted.length ? labelText : 'No players available';
-        if (!rankSorted.length) {
-          renderPlayers([], null);
+        if (labelEl) {
+          labelEl.textContent = fullBoard.length ? labelText : 'No players available';
+          labelEl.title =
+            fullBoard.length && state.topViewMode === 'highestRanked'
+              ? 'Dimmed rows are still undrafted but cannot be signed on this pick (pool / slot rules). Hover for detail.'
+              : '';
+        }
+        if (!fullBoard.length) {
+          appendPlayerRows([], null, true);
           return;
         }
         if (state.topViewMode === 'highestRanked') {
-          const chalk = rankSorted[0];
-          renderPlayers(rankSorted, chalk);
+          const entries = toEntries(fullBoard);
+          const chalk = entries.find(e => e.signable)?.player || null;
+          appendPlayerRows(entries, chalk, true);
         } else {
           const highestRanked = rankSorted[0];
-          const orderedAvailable = [highestRanked, ...fitSorted.filter(p => p.rank !== highestRanked.rank)];
-          renderPlayers(orderedAvailable, highestRanked);
+          const orderedAvailable = highestRanked
+            ? [highestRanked, ...fitSorted.filter(p => p.rank !== highestRanked.rank)]
+            : [];
+          const orderedRanks = new Set(orderedAvailable.map(p => p.rank));
+          const tail = fullBoard.filter(p => !orderedRanks.has(p.rank));
+          const headEntries = toEntries(orderedAvailable);
+          const chalk = headEntries.find(e => e.signable)?.player || null;
+          appendPlayerRows(headEntries, chalk, true);
+          if (tail.length) {
+            const sep = document.createElement('div');
+            sep.className =
+              'text-xs text-neutral-500 px-2 py-2 mt-1 border-t border-overslot-grey-border sticky top-0 bg-overslot-black/95 backdrop-blur-sm';
+            sep.textContent = 'Rest of draft board (rank order)';
+            availableEl.appendChild(sep);
+            appendPlayerRows(toEntries(tail), chalk, false);
+          }
         }
       }
     }
@@ -3142,6 +3215,7 @@
     const pick = state.picks[state.currentPickIndex];
     const row = state.pickIndexToRow[state.currentPickIndex]?.row;
     if (!row) return;
+    if (!getPlayerSignabilityForPick(player, pick.value, pick.team, state.currentPickIndex).signable) return;
     let chosen = player;
     let reason = 'Human selection';
     if (!chosen) {
