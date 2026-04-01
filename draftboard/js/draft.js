@@ -24,8 +24,9 @@
    * so iMessage keeps one tappable URL. Legacy query/hash still work.
    */
   const MOCK_DRAFT_CANONICAL_ORIGIN = 'https://overslotbaseball.com';
-  const MOCK_DRAFT_UUID_PATH =
-    /^\/my-mock-draft\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/?$/i;
+  /** End-anchored: works with path prefixes (e.g. /beta/my-mock-draft/<uuid>/). */
+  const MOCK_DRAFT_PATH_UUID_RE =
+    /\/my-mock-draft\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/?$/i;
 
   /** Single in-flight POST to save share; copy/address bar wait on this so URLs use UUID, not /s/… payload. */
   let sharePersistPromise = null;
@@ -42,20 +43,19 @@
   }
 
   function parseUuidFromMockDraftPath() {
-    const m = location.pathname.match(MOCK_DRAFT_UUID_PATH);
+    const m = location.pathname.match(MOCK_DRAFT_PATH_UUID_RE);
     return m ? m[1] : null;
   }
 
   function getMockDraftHomePath() {
-    const m = location.pathname.match(
-      /^(\/my-mock-draft)(?:\/s\/[^/]+|\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?\/?$/i
-    );
-    if (m) return m[1];
+    const p = location.pathname;
+    const idx = p.search(/\/my-mock-draft(?:\/|$)/i);
+    if (idx >= 0) return p.slice(0, idx + '/my-mock-draft'.length);
     return '/my-mock-draft';
   }
 
   function onMockDraftSimulatorPage() {
-    return /^\/my-mock-draft/.test(location.pathname);
+    return /\/my-mock-draft(?:\/|$)/i.test(location.pathname);
   }
 
   /** Public tool entry (no share payload) for brag cards and off-site fallbacks. */
@@ -66,8 +66,17 @@
     return `${MOCK_DRAFT_CANONICAL_ORIGIN}${getMockDraftHomePath()}/`;
   }
 
-  function extractEndgamePayloadRaw() {
-    if (typeof window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__ === 'string' && window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__.length) {
+  /**
+   * @param {{ forShareableUrl?: boolean }} [opts] If forShareableUrl, skip server-injected payload
+   *   (avoids copying a giant /s/&lt;b64&gt;/ link when the real permalink is /my-mock-draft/&lt;uuid&gt;/).
+   */
+  function extractEndgamePayloadRaw(opts) {
+    const forShare = opts && opts.forShareableUrl;
+    if (
+      !forShare &&
+      typeof window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__ === 'string' &&
+      window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__.length
+    ) {
       return window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__;
     }
     const pathM = location.pathname.match(/\/my-mock-draft\/s\/([^/]+)\/?$/);
@@ -106,7 +115,8 @@
       if (onMockDraftSimulatorPage()) return `${location.origin}${sharePath}`;
       return `${MOCK_DRAFT_CANONICAL_ORIGIN}${sharePath}`;
     }
-    const raw = extractEndgamePayloadRaw();
+    /** Legacy state-in-URL: path /my-mock-draft/s/&lt;b64&gt;/, or ?d= / #d= / bare ?payload — not DB permalink. */
+    const raw = extractEndgamePayloadRaw({ forShareableUrl: true });
     if (!raw) {
       if (onMockDraftSimulatorPage()) return `${location.origin}${home}/`;
       return `${MOCK_DRAFT_CANONICAL_ORIGIN}${home}/`;
@@ -910,7 +920,7 @@
   function clearEndgameStateFromUrl() {
     const home = getMockDraftHomePath();
     const hadPathShare = /\/my-mock-draft\/s\/[^/]+\/?$/.test(location.pathname);
-    const hadPathShareUuid = MOCK_DRAFT_UUID_PATH.test(location.pathname);
+    const hadPathShareUuid = MOCK_DRAFT_PATH_UUID_RE.test(location.pathname);
 
     const q = location.search;
     const body = q.startsWith('?') ? q.slice(1) : '';
