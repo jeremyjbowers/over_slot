@@ -1035,7 +1035,19 @@
     const labelDefault = 'Copy URL to my draft';
     btn.textContent = labelDefault;
     btn.addEventListener('click', async () => {
-      await ensureSharePersisted();
+      btn.disabled = true;
+      btn.textContent = 'Preparing link…';
+      try {
+        for (let attempt = 0; attempt < 2; attempt++) {
+          if (attempt > 0) sharePersistPromise = null;
+          await ensureSharePersisted();
+          const u = getShareableDraftUrl();
+          if (!/\/my-mock-draft\/s\/[^/]+\//.test(u)) break;
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = labelDefault;
+      }
       const url = getShareableDraftUrl();
       try {
         await navigator.clipboard.writeText(url);
@@ -1667,15 +1679,15 @@
     const spotsBelow = rank - pickNum;
     const spotsAbove = pickNum - rank;
 
-    // Round 1: keep bonuses closer to slot when a player slides or is reached for
+    // Round 1: small deviation from slot on big slides/reaches (avoid huge faux “overages”)
     if (isRound1(pick)) {
-      if (spotsBelow >= 150) return 0.96;
-      if (spotsBelow >= 100) return 0.97;
-      if (spotsBelow >= 60) return 0.98;
-      if (spotsBelow >= 30) return 0.99;
-      if (spotsAbove >= 150) return 1.04;
-      if (spotsAbove >= 100) return 1.03;
-      if (spotsAbove >= 50) return 1.02;
+      if (spotsBelow >= 150) return 0.985;
+      if (spotsBelow >= 100) return 0.99;
+      if (spotsBelow >= 60) return 0.992;
+      if (spotsBelow >= 30) return 0.995;
+      if (spotsAbove >= 150) return 1.015;
+      if (spotsAbove >= 100) return 1.012;
+      if (spotsAbove >= 50) return 1.008;
       return 1;
     }
 
@@ -1693,6 +1705,28 @@
     const m = getCollegeRankVsPickMultiplier(player, pick);
     if (m === 1) return baseCost;
     return Math.floor(baseCost * m);
+  }
+
+  /**
+   * Upper bound on what getEffectiveSigningCost can return (same pick/slot/team),
+   * so availability matches pool resolution (R1 college uses slot-based signing, not CSV ask).
+   */
+  function upperBoundSigningCostForFilter(player, pick, slotValue, teamName) {
+    if (!player || !pick || !slotValue) return player?.cost ?? 0;
+    if (player.class !== 'C') return player.cost;
+    const team = teamName != null ? teamName : pick.team;
+    const poolSaver = teamPrefersEarlyUnderslotStrategy(team);
+    let baseMax;
+    if (isRound1(pick)) {
+      baseMax = Math.ceil(slotValue * 1.03);
+    } else if (isRound2(pick) || isCompetitiveBalanceA(pick)) {
+      baseMax = poolSaver ? slotValue : Math.ceil(slotValue * 1.03);
+    } else if (isRound3(pick)) {
+      baseMax = slotValue;
+    } else {
+      return applyCollegeRankVsPickToCost(player.cost, player, pick);
+    }
+    return applyCollegeRankVsPickToCost(baseMax, player, pick);
   }
 
   function getEffectiveSigningCost(player, pick, slotValue, teamName) {
@@ -1768,9 +1802,12 @@
       .filter(p => isPlayerSelectableInPool(p))
       .filter(p => {
         const collegeSlotBand = pick && p.class === 'C' && isCompAOrRound2Or3(pick);
-        const effectiveMax = collegeSlotBand ? slotValue : p.cost;
+        const signingMax =
+          pick && p.class === 'C'
+            ? upperBoundSigningCostForFilter(p, pick, slotValue, team)
+            : p.cost;
         const effectiveMin = collegeSlotBand ? Math.floor(slotValue * 0.97) : p.cost;
-        return effectiveMax <= maxSpend && effectiveMin >= minSpend;
+        return signingMax <= maxSpend && effectiveMin >= minSpend;
       })
       .sort((a, b) => a.rank - b.rank);
   }
@@ -2558,8 +2595,11 @@
   /** Prefer players whose listed cost fits current remaining pool (avoids burning the last-round reserve). */
   function firstAffordableUndrafted(team, pickIndex, slotValue) {
     const maxSpend = getMaxSpendThisPick(slotValue, team, pickIndex);
+    const pick = state.picks[pickIndex];
     const byCost = getUndraftedByCostAsc();
-    const affordable = byCost.filter(p => p.cost <= maxSpend);
+    const affordable = byCost.filter(p =>
+      upperBoundSigningCostForFilter(p, pick, slotValue, team) <= maxSpend
+    );
     return affordable[0] || null;
   }
 
@@ -2570,7 +2610,9 @@
     if (candidates.length === 0) candidates = getAvailablePlayers(slotValue, pick.team, pickIndex);
     if (candidates.length === 0) {
       const maxSpend = getMaxSpendThisPick(slotValue, pick.team, pickIndex);
-      candidates = getUndraftedByCostAsc().filter(p => p.cost <= maxSpend);
+      candidates = getUndraftedByCostAsc().filter(p =>
+        upperBoundSigningCostForFilter(p, pick, slotValue, pick.team) <= maxSpend
+      );
     }
     let { candidates: filtered, reason, weirdPick } = applyTeamRules(candidates, pick.team, pickIndex, slotValue);
     if (filtered.length === 0) filtered = candidates;
