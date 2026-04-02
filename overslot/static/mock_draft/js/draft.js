@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-07';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -2185,10 +2185,16 @@
 
       // Specific player: "Will draft Roch Cholowsky with the No. 1 pick X% of the time"
       const playerMatch = rules.match(/will draft ([a-z\s]+) with.*?(\d+)%/);
-      if (playerMatch && pickIndex === 0) {
+      const pickRow = state.picks[pickIndex];
+      if (playerMatch && pickRow && pickRow.pick === 1) {
         const namePart = playerMatch[1].trim();
         const pct = parseInt(playerMatch[2], 10) / 100;
-        const player = candidates.find(p => p.name.toLowerCase().includes(namePart));
+        let player = candidates.find(p => p.name.toLowerCase().includes(namePart));
+        if (!player) {
+          player = state.players.find(
+            p => isPlayerSelectableInPool(p) && p.name.toLowerCase().includes(namePart)
+          );
+        }
         if (player && Math.random() < pct) {
           const r = soft([
             `We've had our eye on ${player.name} for a while; he was our guy at 1.`,
