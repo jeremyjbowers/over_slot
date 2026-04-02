@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-09';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-10';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -19,6 +19,10 @@
   /** Random senior sign amount; also MLB-realistic floor for any signing in rounds 1–10 when pool allows. */
   const RANDOM_SENIOR_SIGN = 150000;
   const MIN_SLOT_PCT_TOP3 = 0.75; // First 3 rounds: teams cannot spend less than 75% of slot (MLB Combine rule)
+  /** Picks 1–10: if college ask is within this % of slot, model 2–3% under slot; larger CSV gaps use the ask (e.g. Roch). */
+  const EARLY_PICK_NEAR_SLOT_FRAC = 0.02;
+  const EARLY_TOP_UNDER_SLOT_MIN_PCT = 0.02;
+  const EARLY_TOP_UNDER_SLOT_MAX_PCT = 0.03;
   /** After Round 2 ends: chance that 1–3 top remaining HS players “go to college” and leave the pool. */
   const HS_GTC_AFTER_R2_CHANCE = 0.08;
   /** First pick only: P(lock onto Grady Emerson | he remains in the AI candidate pool). Editor override. */
@@ -1748,6 +1752,20 @@
     return r === 'Round 3';
   }
 
+  /** Overall draft picks 1–10 (top of round 1). */
+  function isFirstTenOverallPicks(pick) {
+    const n = pick?.pick;
+    return n != null && n >= 1 && n <= 10;
+  }
+
+  /**
+   * True when the CSV bonus is clearly below slot so the deal is already encoded (don’t add synthetic under-slot).
+   */
+  function csvBonusEncodesUnderslotVsSlot(player, slotValue) {
+    if (!player || !slotValue || player.cost <= 0) return false;
+    return player.cost <= Math.floor(slotValue * (1 - EARLY_PICK_NEAR_SLOT_FRAC));
+  }
+
   /** Teams that deliberately shave R1–2/CB-A to redeploy pool (explicit big-discount strategy in rules). */
   function teamPrefersEarlyUnderslotStrategy(teamName) {
     if (!teamName) return false;
@@ -1794,6 +1812,16 @@
     return Math.floor(baseCost * m);
   }
 
+  /** Picks 1–10, college ask near slot: random 2–3% under slot, capped so rank-vs-pick can’t erase the underslot. */
+  function collegeSigningCostEarlyTopNearSlot(player, pick, slotValue) {
+    const span = EARLY_TOP_UNDER_SLOT_MAX_PCT - EARLY_TOP_UNDER_SLOT_MIN_PCT;
+    const pct = EARLY_TOP_UNDER_SLOT_MIN_PCT + Math.random() * span;
+    const base = Math.floor(slotValue * (1 - pct));
+    const cap = Math.floor(slotValue * (1 - EARLY_TOP_UNDER_SLOT_MIN_PCT));
+    const out = applyCollegeRankVsPickToCost(base, player, pick);
+    return Math.min(out, cap);
+  }
+
   /**
    * Upper bound on what getEffectiveSigningCost can return (same pick/slot/team),
    * so availability matches pool resolution (R1 college uses slot-based signing, not CSV ask).
@@ -1801,6 +1829,12 @@
   function upperBoundSigningCostForFilter(player, pick, slotValue, teamName) {
     if (!player || !pick || !slotValue) return player?.cost ?? 0;
     if (player.class !== 'C') return player.cost;
+    if (player.cost > 0 && player.cost <= slotValue) {
+      if (isFirstTenOverallPicks(pick) && !csvBonusEncodesUnderslotVsSlot(player, slotValue)) {
+        return Math.floor(slotValue * (1 - EARLY_TOP_UNDER_SLOT_MIN_PCT));
+      }
+      return applyCollegeRankVsPickToCost(player.cost, player, pick);
+    }
     const team = teamName != null ? teamName : pick.team;
     const poolSaver = teamPrefersEarlyUnderslotStrategy(team);
     let baseMax;
@@ -1819,6 +1853,12 @@
   function getEffectiveSigningCost(player, pick, slotValue, teamName) {
     if (!player || !slotValue) return player?.cost ?? 0;
     if (player.class !== 'C') return player.cost;
+    if (player.cost > 0 && player.cost <= slotValue) {
+      if (isFirstTenOverallPicks(pick) && !csvBonusEncodesUnderslotVsSlot(player, slotValue)) {
+        return collegeSigningCostEarlyTopNearSlot(player, pick, slotValue);
+      }
+      return applyCollegeRankVsPickToCost(player.cost, player, pick);
+    }
     const team = teamName != null ? teamName : pick?.team;
     const poolSaver = teamPrefersEarlyUnderslotStrategy(team);
 
@@ -1894,7 +1934,11 @@
       pick && p.class === 'C'
         ? upperBoundSigningCostForFilter(p, pick, slotValue, team)
         : p.cost;
-    const effectiveMin = collegeSlotBand ? Math.floor(slotValue * 0.97) : p.cost;
+    const effectiveMin = collegeSlotBand
+      ? p.cost > 0 && p.cost <= slotValue
+        ? applyCollegeRankVsPickToCost(p.cost, p, pick)
+        : Math.floor(slotValue * 0.97)
+      : p.cost;
     if (signingMax > maxSpend) {
       return {
         signable: false,
