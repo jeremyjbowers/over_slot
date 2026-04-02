@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-10';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-11';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -448,13 +448,14 @@
     textEl.classList.add('reasoning-appear');
   }
 
+  /** One entry per contiguous block in pick order (unique roundSectionIndex from build-data). */
   function getRoundSections() {
     const sections = [];
-    let prev = null;
+    let prevIdx = null;
     state.picks.forEach(p => {
-      if (p.round && p.round !== prev) {
+      if (p.roundSectionIndex !== prevIdx) {
         sections.push({ label: p.round, index: p.roundSectionIndex });
-        prev = p.round;
+        prevIdx = p.roundSectionIndex;
       }
     });
     return sections;
@@ -576,20 +577,20 @@
     state._draftNewsFlash = `Commitment news: ${names} ${n === 1 ? 'heads' : 'head'} to college — off the board. `;
   }
 
-  function getPicksForRound(roundLabel) {
+  function getPicksForSection(sectionIdx) {
     return state.picks
       .map((p, i) => ({ pick: p, index: i }))
-      .filter(({ pick }) => pick.round === roundLabel);
+      .filter(({ pick }) => pick.roundSectionIndex === sectionIdx);
   }
 
-  function renderRound(roundLabel) {
-    const roundPicks = getPicksForRound(roundLabel);
+  function renderSection(sectionIdx) {
+    const roundPicks = getPicksForSection(sectionIdx);
     if (roundPicks.length === 0) return null;
 
-    const sectionIndex = roundPicks[0].pick.roundSectionIndex;
+    const roundLabel = roundPicks[0].pick.round;
     const roundEl = document.createElement('div');
     roundEl.className = 'mb-3 p-2 bg-overslot-grey border border-overslot-grey-border overflow-hidden';
-    roundEl.dataset.roundSection = String(sectionIndex);
+    roundEl.dataset.roundSection = String(sectionIdx);
     const h3 = document.createElement('h3');
     h3.className = 'text-sm font-semibold text-overslot-red mb-2';
     h3.textContent = roundLabel;
@@ -614,12 +615,10 @@
     return roundEl;
   }
 
-  function ensureRoundVisible(roundLabel) {
-    const section = getRoundSections().find(s => s.label === roundLabel);
-    const sectionIndex = section ? section.index : 0;
-    const existing = $board.querySelector(`[data-round-section="${sectionIndex}"]`);
+  function ensureSectionVisible(sectionIdx) {
+    const existing = $board.querySelector(`[data-round-section="${sectionIdx}"]`);
     if (existing) return;
-    const roundEl = renderRound(roundLabel);
+    const roundEl = renderSection(sectionIdx);
     if (roundEl) {
       $board.appendChild(roundEl);
       roundEl.scrollIntoView({ behavior: state.pickDelay === 0 ? 'auto' : 'smooth', block: 'nearest' });
@@ -634,9 +633,9 @@
     container.setAttribute('role', 'navigation');
     container.setAttribute('aria-label', 'Jump to draft round');
     const sections = getRoundSections();
-    const currentRound = state.currentPickIndex < state.picks.length
-      ? state.picks[state.currentPickIndex].round
-      : (sections.length ? sections[sections.length - 1].label : '');
+    const currentSectionIdx = state.currentPickIndex < state.picks.length
+      ? state.picks[state.currentPickIndex].roundSectionIndex
+      : (sections.length ? sections[sections.length - 1].index : null);
     sections.forEach((section, i) => {
       if (i > 0) {
         const sep = document.createElement('span');
@@ -646,7 +645,7 @@
         container.appendChild(sep);
       }
       const span = document.createElement('span');
-      span.className = (section.label === currentRound
+      span.className = (section.index === currentSectionIdx
         ? 'text-overslot-red font-semibold underline cursor-default'
         : 'text-neutral-100 hover:text-white cursor-pointer') + ' whitespace-nowrap';
       const shortLabel = shortRoundNavLabel(section.label);
@@ -654,7 +653,7 @@
       span.title = section.label;
       span.setAttribute('aria-label', section.label);
       span.addEventListener('click', () => {
-        ensureRoundVisible(section.label);
+        ensureSectionVisible(section.index);
         const roundEl = $board.querySelector(`[data-round-section="${section.index}"]`);
         if (roundEl) roundEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
@@ -709,7 +708,7 @@
     $status.textContent = '';
 
     const firstSection = getRoundSections()[0];
-    if (firstSection) ensureRoundVisible(firstSection);
+    if (firstSection) ensureSectionVisible(firstSection.index);
     renderRoundBreadcrumbs();
     renderHumanBudgetSummary();
     processNextPick();
@@ -1196,7 +1195,7 @@
     $('round-breadcrumbs').innerHTML = '';
     state.boardRows = [];
     state.pickIndexToRow = {};
-    getRoundSections().forEach(s => ensureRoundVisible(s.label));
+    getRoundSections().forEach(s => ensureSectionVisible(s.index));
 
     for (let i = 0; i < state.picks.length; i++) {
       applyRestoredPickToRow(i);
@@ -2851,7 +2850,7 @@
 
     const pick = state.picks[state.currentPickIndex];
     const newsPrefix = consumeDraftNewsFlash();
-    ensureRoundVisible(pick.round);
+    ensureSectionVisible(pick.roundSectionIndex);
     const { row } = state.pickIndexToRow[state.currentPickIndex];
     const isHuman = state.humanTeams.has(pick.team);
 
