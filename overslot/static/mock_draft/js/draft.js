@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-08';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-09';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -248,7 +248,8 @@
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'team-square px-3 py-2 border border-overslot-grey-border bg-overslot-grey text-white text-sm font-medium hover:border-red-500/50 transition-colors flex items-center gap-2 text-left';
-      btn.innerHTML = `${teamLogoHtml(t.id, 'w-8 h-8')}<span class="flex flex-col gap-0.5 min-w-0"><span class="break-words">${escapeHtml(t.name)}</span><span class="text-xs text-neutral-100 font-normal">${pickCount} pick${pickCount !== 1 ? 's' : ''}</span></span>`;
+      const poolStr = fmt(t.pool != null ? t.pool : 0);
+      btn.innerHTML = `${teamLogoHtml(t.id, 'w-8 h-8')}<span class="flex flex-col gap-0.5 min-w-0"><span class="break-words">${escapeHtml(t.name)}</span><span class="text-xs text-neutral-100 font-normal tabular-nums">${pickCount} pick${pickCount !== 1 ? 's' : ''} · ${poolStr} pool</span></span>`;
       btn.dataset.team = t.name;
       btn.addEventListener('click', () => {
         container.querySelectorAll('.team-square.selected').forEach(el => el.classList.remove('selected'));
