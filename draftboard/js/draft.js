@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-07';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-08';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -18,8 +18,6 @@
   const MIN_HS = 400000;
   /** Random senior sign amount; also MLB-realistic floor for any signing in rounds 1–10 when pool allows. */
   const RANDOM_SENIOR_SIGN = 150000;
-  /** Only budget this many future picks at the senior floor; rest of the pool stays usable earlier (make up $ on last picks). */
-  const MAKEUP_RESERVE_PICKS = 3;
   const MIN_SLOT_PCT_TOP3 = 0.75; // First 3 rounds: teams cannot spend less than 75% of slot (MLB Combine rule)
   /** After Round 2 ends: chance that 1–3 top remaining HS players “go to college” and leave the pool. */
   const HS_GTC_AFTER_R2_CHANCE = 0.08;
@@ -1648,14 +1646,12 @@
   }
 
   /**
-   * Pool held back for cheap late picks: $150k × min(future picks, MAKEUP_RESERVE_PICKS).
-   * Avoids reserving for every remaining pick (which forced random seniors in rounds 3–4).
+   * Pool that must remain after this pick’s bonus: $150k × each pick the team still has after this one.
+   * Stops burning pool early on overslot signings and keeps random senior amounts consistent at the end.
    */
   function getFuturePickReserve(picksLeft) {
     if (picksLeft <= 1) return 0;
-    const futurePicks = picksLeft - 1;
-    const reserveSlots = Math.min(futurePicks, MAKEUP_RESERVE_PICKS);
-    return reserveSlots * RANDOM_SENIOR_SIGN;
+    return (picksLeft - 1) * RANDOM_SENIOR_SIGN;
   }
 
   function isSyntheticRandomSeniorRank(rank) {
@@ -1677,20 +1673,17 @@
 
   /**
    * Never returns pass — teams always sign (Random senior sign if no named player fits or pool is tight).
-   * getMaxSpendThisPick uses a capped reserve so teams can spend up mid-draft and balance on last picks.
+   * getMaxSpendThisPick leaves $150k × (picks after this one) in the pool so late picks stay funded.
    */
   function resolvePickForPool(pick, player, prefCost, pickIndex) {
     const team = pick.team;
     const maxThisPick = getMaxSpendThisPick(pick.value, team, pickIndex);
-    const remaining = getTeamRemaining(team);
 
     function randomSeniorNoPass() {
       const senior = makeRandomSeniorSignPlayer(pickIndex);
       let cost = 0;
       if (maxThisPick > 0) {
         cost = Math.min(RANDOM_SENIOR_SIGN, maxThisPick);
-      } else if (remaining > 0) {
-        cost = Math.min(RANDOM_SENIOR_SIGN, remaining);
       }
       cost = floorSigningBonusFirstTenRounds(cost, pickIndex, maxThisPick);
       return { player: senior, effectiveCost: cost };
@@ -3078,12 +3071,12 @@
     const picksLeft = getPicksRemaining(pick.team, state.currentPickIndex);
     const teamData = state.teams.find(t => t.name === pick.team);
     const futureReserve = getFuturePickReserve(picksLeft);
-    const reserveSlots = picksLeft > 1 ? Math.min(picksLeft - 1, MAKEUP_RESERVE_PICKS) : 0;
+    const reserveSlots = picksLeft > 1 ? picksLeft - 1 : 0;
     const minFloor = pick.value && isTopThreeRounds(pick)
       ? Math.floor(pick.value * MIN_SLOT_PCT_TOP3)
       : 0;
     const reserveSeg = reserveSlots > 0
-      ? `<span title="Budget for up to ${reserveSlots} late pick(s) at the cheap senior floor (~$150k each). The rest of your pool is available for this pick."><span class="text-neutral-400">Reserve</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(futureReserve)}</span> <span class="text-neutral-500">(${reserveSlots})</span></span>`
+      ? `<span title="After this signing, you must keep at least $150k × ${reserveSlots} pick(s) still to come (~$150k per future pick). That amount is subtracted from &quot;Max&quot; for this pick."><span class="text-neutral-400">Reserve</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(futureReserve)}</span> <span class="text-neutral-500">(${reserveSlots}×$150k)</span></span>`
       : '';
     const floorSeg = minFloor > 0
       ? `<span title="Rounds 1–3: signing must be at least 75% of slot."><span class="text-neutral-400">Floor</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(minFloor)}</span></span>`
@@ -3100,7 +3093,7 @@
             <span><span class="text-neutral-400">Pool</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(pool)}</span></span>
             <span><span class="text-neutral-400">Spent</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(spent)}</span></span>
             <span><span class="text-neutral-400">Left</span> <span class="text-neutral-100 font-semibold tabular-nums">${fmt(remaining)}</span></span>
-            <span class="text-overslot-red/90 font-medium tabular-nums" title="Top offer this pick after setting aside the small reserve for cheap late picks (last few rounds).">Max ${fmt(maxThisPick)}</span>
+            <span class="text-overslot-red/90 font-medium tabular-nums" title="Largest bonus this pick can pay while leaving $150k × every pick you still have after this one.">Max ${fmt(maxThisPick)}</span>
             ${reserveSeg}
             ${floorSeg}
           </div>
