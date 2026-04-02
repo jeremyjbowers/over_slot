@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-04';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -182,7 +182,7 @@
     _pickDelayBeforeSim: null, // restored when simulated draft completes or restarts
     /** After draft: which endgame tab is active. */
     endgameTab: 'my', // 'my' | 'team' | 'browse'
-    endgameTeamChoice: null, // string | null — "Any team" brag sheet
+    endgameTeamChoice: null, // string | null — team chosen in endgame dropdown for brag sheet
     endgameBrowseIndex: 0 // pick index in state.picks
   };
 
@@ -1485,12 +1485,8 @@
 
     const toolbar = document.createElement('div');
     toolbar.className = 'endgame-toolbar flex flex-wrap items-center gap-2 sm:gap-2.5 mb-3';
-    const tabDefs = [
-      { id: 'my', label: 'My team(s)' },
-      { id: 'team', label: 'Any team' },
-      { id: 'browse', label: 'Browse picks' }
-    ];
-    tabDefs.forEach(({ id, label }) => {
+
+    function makeEndgameTabButton(id, label) {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'endgame-tab text-base px-3 py-1.5 border font-medium cursor-pointer transition-colors ' + (tab === id
@@ -1501,21 +1497,17 @@
         state.endgameTab = id;
         renderEndgame();
       });
-      toolbar.appendChild(b);
-    });
-
-    const restartToolbar = document.createElement('button');
-    restartToolbar.type = 'button';
-    restartToolbar.className =
-      'endgame-restart text-base px-3 py-1.5 border border-amber-500/80 bg-amber-950/55 text-amber-100 font-semibold cursor-pointer hover:bg-amber-900/70 hover:border-amber-400 transition-colors';
-    restartToolbar.textContent = 'Restart';
-    restartToolbar.addEventListener('click', () => restartToSetup());
-    toolbar.appendChild(restartToolbar);
+      return b;
+    }
 
     const teamSel = document.createElement('select');
     teamSel.id = 'endgame-team-select';
     teamSel.setAttribute('aria-label', 'Team for brag sheet');
-    teamSel.className = 'text-base bg-black/50 border border-overslot-grey-border text-white px-2 py-1.5 max-w-[min(100%,20rem)] ' + (tab === 'team' ? '' : 'hidden');
+    teamSel.className =
+      'text-base bg-black/50 border text-white px-2 py-1.5 max-w-[min(100%,20rem)] min-h-[2.5rem] rounded-sm cursor-pointer ' +
+      (tab === 'team'
+        ? 'border-overslot-red bg-red-950/40'
+        : 'border-overslot-grey-border hover:border-neutral-500');
     allNames.forEach(name => {
       const o = document.createElement('option');
       o.value = name;
@@ -1525,9 +1517,21 @@
     if (state.endgameTeamChoice) teamSel.value = state.endgameTeamChoice;
     teamSel.addEventListener('change', () => {
       state.endgameTeamChoice = teamSel.value;
+      state.endgameTab = 'team';
       renderEndgame();
     });
+
+    toolbar.appendChild(makeEndgameTabButton('my', 'My Team'));
     toolbar.appendChild(teamSel);
+    toolbar.appendChild(makeEndgameTabButton('browse', 'Browse picks'));
+
+    const restartToolbar = document.createElement('button');
+    restartToolbar.type = 'button';
+    restartToolbar.className =
+      'endgame-restart text-base px-3 py-1.5 border border-amber-500/80 bg-amber-950/55 text-amber-100 font-semibold cursor-pointer hover:bg-amber-900/70 hover:border-amber-400 transition-colors';
+    restartToolbar.textContent = 'Restart';
+    restartToolbar.addEventListener('click', () => restartToSetup());
+    toolbar.appendChild(restartToolbar);
 
     $draftCompleteInner.appendChild(toolbar);
 
@@ -1539,7 +1543,7 @@
       title = state.originalHumanTeams.size ? 'Your mock draft class' : 'That\u2019s a wrap';
       subtitle = state.originalHumanTeams.size
         ? ''
-        : 'You didn\u2019t select a human team—use <strong class="text-neutral-300">Any team</strong> for a brag sheet, or <strong class="text-neutral-300">Browse picks</strong> to review the draft.';
+        : 'You didn\u2019t select a human team—choose a club from the <strong class="text-neutral-300">team menu</strong> for a brag sheet, or open <strong class="text-neutral-300">Browse picks</strong> to review the draft.';
     } else if (tab === 'team') {
       const teamNameForHero = state.endgameTeamChoice || allNames[0] || '';
       title = teamNameForHero
@@ -1566,7 +1570,7 @@
       if (myTeams.length === 0) {
         const p = document.createElement('p');
         p.className = 'text-neutral-500 text-base text-center leading-snug';
-        p.innerHTML = 'Select a human team before <strong class="text-neutral-400">Start Draft</strong> next time to unlock &ldquo;My team(s)&rdquo; here.';
+        p.innerHTML = 'Select a human team before <strong class="text-neutral-400">Start Draft</strong> next time to unlock &ldquo;My Team&rdquo; here.';
         content.appendChild(p);
       } else {
         myTeams.forEach(name => content.appendChild(buildBragSheetWrap(name)));
