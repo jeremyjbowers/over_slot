@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-11.1';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-11.2';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -1700,6 +1700,11 @@
       effectiveCost = prefCost != null ? prefCost : getEffectiveSigningCost(player, pick, pick.value);
     }
 
+    const slotFloor = getSlotFloorMinSpend(pick, pick.value);
+    if (slotFloor > 0 && player && !isSyntheticRandomSeniorRank(player.rank)) {
+      effectiveCost = Math.max(effectiveCost, slotFloor);
+    }
+
     if (effectiveCost <= maxThisPick) {
       const floored = floorSigningBonusFirstTenRounds(effectiveCost, pickIndex, maxThisPick);
       if (floored <= maxThisPick) {
@@ -1720,6 +1725,12 @@
   function isTopThreeRounds(pick) {
     const r = (pick?.round || '').trim();
     return r === 'Round 1' || r === 'Round 2' || r === 'Round 3';
+  }
+
+  /** Rounds 1–3: minimum bonus allowed for this slot (Combine 75% rule). */
+  function getSlotFloorMinSpend(pick, slotValue) {
+    if (!pick || slotValue == null || !isTopThreeRounds(pick)) return 0;
+    return Math.floor(slotValue * MIN_SLOT_PCT_TOP3);
   }
 
   function isCompAOrRound2Or3(pick) {
@@ -1875,6 +1886,21 @@
   }
 
   /**
+   * Lower bound on modeled bonus for this player on this pick (matches signability / pool display).
+   * Does not apply the 75% slot floor bump — use max(..., getSlotFloorMinSpend) for resolved pay.
+   */
+  function getEffectiveMinSigningDemand(p, pick, slotValue) {
+    if (!p || !pick || slotValue == null) return p?.cost ?? 0;
+    const collegeSlotBand = p.class === 'C' && isCompAOrRound2Or3(pick);
+    if (collegeSlotBand) {
+      return p.cost > 0 && p.cost <= slotValue
+        ? applyCollegeRankVsPickToCost(p.cost, p, pick)
+        : Math.floor(slotValue * 0.97);
+    }
+    return p.cost;
+  }
+
+  /**
    * @param {object} [opts]
    * @param {boolean} [opts.useFullRemainingPoolForCap] — If true, cap by raw pool left (misleading vs Max).
    *   Default false: same cap as resolvePickForPool / human “Max”.
@@ -1888,32 +1914,26 @@
         ? Math.max(0, getTeamRemaining(team))
         : getMaxSpendThisPick(slotValue, team, idx))
       : slotValue;
-    const minSpend = (pick && slotValue && isTopThreeRounds(pick))
-      ? Math.floor(slotValue * MIN_SLOT_PCT_TOP3)
-      : 0;
+    const minSpend = getSlotFloorMinSpend(pick, slotValue);
     if (!isPlayerSelectableInPool(p)) {
       return { signable: false, reason: 'Already drafted or off the board.' };
     }
-    const collegeSlotBand = pick && p.class === 'C' && isCompAOrRound2Or3(pick);
     const signingMax =
       pick && p.class === 'C'
         ? upperBoundSigningCostForFilter(p, pick, slotValue, team)
         : p.cost;
-    const effectiveMin = collegeSlotBand
-      ? p.cost > 0 && p.cost <= slotValue
-        ? applyCollegeRankVsPickToCost(p.cost, p, pick)
-        : Math.floor(slotValue * 0.97)
-      : p.cost;
+    const effectiveMin = getEffectiveMinSigningDemand(p, pick, slotValue);
     if (signingMax > maxSpend) {
       return {
         signable: false,
         reason: `Not signable: bonus would exceed Max for this pick (${fmt(maxSpend)}).`
       };
     }
-    if (effectiveMin < minSpend) {
+    const resolvedFloor = minSpend > 0 ? Math.max(effectiveMin, minSpend) : effectiveMin;
+    if (minSpend > 0 && resolvedFloor > maxSpend) {
       return {
         signable: false,
-        reason: `Not signable: below rounds 1–3 slot floor (${fmt(minSpend)}).`
+        reason: `Not signable: paying the rounds 1–3 slot floor (${fmt(minSpend)}) would exceed Max for this pick (${fmt(maxSpend)}).`
       };
     }
     return { signable: true, reason: '' };
@@ -3082,9 +3102,7 @@
     const teamData = state.teams.find(t => t.name === pick.team);
     const futureReserve = getFuturePickReserve(picksLeft);
     const reserveSlots = picksLeft > 1 ? picksLeft - 1 : 0;
-    const minFloor = pick.value && isTopThreeRounds(pick)
-      ? Math.floor(pick.value * MIN_SLOT_PCT_TOP3)
-      : 0;
+    const minFloor = getSlotFloorMinSpend(pick, pick.value);
     const reserveSeg = reserveSlots > 0
       ? `<span title="After this signing, you must keep at least $150k × ${reserveSlots} pick(s) still to come (~$150k per future pick). That amount is subtracted from &quot;Max&quot; for this pick."><span class="text-neutral-400">Reserve</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(futureReserve)}</span> <span class="text-neutral-500">(${reserveSlots}×$150k)</span></span>`
       : '';
@@ -3146,7 +3164,8 @@
           div.className = canPick ? rowEnabledClass : rowDisabledClass;
           const isChalk = canPick && chalk && p.rank === chalk.rank;
           const rankClass = isChalk ? 'rank-badge rank-badge--chalk' : 'rank-badge';
-          const listCost = p.class === 'C' ? applyCollegeRankVsPickToCost(p.cost, p, pick) : p.cost;
+          const rawMin = getEffectiveMinSigningDemand(p, pick, pick.value);
+          const listCost = Math.max(rawMin, minFloor);
           const costClass = listCost > pick.value ? 'text-overslot-red' : listCost < pick.value ? 'text-green-400' : 'text-white';
           const dimCostClass = canPick ? costClass : 'text-neutral-500';
           const badge = !canPick
