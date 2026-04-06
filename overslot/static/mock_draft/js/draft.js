@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.3';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.4';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -149,8 +149,6 @@
     return `<img src="${url}" alt="" class="${sizeClass} flex-shrink-0 object-contain align-middle" onerror="this.style.display='none'">`;
   }
 
-  const WEIRD_LEVELS = { default: 0.03, more: 0.16, crazy: 0.40 };
-
   let state = {
     players: [],
     teams: [],
@@ -159,7 +157,6 @@
     /** Teams the user selected as human at Start Draft (persists if Simulate to end clears `humanTeams`). */
     originalHumanTeams: new Set(),
     pickDelay: 1000,
-    weirdPickChance: WEIRD_LEVELS.default,
     currentPickIndex: 0,
     drafted: new Set(), // player rank
     /** HS players who left the pool (enrolled in college); same effect as drafted for availability. */
@@ -173,7 +170,7 @@
     teamPicks: {}, // teamName -> [{ name, cost }]
     topViewMode: 'bestFit', // 'bestFit' | 'highestRanked'
     _topViewRefresh: null, // set by showHumanPickUI
-    pickRationales: {}, // pickIndex -> { reason, player, weirdEvent, isHuman }
+    pickRationales: {}, // pickIndex -> { reason, player, isHuman }
     paused: false,
     _pickTimeoutId: null,
     _pendingAdvance: null, // { pick, result, row } when paused during AI pick
@@ -399,17 +396,6 @@
     $btnSimulateRest?.addEventListener('click', simulateRestOfDraft);
     $btnSkip.addEventListener('click', () => makeHumanPick(null));
 
-    function updateWeirdButtons() {
-      const level = state.weirdPickChance === WEIRD_LEVELS.default ? 'default' : state.weirdPickChance === WEIRD_LEVELS.more ? 'more' : 'crazy';
-      document.querySelectorAll('.weird-btn').forEach(btn => {
-        btn.classList.toggle('selected', btn.dataset.level === level);
-      });
-    }
-    $('btn-weird-default')?.addEventListener('click', () => { state.weirdPickChance = WEIRD_LEVELS.default; updateWeirdButtons(); });
-    $('btn-weird-more')?.addEventListener('click', () => { state.weirdPickChance = WEIRD_LEVELS.more; updateWeirdButtons(); });
-    $('btn-weird-crazy')?.addEventListener('click', () => { state.weirdPickChance = WEIRD_LEVELS.crazy; updateWeirdButtons(); });
-    updateWeirdButtons();
-
     function updatePaceButtons() {
       document.querySelectorAll('.pace-btn').forEach(btn => {
         btn.classList.toggle('selected', btn.dataset.ms === String(state.pickDelay));
@@ -503,11 +489,7 @@
       if (state._pendingAdvance) {
         const { pick, result, row, effectiveCost } = state._pendingAdvance;
         state._pendingAdvance = null;
-        if ($aiReasoning) {
-          $aiReasoning.classList.remove('weird-event');
-          $aiReasoning.querySelector('.weird-event-label')?.classList.add('hidden');
-        }
-        recordPick(pick, result.player, row, result.reason, { weirdEvent: result.weirdEvent, isHuman: false, effectiveCost });
+        recordPick(pick, result.player, row, result.reason, { isHuman: false, effectiveCost });
         state.currentPickIndex++;
         maybeHsGoToCollegeAfterRound2();
         renderHumanBudgetSummary();
@@ -567,9 +549,6 @@
       : 'text-white';
     const quotedReason = '"' + escapeHtml(reasonText) + '"';
     $aiReasoning.classList.remove('hidden');
-    $aiReasoning.classList.toggle('weird-event', !!r.weirdEvent);
-    const badge = $aiReasoning.querySelector('.weird-event-label');
-    if (badge) badge.classList.toggle('hidden', !r.weirdEvent);
     const teamEl = $aiReasoning.querySelector('#ai-reasoning-team');
     teamEl.innerHTML = '';
     teamEl.classList.add('hidden');
@@ -882,11 +861,7 @@
     }
 
     if (pending) {
-      if ($aiReasoning) {
-        $aiReasoning.classList.remove('weird-event');
-        $aiReasoning.querySelector('.weird-event-label')?.classList.add('hidden');
-      }
-      recordPick(pending.pick, pending.result.player, pending.row, pending.result.reason, { weirdEvent: pending.result.weirdEvent, isHuman: false, effectiveCost: pending.effectiveCost });
+      recordPick(pending.pick, pending.result.player, pending.row, pending.result.reason, { isHuman: false, effectiveCost: pending.effectiveCost });
       state.currentPickIndex++;
       maybeHsGoToCollegeAfterRound2();
       renderHumanBudgetSummary();
@@ -955,8 +930,6 @@
 
     if ($aiReasoning) {
       $aiReasoning.classList.add('hidden');
-      $aiReasoning.classList.remove('weird-event');
-      $aiReasoning.querySelector('.weird-event-label')?.classList.add('hidden');
       const teamEl = $aiReasoning.querySelector('#ai-reasoning-team');
       if (teamEl) {
         teamEl.innerHTML = '';
@@ -1322,8 +1295,6 @@
     if ($budgetDone) $budgetDone.classList.add('hidden');
     if ($aiReasoning) {
       $aiReasoning.classList.add('hidden');
-      $aiReasoning.classList.remove('weird-event');
-      $aiReasoning.querySelector('.weird-event-label')?.classList.add('hidden');
     }
 
     $board.innerHTML = '';
@@ -2328,7 +2299,7 @@
 
   function applyTeamRules(candidates, team, pickIndex, slotValue) {
     const teamData = state.teams.find(t => t.name === team);
-    if (!teamData || !teamData.rules) return { candidates, reason: null, weirdPick: false };
+    if (!teamData || !teamData.rules) return { candidates, reason: null };
 
     const statements = parseRuleStatements(teamData.rules);
     const rules = statements.join(' ').toLowerCase();
@@ -2341,8 +2312,6 @@
     const isPositionPlayer = p => !isPitcher(p);
 
     if (isFirstPick) {
-      if (Math.random() < state.weirdPickChance) return { candidates, reason: null, weirdPick: true };
-
       const soft = arr => arr[Math.floor(Math.random() * arr.length)];
 
       // Specific player: "Will draft Roch Cholowsky with the No. 1 pick X% of the time"
@@ -2363,7 +2332,7 @@
             `We were locked in on ${player.name} from the start.`,
             `${player.name} was at the top of our board; we're thrilled he was there.`
           ]);
-          return { candidates: [player], reason: r, weirdPick: false };
+          return { candidates: [player], reason: r };
         }
       }
 
@@ -2376,7 +2345,7 @@
             "Emerson was our guy—we had strong conviction and didn't overthink it.",
             'Grady Emerson checked every box for us; thrilled to add him to the system.'
           ]);
-          return { candidates: [emerson], reason: r, weirdPick: false };
+          return { candidates: [emerson], reason: r };
         }
       }
 
@@ -2389,7 +2358,7 @@
             'Underslot play to maximize flexibility in later rounds.',
             'We saw an opportunity to go under slot and still get a player we love.'
           ]);
-          return { candidates: filtered, reason: r, weirdPick: false };
+          return { candidates: filtered, reason: r };
         }
       }
 
@@ -2554,7 +2523,7 @@
       }
     }
 
-    return { candidates: filtered, reason, weirdPick: false };
+    return { candidates: filtered, reason };
   }
 
   function getTeamDescriptionFlavor(team) {
@@ -2917,7 +2886,7 @@
         upperBoundSigningCostForFilter(p, pick, slotValue, pick.team) <= maxSpend
       );
     }
-    let { candidates: filtered, reason, weirdPick } = applyTeamRules(candidates, pick.team, pickIndex, slotValue);
+    let { candidates: filtered, reason } = applyTeamRules(candidates, pick.team, pickIndex, slotValue);
     if (filtered.length === 0) filtered = candidates;
     filtered = filterAiCandidatesBySlotBudget(filtered, pick, pickIndex, pick.team, pick.value);
     let chosen = pickFromTopWithRandomness(filtered, 5) || filtered[0] || candidates[0];
@@ -2925,13 +2894,10 @@
     if (!chosen) chosen = makeRandomSeniorSignPlayer(pickIndex);
     const reached = chosen && filtered[0] && chosen.rank !== filtered[0].rank;
     let baseReason = reason || (chosen ? getBPAAttributeReasoning(chosen, pick.team) : null);
-    const randomNote = weirdPick || reached
-      ? pickVaried(RANDOM_PICK_NOTES, 'random-pick-note')
-      : '';
+    const randomNote = reached ? pickVaried(RANDOM_PICK_NOTES, 'random-pick-note') : '';
     return {
       player: chosen,
-      reason: randomNote + (baseReason || ''),
-      weirdEvent: weirdPick
+      reason: randomNote + (baseReason || '')
     };
   }
 
@@ -3011,9 +2977,6 @@
       if ($aiReasoning) {
         if (state.pickDelay > 0) {
           $aiReasoning.classList.remove('hidden');
-          $aiReasoning.classList.toggle('weird-event', !!result.weirdEvent);
-          const badge = $aiReasoning.querySelector('.weird-event-label');
-          if (badge) badge.classList.toggle('hidden', !result.weirdEvent);
           const teamEl = $aiReasoning.querySelector('#ai-reasoning-team');
           teamEl.innerHTML = '';
           teamEl.classList.add('hidden');
@@ -3047,11 +3010,7 @@
         const pending = state._pendingAdvance;
         if (!pending) return;
         state._pendingAdvance = null;
-        if ($aiReasoning) {
-          $aiReasoning.classList.remove('weird-event');
-          $aiReasoning.querySelector('.weird-event-label')?.classList.add('hidden');
-        }
-        recordPick(pending.pick, pending.result.player, pending.row, pending.result.reason, { weirdEvent: pending.result.weirdEvent, isHuman: false, effectiveCost: pending.effectiveCost });
+        recordPick(pending.pick, pending.result.player, pending.row, pending.result.reason, { isHuman: false, effectiveCost: pending.effectiveCost });
         state.currentPickIndex++;
         maybeHsGoToCollegeAfterRound2();
         renderHumanBudgetSummary();
@@ -3448,7 +3407,6 @@
         reason: reason || (player ? 'Best player available' : ''),
         player: player || null,
         effectiveCost: player ? effectiveCost : null,
-        weirdEvent: opts.weirdEvent || false,
         isHuman: opts.isHuman || false
       };
     }

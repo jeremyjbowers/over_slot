@@ -138,15 +138,6 @@ body {
 }
 
 
-/* Weird event: amber highlight on pick panel when AI makes a surprising pick */
-#ai-reasoning.weird-event {
-  border-width: 4px;
-  border-color: #f59e0b;
-  background-color: rgba(245, 158, 11, 0.08);
-  overflow: hidden;
-  isolation: isolate;
-}
-
 /* Team names: never truncate, allow wrap */
 .col-team,
 .team-square span.break-words,
@@ -195,13 +186,6 @@ body {
 .top-view-btn.selected:hover {
   border-color: rgba(255, 255, 255, 0.62);
   background-color: rgba(255, 255, 255, 0.11);
-}
-
-/* Weird events button selection */
-.weird-btn.selected {
-  border-color: rgba(245, 158, 11, 0.8);
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.5);
-  background-color: rgba(245, 158, 11, 0.2);
 }
 
 /* Pick cards in human budget summary */
@@ -599,8 +583,7 @@ html.endgame-pending #btn-restart {
   .team-square {
     min-height: 44px;
   }
-  .pace-btn,
-  .weird-btn {
+  .pace-btn {
     min-height: 44px;
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
