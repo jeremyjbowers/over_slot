@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.2';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.3';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -225,6 +225,30 @@
   const $draftComplete = $('draft-complete');
   const $draftCompleteInner = $('draft-complete-inner');
 
+  function setMobilePickSheetActive(open) {
+    const db = $('draft-body');
+    const side = $('draft-side');
+    if (!db) return;
+    const isMobile =
+      typeof window.matchMedia === 'function'
+        ? !window.matchMedia('(min-width: 1024px)').matches
+        : true;
+
+    if (!open || !isMobile) {
+      db.classList.remove('draft-body--mobile-pick-open');
+      if (side) side.style.removeProperty('max-height');
+    } else {
+      if (side) side.style.removeProperty('max-height');
+      db.classList.add('draft-body--mobile-pick-open');
+    }
+    scheduleMockDraftViewportHeight();
+  }
+
+  function hideHumanPickPanel() {
+    if ($currentPick) $currentPick.classList.add('hidden');
+    setMobilePickSheetActive(false);
+  }
+
   let mockDraftVvRaf = null;
   let mockDraftVvListenersBound = false;
 
@@ -295,6 +319,46 @@
     vv.addEventListener('scroll', scheduleMockDraftViewportHeight);
     window.addEventListener('resize', scheduleMockDraftViewportHeight);
     window.addEventListener('orientationchange', scheduleMockDraftViewportHeight);
+  }
+
+  function installMobilePickSheetDrag() {
+    const handle = $('mobile-pick-sheet-handle');
+    const side = $('draft-side');
+    const body = $('draft-body');
+    if (!handle || !side || !body || handle.dataset.dragBound === '1') return;
+    handle.dataset.dragBound = '1';
+    handle.addEventListener('pointerdown', downEv => {
+      if (!body.classList.contains('draft-body--mobile-pick-open')) return;
+      if (downEv.pointerType === 'mouse' && downEv.button !== 0) return;
+      downEv.preventDefault();
+      try {
+        handle.setPointerCapture(downEv.pointerId);
+      } catch (_) { /* ignore */ }
+      const startY = downEv.clientY;
+      const rect = side.getBoundingClientRect();
+      const startH = rect.height;
+      const winH = window.innerHeight || document.documentElement.clientHeight || 800;
+      const clampSheetHeight = h => {
+        const minH = Math.round(winH * 0.28);
+        const maxH = Math.round(winH * 0.94);
+        return Math.min(maxH, Math.max(minH, h));
+      };
+      function onMove(ev) {
+        const dy = startY - ev.clientY;
+        side.style.maxHeight = `${clampSheetHeight(startH + dy)}px`;
+      }
+      function onUp() {
+        try {
+          handle.releasePointerCapture(downEv.pointerId);
+        } catch (_) { /* ignore */ }
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onUp);
+      }
+      document.addEventListener('pointermove', onMove, { passive: true });
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
+    });
   }
 
   function fmt(n) {
@@ -452,6 +516,7 @@
     });
 
     installMockDraftVisualViewport();
+    installMobilePickSheetDrag();
 
     if (tryRestoreEndgameFromUrl()) {
       return;
@@ -774,7 +839,7 @@
     if ($draft) $draft.classList.remove('draft-finished');
     $board.innerHTML = '';
     $('round-breadcrumbs').innerHTML = '';
-    $currentPick.classList.add('hidden');
+    hideHumanPickPanel();
     $status.textContent = '';
 
     const firstSection = getRoundSections()[0];
@@ -827,7 +892,7 @@
       renderHumanBudgetSummary();
     }
 
-    $currentPick.classList.add('hidden');
+    hideHumanPickPanel();
     processNextPick();
   }
 
@@ -868,7 +933,7 @@
     }
     $status.textContent = '';
     $status.classList.remove('picking');
-    $currentPick.classList.add('hidden');
+    hideHumanPickPanel();
     $btnPause?.classList.add('hidden');
     $btnResume?.classList.add('hidden');
     $btnRestart?.classList.add('hidden');
@@ -1248,7 +1313,7 @@
     $btnSimulateRest?.classList.add('hidden');
     $btnPause?.classList.add('hidden');
     $btnResume?.classList.add('hidden');
-    $currentPick?.classList.add('hidden');
+    hideHumanPickPanel();
     if ($status) {
       $status.textContent = 'DRAFT COMPLETE.';
       $status.classList.remove('picking');
@@ -2876,7 +2941,7 @@
       $btnRestart?.classList.add('hidden');
       $status.textContent = 'DRAFT COMPLETE.';
       $status.classList.remove('picking');
-      $currentPick.classList.add('hidden');
+      hideHumanPickPanel();
       state._pendingAdvance = null;
       state._pickTimeoutId = null;
       updatePauseButtonUI();
@@ -2935,7 +3000,7 @@
     } else {
       $status.textContent = newsPrefix + `${pick.team} are picking...`;
       $status.classList.add('picking');
-      $currentPick.classList.add('hidden');
+      hideHumanPickPanel();
       const result = aiPick(pick, pick.value, state.currentPickIndex);
       const prefCost = result.player ? getEffectiveSigningCost(result.player, pick, pick.value) : null;
       const poolResolved = resolvePickForPool(pick, result.player, prefCost, state.currentPickIndex);
@@ -3168,6 +3233,7 @@
 
   function showHumanPickUI(pick) {
     $currentPick.classList.remove('hidden');
+    setMobilePickSheetActive(true);
     const pool = getTeamPool(pick.team);
     const spent = getTeamSpent(pick.team);
     const remaining = getTeamRemaining(pick.team);
@@ -3360,7 +3426,7 @@
     recordPick(pick, chosen, row, reason, { isHuman: true });
     state.currentPickIndex++;
     maybeHsGoToCollegeAfterRound2();
-    $currentPick.classList.add('hidden');
+    hideHumanPickPanel();
     renderHumanBudgetSummary();
     processNextPick();
   }

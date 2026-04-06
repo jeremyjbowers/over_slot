@@ -25,7 +25,7 @@ KEY_RANKINGS = 'overslot:rankings'
 KEY_RANKING = 'overslot:ranking'
 KEY_MOCK_DRAFT = 'overslot:mock_draft'
 # Fixed string only — never vary by URL path, query, or draft_share payload.
-KEY_MY_MOCK_DRAFT_HTML = 'overslot:my_mock_draft:html:v3'
+KEY_MY_MOCK_DRAFT_HTML = 'overslot:my_mock_draft:html:v4'
 
 
 def get_cached(key, compute_fn, timeout=DEFAULT_TIMEOUT):

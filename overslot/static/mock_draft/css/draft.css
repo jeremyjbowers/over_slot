@@ -623,3 +623,85 @@ html.endgame-pending #btn-restart {
     background-color: rgba(38, 38, 38, 0.8);
   }
 }
+
+/* --- Mobile draft: hide round jump nav (cramped / redundant); human pick = bottom sheet --- */
+@media (max-width: 1023px) {
+  #round-breadcrumbs {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    border: none !important;
+  }
+
+  .mobile-pick-sheet-handle {
+    display: none;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0 0.35rem;
+    touch-action: none;
+    cursor: grab;
+    background: #141414;
+    border-bottom: 1px solid #262626;
+  }
+  .mobile-pick-sheet-handle:active {
+    cursor: grabbing;
+  }
+  .mobile-pick-sheet-handle-bar {
+    width: 2.25rem;
+    height: 0.28rem;
+    border-radius: 999px;
+    background: #525252;
+  }
+
+  #draft-body.draft-body--mobile-pick-open #draft-side {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100vw;
+    max-height: min(78vh, 42rem);
+    z-index: 1001;
+    flex: none !important;
+    min-height: 0;
+    background: #0a0a0a;
+    border-top: 1px solid #262626;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.55);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    overflow: hidden;
+  }
+
+  #draft-body.draft-body--mobile-pick-open .mobile-pick-sheet-handle {
+    display: flex;
+  }
+
+  #draft-body.draft-body--mobile-pick-open #pick-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #draft-body.draft-body--mobile-pick-open #current-pick {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mobile-pick-sheet-handle {
+    display: none !important;
+  }
+}
