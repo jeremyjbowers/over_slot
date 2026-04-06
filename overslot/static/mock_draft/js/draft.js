@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.1';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.2';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -230,14 +230,45 @@
 
   function syncMockDraftViewportHeight() {
     const root = document.querySelector('.mock-draft-viewport');
+    if (!root) return;
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
-    if (!root || !vv) return;
+    if (!vv) {
+      root.style.removeProperty('--mock-draft-vv-override');
+      return;
+    }
+
+    const layoutH =
+      (typeof window.innerHeight === 'number' && window.innerHeight > 0
+        ? window.innerHeight
+        : 0) ||
+      (document.documentElement && document.documentElement.clientHeight) ||
+      0;
+
+    let vTop = Number(vv.offsetTop);
+    if (!Number.isFinite(vTop)) vTop = 0;
+    let vvH = Number(vv.height);
+    if (!Number.isFinite(vvH) || vvH <= 0) vvH = layoutH > 0 ? layoutH : 0;
+
     const main = document.querySelector('body main');
-    const navH = main ? parseFloat(getComputedStyle(main).paddingTop) || 56 : 56;
-    const vTop = vv.offsetTop;
-    const bottom = vTop + vv.height;
+    let navH = 56;
+    if (main) {
+      const pt = parseFloat(getComputedStyle(main).paddingTop);
+      if (Number.isFinite(pt) && pt > 0) navH = pt;
+    }
+
+    const bottom = vTop + vvH;
     const topClip = Math.max(navH, vTop);
-    const h = Math.max(220, bottom - topClip);
+    let h = bottom - topClip;
+    if (!Number.isFinite(h)) {
+      root.style.removeProperty('--mock-draft-vv-override');
+      return;
+    }
+    const cap = layoutH > 0 ? layoutH : 4096;
+    h = Math.min(Math.max(h, 220), cap);
+    if (!Number.isFinite(h) || h < 200) {
+      root.style.removeProperty('--mock-draft-vv-override');
+      return;
+    }
     root.style.setProperty('--mock-draft-vv-override', `${Math.round(h)}px`);
   }
 
@@ -258,7 +289,8 @@
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
     if (!root || !vv || mockDraftVvListenersBound) return;
     mockDraftVvListenersBound = true;
-    syncMockDraftViewportHeight();
+    scheduleMockDraftViewportHeight();
+    requestAnimationFrame(() => scheduleMockDraftViewportHeight());
     vv.addEventListener('resize', scheduleMockDraftViewportHeight);
     vv.addEventListener('scroll', scheduleMockDraftViewportHeight);
     window.addEventListener('resize', scheduleMockDraftViewportHeight);

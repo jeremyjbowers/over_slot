@@ -109,7 +109,10 @@
     --md-nav: 3.5rem;
     --md-safe-bottom: env(safe-area-inset-bottom, 0px);
     flex: 1;
-    min-height: 0;
+    /* Floor when height is invalid (bad --mock-draft-vv-override) or flex resolves oddly on mobile */
+    min-height: 220px;
+    min-height: calc(100vh - var(--md-nav) - var(--md-safe-bottom));
+    min-height: calc(100dvh - var(--md-nav) - var(--md-safe-bottom));
     /* Fallback: static viewport; JS sets --mock-draft-vv-override when visualViewport is available (keyboard, iOS chrome). */
     height: var(--mock-draft-vv-override, calc(100vh - var(--md-nav) - var(--md-safe-bottom)));
     max-height: var(--mock-draft-vv-override, calc(100vh - var(--md-nav) - var(--md-safe-bottom)));
