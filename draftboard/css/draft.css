@@ -573,3 +573,53 @@ html.endgame-pending #draft-side {
 html.endgame-pending #btn-restart {
   display: inline-flex !important;
 }
+
+/* --- Embedded /my-mock-draft/: modal max height (dynamic viewport on phones) --- */
+.mock-draft-modal-panel {
+  max-height: min(90vh, 40rem);
+  max-height: min(90dvh, 40rem);
+}
+
+/* --- Mobile: scroll momentum, reduce scroll chaining, tap targets, filter font (iOS zoom) --- */
+#setup,
+#draft,
+#board,
+#available-players,
+.draft-money-primer-list,
+#draft-complete-inner,
+.mock-draft-modal-panel > div:last-child {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+@media (max-width: 768px) {
+  #player-filter {
+    font-size: 16px;
+  }
+  .team-square {
+    min-height: 44px;
+  }
+  .pace-btn,
+  .weird-btn {
+    min-height: 44px;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  .top-view-btn {
+    min-height: 44px;
+  }
+  #btn-start {
+    min-height: 44px;
+  }
+  .player-pool-row {
+    min-height: 44px;
+    align-items: center;
+  }
+}
+
+/* Touch feedback where hover is absent */
+@media (hover: none) {
+  .board-row.past-pick:active {
+    background-color: rgba(38, 38, 38, 0.8);
+  }
+}

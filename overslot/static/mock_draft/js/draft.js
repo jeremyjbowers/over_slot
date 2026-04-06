@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-11.2';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.1';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -225,6 +225,46 @@
   const $draftComplete = $('draft-complete');
   const $draftCompleteInner = $('draft-complete-inner');
 
+  let mockDraftVvRaf = null;
+  let mockDraftVvListenersBound = false;
+
+  function syncMockDraftViewportHeight() {
+    const root = document.querySelector('.mock-draft-viewport');
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!root || !vv) return;
+    const main = document.querySelector('body main');
+    const navH = main ? parseFloat(getComputedStyle(main).paddingTop) || 56 : 56;
+    const vTop = vv.offsetTop;
+    const bottom = vTop + vv.height;
+    const topClip = Math.max(navH, vTop);
+    const h = Math.max(220, bottom - topClip);
+    root.style.setProperty('--mock-draft-vv-override', `${Math.round(h)}px`);
+  }
+
+  function scheduleMockDraftViewportHeight() {
+    if (mockDraftVvRaf != null) return;
+    mockDraftVvRaf = requestAnimationFrame(() => {
+      mockDraftVvRaf = null;
+      syncMockDraftViewportHeight();
+    });
+  }
+
+  /**
+   * Shrink the embedded simulator shell to match visualViewport (mobile keyboard, iOS URL bar).
+   * Binds listeners once; use scheduleMockDraftViewportHeight() for one-off sync (e.g. input focus).
+   */
+  function installMockDraftVisualViewport() {
+    const root = document.querySelector('.mock-draft-viewport');
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!root || !vv || mockDraftVvListenersBound) return;
+    mockDraftVvListenersBound = true;
+    syncMockDraftViewportHeight();
+    vv.addEventListener('resize', scheduleMockDraftViewportHeight);
+    vv.addEventListener('scroll', scheduleMockDraftViewportHeight);
+    window.addEventListener('resize', scheduleMockDraftViewportHeight);
+    window.addEventListener('orientationchange', scheduleMockDraftViewportHeight);
+  }
+
   function fmt(n) {
     if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
     if (n >= 1000) return '$' + (n / 1000).toFixed(0) + 'k';
@@ -378,6 +418,8 @@
         processNextPick();
       }
     });
+
+    installMockDraftVisualViewport();
 
     if (tryRestoreEndgameFromUrl()) {
       return;
@@ -3241,6 +3283,16 @@
     renderList();
     if (filterInput) {
       filterInput.oninput = () => renderList(filterInput.value);
+      if (!filterInput.dataset.mobileFocusInit) {
+        filterInput.dataset.mobileFocusInit = '1';
+        filterInput.addEventListener('focus', () => {
+          requestAnimationFrame(() => {
+            scheduleMockDraftViewportHeight();
+            $currentPick?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            requestAnimationFrame(() => scheduleMockDraftViewportHeight());
+          });
+        });
+      }
     }
     const btnHighest = $('btn-show-highest');
     const btnBestfit = $('btn-show-bestfit');
