@@ -79,7 +79,7 @@
 
 {% block extra_css %}
 {{ block.super }}
-<link rel="stylesheet" href="{% static 'mock_draft/css/draft.css' %}">
+<link rel="stylesheet" href="{% static 'mock_draft/css/draft.css' %}?v={{ mock_draft_asset_version|default:'1' }}">
 <style>
   /* Embedded under site chrome: keep page scrollable; confine simulator to viewport below fixed nav */
   body > main {
@@ -272,6 +272,6 @@ window.__MOCK_DRAFT_SHARE_UUID__ = "{{ mock_draft_share_id }}";
 window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__ = "{{ mock_draft_share_payload_b64 }}";
 {% endif %}
 </script>
-<script src="{% static 'mock_draft/js/data.js' %}"></script>
-<script src="{% static 'mock_draft/js/draft.js' %}"></script>
+<script src="{% static 'mock_draft/js/data.js' %}?v={{ mock_draft_asset_version|default:'1' }}"></script>
+<script src="{% static 'mock_draft/js/draft.js' %}?v={{ mock_draft_asset_version|default:'1' }}"></script>
 {% endblock %}

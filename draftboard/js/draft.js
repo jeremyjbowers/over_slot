@@ -3,13 +3,14 @@
  *
  * Version: bump MOCK_DRAFT_JS_VERSION when you ship JS changes (check in DevTools:
  *   window.__MOCK_DRAFT_JS_VERSION
- * With collectstatic, the script URL also gets a content hash, e.g. draft.a1b2c3d4e5f6.js).
+ * Prod (S3/CDN): also bump overslot/mock_draft_assets.py MOCK_DRAFT_ASSET_VERSION and
+ * sync overslot/static/mock_draft/js/draft.js so ?v= cache-busts the correct file.
  */
 
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.13';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.14';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
