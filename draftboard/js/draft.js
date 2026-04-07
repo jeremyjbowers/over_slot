@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.8';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.9';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -548,9 +548,14 @@
     updateSimulateRestButtonUI();
   }
 
+  /** AI pick rationale panel (sidebar). Off on mobile — same breakpoint as bottom sheet / team deck. */
+  function pickExplanationsEnabled() {
+    return typeof window.matchMedia !== 'function' || window.matchMedia('(min-width: 1024px)').matches;
+  }
+
   function showPastPickRationale(pickIndex, r) {
     const pick = state.picks[pickIndex];
-    if (!pick || !$aiReasoning) return;
+    if (!pick || !$aiReasoning || !pickExplanationsEnabled()) return;
     const displayCost = r.effectiveCost ?? r.player?.cost;
     let reasonText = r.reason || (r.player ? 'Best player available' : 'Passing');
     if (r.player && pick.value != null) {
@@ -2999,7 +3004,7 @@
       state._pendingAdvance = { pick, result, row, effectiveCost: prefCost };
       updatePauseButtonUI();
       if ($aiReasoning) {
-        if (state.pickDelay > 0) {
+        if (state.pickDelay > 0 && pickExplanationsEnabled()) {
           $aiReasoning.classList.remove('hidden');
           const teamEl = $aiReasoning.querySelector('#ai-reasoning-team');
           teamEl.innerHTML = '';

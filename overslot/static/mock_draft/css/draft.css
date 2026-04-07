@@ -194,6 +194,13 @@ body {
   }
 }
 
+/* Pick explanations are desktop-only; mobile follows the board + status. */
+@media (max-width: 1023px) {
+  #ai-reasoning {
+    display: none !important;
+  }
+}
+
 
 /* Team names: never truncate, allow wrap */
 .col-team,
