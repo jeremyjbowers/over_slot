@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.4';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.5';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -711,7 +711,8 @@
     roundEl.appendChild(h3);
 
     const header = document.createElement('div');
-    header.className = 'grid grid-cols-[2.5rem_minmax(6rem,1fr)_5rem_minmax(10rem,1fr)_5rem] gap-1.5 py-1 border-b border-overslot-grey-border text-neutral-100 text-xs';
+    header.className =
+      'board-grid-header grid grid-cols-[2.5rem_minmax(6rem,1fr)_5rem_minmax(10rem,1fr)_5rem] gap-1.5 py-1 border-b border-overslot-grey-border text-neutral-100 text-xs';
     header.innerHTML = '<span>#</span><span>TEAM</span><span>SLOT</span><span>PLAYER</span><span>COST</span>';
     roundEl.appendChild(header);
 
@@ -1329,7 +1330,9 @@
       if (playerEl && player) {
         const rankBit = player.name === 'Random senior sign' ? '' : `#${player.rank} `;
         playerEl.className = 'col-player flex items-center gap-1.5 min-w-0';
-        playerEl.innerHTML = playerPhotoHtml(player) + `<span class="truncate min-w-0">${rankBit}${player.position ? player.position + ' ' : ''}${escapeHtml(player.name)}</span>`;
+        playerEl.innerHTML =
+          `<span class="board-player-photo" aria-hidden="true">${playerPhotoHtml(player)}</span>` +
+          `<span class="board-player-line">${rankBit}${player.position ? player.position + ' ' : ''}${escapeHtml(player.name)}</span>`;
       }
       if (costEl && pick.value != null) {
         const effectiveCost = sel.cost;
@@ -3419,7 +3422,9 @@
     if (playerEl) {
       const rankBit = player.name === 'Random senior sign' ? '' : `#${player.rank} `;
       playerEl.className = 'col-player flex items-center gap-1.5 min-w-0';
-      playerEl.innerHTML = playerPhotoHtml(player) + `<span class="truncate min-w-0">${rankBit}${player.position ? player.position + ' ' : ''}${escapeHtml(player.name)}</span>`;
+      playerEl.innerHTML =
+        `<span class="board-player-photo" aria-hidden="true">${playerPhotoHtml(player)}</span>` +
+        `<span class="board-player-line">${rankBit}${player.position ? player.position + ' ' : ''}${escapeHtml(player.name)}</span>`;
     }
     if (costEl) {
       costEl.textContent = fmt(effectiveCost);
