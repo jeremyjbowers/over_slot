@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.5';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.6';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -225,6 +225,7 @@
   function setMobilePickSheetActive(open) {
     const db = $('draft-body');
     const side = $('draft-side');
+    const budget = $('human-budget-summary');
     if (!db) return;
     const isMobile =
       typeof window.matchMedia === 'function'
@@ -237,6 +238,11 @@
     } else {
       if (side) side.style.removeProperty('max-height');
       db.classList.add('draft-body--mobile-pick-open');
+      if (budget && isMobile) {
+        budget.classList.add('human-budget-deck--peek');
+        budget.classList.remove('human-budget-deck--expanded');
+        budget.style.removeProperty('max-height');
+      }
     }
     scheduleMockDraftViewportHeight();
   }
@@ -499,6 +505,7 @@
 
     installMockDraftVisualViewport();
     installMobilePickSheetDrag();
+    installHumanBudgetDeck();
 
     if (tryRestoreEndgameFromUrl()) {
       return;
@@ -721,7 +728,7 @@
       row.className = 'board-row flex border-b border-overslot-grey-border';
       row.dataset.pickIndex = String(index);
       const teamLogo = teamLogoHtml(pick.teamId, 'w-6 h-6');
-      row.innerHTML = `<div class="w-10 flex-shrink-0 bg-overslot-red flex items-center justify-center text-white font-bold text-sm">${pick.pick}</div><div class="flex-1 min-w-0 grid grid-cols-[minmax(6rem,1fr)_5rem_minmax(10rem,1fr)_5rem] gap-1.5 py-1 px-2 items-center bg-overslot-grey/50 text-sm"><span class="col-team break-words flex items-center gap-1.5">${teamLogo}${escapeHtml(pick.team)}</span><span>${fmt(pick.value)}</span><span class="col-player truncate">--</span><span class="col-cost">--</span></div>`;
+      row.innerHTML = `<div class="w-10 flex-shrink-0 bg-overslot-red flex items-center justify-center text-white font-bold text-sm">${pick.pick}</div><div class="flex-1 min-w-0 grid grid-cols-[minmax(6rem,1fr)_5rem_minmax(10rem,1fr)_5rem] gap-1.5 py-1 px-2 items-center bg-overslot-grey/50 text-sm"><span class="col-team break-words flex items-center gap-1.5">${teamLogo}${escapeHtml(pick.team)}</span><span class="col-slot">${fmt(pick.value)}</span><span class="col-player truncate">--</span><span class="col-cost">--</span></div>`;
       state.boardRows[index] = row;
       state.pickIndexToRow[index] = { row, roundEl };
       roundEl.appendChild(row);
@@ -859,6 +866,7 @@
     if ($budget) {
       $budget.classList.add('hidden');
       $budget.innerHTML = '';
+      $('draft')?.classList.remove('draft--team-deck-visible');
     }
 
     if (pending) {
@@ -920,6 +928,7 @@
     if ($budget) {
       $budget.classList.add('hidden');
       $budget.innerHTML = '';
+      $('draft')?.classList.remove('draft--team-deck-visible');
     }
 
     if ($draftComplete) {
@@ -1293,7 +1302,10 @@
       $status.classList.remove('picking');
     }
     const $budgetDone = $('human-budget-summary');
-    if ($budgetDone) $budgetDone.classList.add('hidden');
+    if ($budgetDone) {
+      $budgetDone.classList.add('hidden');
+      $draft?.classList.remove('draft--team-deck-visible');
+    }
     if ($aiReasoning) {
       $aiReasoning.classList.add('hidden');
     }
@@ -2928,7 +2940,10 @@
         }
       }
       const $budgetDone = $('human-budget-summary');
-      if ($budgetDone) $budgetDone.classList.add('hidden');
+      if ($budgetDone) {
+        $budgetDone.classList.add('hidden');
+        $draft?.classList.remove('draft--team-deck-visible');
+      }
       if ($draftSide) $draftSide.classList.add('hidden');
       if ($draft) $draft.classList.add('draft-finished');
       renderDraftCompleteBragSheets();
@@ -3032,12 +3047,83 @@
     return parts.length > 1 ? parts[parts.length - 1] : name || '';
   }
 
+  function installHumanBudgetDeck() {
+    const el = $('human-budget-summary');
+    if (!el || el.dataset.deckDragInit === '1') return;
+    el.dataset.deckDragInit = '1';
+    el.addEventListener('pointerdown', downEv => {
+      const handle = downEv.target.closest('.mobile-team-deck-handle');
+      if (!handle || !el.contains(handle)) return;
+      if (typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1024px)').matches) return;
+      if (downEv.pointerType === 'mouse' && downEv.button !== 0) return;
+      downEv.preventDefault();
+      try {
+        el.setPointerCapture(downEv.pointerId);
+      } catch (_) { /* ignore */ }
+      const startY = downEv.clientY;
+      const winH = window.innerHeight || document.documentElement.clientHeight || 800;
+      const rect = el.getBoundingClientRect();
+      const startH = rect.height;
+      const minH = 52;
+      const maxH = Math.round(Math.min(winH * 0.62, 440));
+      const clampH = h => Math.min(maxH, Math.max(minH, h));
+
+      function onMove(ev) {
+        const dy = startY - ev.clientY;
+        el.classList.remove('human-budget-deck--peek', 'human-budget-deck--expanded');
+        el.style.maxHeight = `${clampH(startH + dy)}px`;
+      }
+
+      function onUp() {
+        try {
+          el.releasePointerCapture(downEv.pointerId);
+        } catch (_) { /* ignore */ }
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        document.removeEventListener('pointercancel', onUp);
+        const h = el.getBoundingClientRect().height;
+        const mid = minH + (maxH - minH) * 0.38;
+        el.style.removeProperty('max-height');
+        if (h < mid) {
+          el.classList.add('human-budget-deck--peek');
+          el.classList.remove('human-budget-deck--expanded');
+        } else {
+          el.classList.remove('human-budget-deck--peek');
+          el.classList.add('human-budget-deck--expanded');
+        }
+      }
+      document.addEventListener('pointermove', onMove, { passive: true });
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
+    });
+  }
+
   function renderHumanBudgetSummary() {
     const el = $('human-budget-summary');
-    if (!el || state.humanTeams.size === 0) return;
+    const draftEl = $('draft');
+    if (!el) return;
+    if (state.humanTeams.size === 0) {
+      el.classList.add('hidden');
+      el.innerHTML = '';
+      draftEl?.classList.remove('draft--team-deck-visible');
+      return;
+    }
+
     el.classList.remove('hidden');
+    draftEl?.classList.add('draft--team-deck-visible');
     el.innerHTML = '';
-    el.className = 'p-3 bg-overslot-grey border border-overslot-grey-border flex flex-col gap-3 overflow-y-auto';
+    el.className =
+      'human-budget-deck flex flex-col border border-overslot-grey-border bg-overslot-grey text-xs overflow-hidden flex-shrink-0 min-h-0';
+
+    const handle = document.createElement('div');
+    handle.className = 'mobile-team-deck-handle';
+    handle.innerHTML =
+      '<span class="mobile-team-deck-handle-bar" aria-hidden="true"></span><span class="mobile-team-deck-peek-label">Your picks — drag up</span>';
+    el.appendChild(handle);
+
+    const body = document.createElement('div');
+    body.className = 'human-budget-deck-body flex flex-col gap-3 overflow-y-auto min-h-0 flex-1 p-3';
+
     const currentPick = state.picks[state.currentPickIndex];
     state.humanTeams.forEach(team => {
       const teamData = state.teams.find(t => t.name === team);
@@ -3079,8 +3165,19 @@
       footer.className = 'text-neutral-100 text-xs';
       footer.textContent = `${fmt(remaining)} left · ${picksRemaining} pick${picksRemaining !== 1 ? 's' : ''} left`;
       section.appendChild(footer);
-      el.appendChild(section);
+      body.appendChild(section);
     });
+    el.appendChild(body);
+
+    const isMobile =
+      typeof window.matchMedia === 'function' && !window.matchMedia('(min-width: 1024px)').matches;
+    el.style.removeProperty('max-height');
+    if (isMobile) {
+      el.classList.add('human-budget-deck--peek');
+      el.classList.remove('human-budget-deck--expanded');
+    } else {
+      el.classList.remove('human-budget-deck--peek', 'human-budget-deck--expanded');
+    }
   }
 
   function getTokensFromPositionString(pos) {
