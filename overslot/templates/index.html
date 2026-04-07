@@ -776,6 +776,79 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
 @media (max-width: 768px) { .carousel-arrows { display: none; } .mobile-touch-zones { display: flex; position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); z-index: 10; pointer-events: none; justify-content: space-between; padding: 0 1rem; } .mobile-touch-zone { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: all; background: rgba(0, 0, 0, 0.4); border: 2px solid rgba(255, 255, 255, 0.3); cursor: pointer; color: white; font-size: 1rem; } .carousel-slide { cursor: pointer; } }
 @media (max-width: 640px) { .ranking-grid { grid-template-columns: 1fr; } }
 
+/* Mock draft homepage banner */
+.mock-draft-home-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid rgba(220, 38, 38, 0.45);
+    background: linear-gradient(135deg, rgba(127, 29, 29, 0.35) 0%, var(--dark-surface) 55%);
+    text-decoration: none;
+    color: var(--dark-text);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.mock-draft-home-banner:hover {
+    border-color: var(--theme-primary);
+    box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2);
+    color: var(--dark-text);
+    text-decoration: none;
+}
+.mock-draft-home-banner-text {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    min-width: 0;
+    flex: 1;
+}
+.mock-draft-home-banner-text .icon-wrap {
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.35rem;
+    background: rgba(220, 38, 38, 0.2);
+    color: var(--theme-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+}
+.mock-draft-home-banner-title {
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+    color: var(--dark-text);
+    margin: 0 0 0.2rem;
+}
+.mock-draft-home-banner-sub {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--dark-text-muted);
+    line-height: 1.4;
+    max-width: 36rem;
+}
+.mock-draft-home-banner-cta {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1rem;
+    font-weight: 800;
+    font-size: 0.9rem;
+    background: var(--theme-primary);
+    color: #fff !important;
+    border: 1px solid var(--theme-primary);
+    border-radius: 0.25rem;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+.mock-draft-home-banner:hover .mock-draft-home-banner-cta {
+    background: var(--theme-primary-hover);
+    border-color: var(--theme-primary-hover);
+    color: #fff !important;
+}
+
 /* Remove old welcome slide styles to simplify lead */
 </style>
 
@@ -933,6 +1006,19 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
             <a href="/articles/" class="list-cta">More news + analysis &rarr;</a>
         </div>
     </div>
+</div>
+
+<div class="content-section mock-draft-home-banner-outer" style="margin-top: 2rem;">
+    <a href="{% url 'my_mock_draft' %}" class="mock-draft-home-banner">
+        <div class="mock-draft-home-banner-text">
+            <span class="icon-wrap" aria-hidden="true"><i class="fas fa-baseball-ball"></i></span>
+            <div>
+                <p class="mock-draft-home-banner-title">Run your own mock draft</p>
+                <p class="mock-draft-home-banner-sub">Full first-round style simulator with slot values, team tendencies, and a shareable class when you&rsquo;re done.</p>
+            </div>
+        </div>
+        <span class="mock-draft-home-banner-cta">Open simulator <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+    </a>
 </div>
 
 <!-- Rankings grid + Player Videos sidebar -->
