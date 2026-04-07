@@ -151,6 +151,7 @@ fs.copyFileSync(path.join(__dirname, 'js', 'draft.js'), path.join(djangoStaticJs
 fs.copyFileSync(path.join(__dirname, 'css', 'draft.css'), path.join(djangoStaticCssDir, 'draft.css'));
 console.log('Generated data.js → draftboard/js/ and overslot/static/mock_draft/js/');
 console.log('Synced draft.js + draft.css → overslot/static/mock_draft/');
+console.log('Production /my-mock-draft/: paste data.js into mock_draft_sim.html (first {% verbatim %} under extra_js).');
 console.log('  -', players.length, 'players');
 console.log('  -', teams.length, 'teams');
 console.log('  -', picks.length, 'picks');

@@ -26,7 +26,6 @@ from datetime import timedelta
 import json
 
 from overslot import models, utils
-from overslot.mock_draft_assets import MOCK_DRAFT_ASSET_VERSION
 from overslot.decorators import subscription_required
 from overslot.cache_utils import (
     get_cached,
@@ -38,7 +37,7 @@ from overslot.cache_utils import (
     KEY_MY_MOCK_DRAFT_HTML,
 )
 
-# Client endgame binary (mock_draft/js/draft.js): magic OSD1 + version + picks.
+# Client endgame binary (inlined in mock_draft_sim.html): magic OSD1 + version + picks.
 _ENDGAME_MAGIC = b'OSD1'
 _MAX_MOCK_DRAFT_SHARE_BYTES = 32768
 
@@ -454,10 +453,7 @@ def my_mock_draft(request):
     def compute_cached_html():
         return render_to_string(
             "mock_draft_sim.html",
-            {
-                "hide_nav_account": True,
-                "mock_draft_asset_version": MOCK_DRAFT_ASSET_VERSION,
-            },
+            {"hide_nav_account": True},
             request=request,
         )
 
@@ -479,14 +475,7 @@ def my_mock_draft_share(request, draft_share):
     for URL routing — the client reads the payload from location.pathname. never_cache
     avoids edge/CDN caches treating each share URL as a cacheable document.
     """
-    return render(
-        request,
-        "mock_draft_sim.html",
-        {
-            "hide_nav_account": True,
-            "mock_draft_asset_version": MOCK_DRAFT_ASSET_VERSION,
-        },
-    )
+    return render(request, "mock_draft_sim.html", {"hide_nav_account": True})
 
 
 @ensure_csrf_cookie
@@ -503,7 +492,6 @@ def my_mock_draft_share_by_uuid(request, share_id):
         "mock_draft_sim.html",
         {
             "hide_nav_account": True,
-            "mock_draft_asset_version": MOCK_DRAFT_ASSET_VERSION,
             "mock_draft_share_id": str(share.id),
             "mock_draft_share_payload_b64": _mock_draft_share_b64url(payload),
         },

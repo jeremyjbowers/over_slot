@@ -3,8 +3,8 @@
  *
  * Version: bump MOCK_DRAFT_JS_VERSION when you ship JS changes (check in DevTools:
  *   window.__MOCK_DRAFT_JS_VERSION
- * Prod (S3/CDN): also bump overslot/mock_draft_assets.py MOCK_DRAFT_ASSET_VERSION and
- * sync overslot/static/mock_draft/js/draft.js so ?v= cache-busts the correct file.
+ * Site (/my-mock-draft/): copy changes into overslot/templates/mock_draft_sim.html (script verbatim).
+ * This repo copy is for draftboard/index.html local dev and build-data sync to static/.
  */
 
 (function () {
