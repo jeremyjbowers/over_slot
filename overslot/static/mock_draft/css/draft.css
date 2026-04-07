@@ -361,119 +361,85 @@ body {
   color: #fecaca;
 }
 
-/* Share card: 3-column grid — larger type, tighter gaps (overall height ~unchanged) */
+/* Share card: one row per pick (aligned with endgame browse table density) */
 .brag-sheet-export--share {
   max-width: 1200px;
   box-sizing: border-box;
 }
-.brag-pick-grid {
+.brag-pick-list {
+  border: 1px solid #333;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.brag-pick-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.22rem 0.3rem;
-}
-@media (max-width: 520px) {
-  .brag-pick-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-.brag-pick-cell {
+  grid-template-columns: 2.1rem minmax(0, 1fr) 4rem 4.25rem;
+  gap: 0.22rem 0.35rem;
+  align-items: center;
+  font-size: 13px;
+  line-height: 1.15;
+  padding: 0.22rem 0.35rem;
+  border-bottom: 1px solid #262626;
   min-width: 0;
 }
-.brag-pick-cell-inner {
-  border: 1px solid #333;
-  background: rgba(0, 0, 0, 0.35);
-  padding: 0.22rem 0.3rem;
-  border-radius: 2px;
-  height: 100%;
-  box-sizing: border-box;
+.brag-pick-row:last-child {
+  border-bottom: none;
 }
-.brag-pick-top {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.25rem;
+.brag-pick-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
 }
-.brag-pick-no {
-  flex-shrink: 0;
-  min-width: 1.2rem;
-  height: 1.2rem;
+.brag-pick-row-pick {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+}
+.brag-pick-row-pick-badge {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.15rem;
   background: #dc2626;
   color: #fff;
   font-size: 11px;
   font-weight: 700;
   border-radius: 2px;
+  box-sizing: border-box;
 }
-.brag-pick-photo {
-  flex-shrink: 0;
-}
-.brag-pick-photo .player-photo-wrap,
-.brag-pick-photo span[class^='w-'] {
-  border-radius: 2px !important;
-}
-.brag-pick-meta {
-  flex: 1;
+.brag-pick-row-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
   min-width: 0;
 }
-.brag-pick-name {
-  font-size: clamp(15px, 2.6vw, 18px);
-  font-weight: 600;
+.brag-pick-row-name {
   color: #fff;
-  line-height: 1.15;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.brag-pick-rank-pos {
-  font-size: 12px;
-  color: #a3a3a3;
-  margin-top: 0;
-  line-height: 1.15;
-}
-.brag-pick-school {
-  font-size: 10px;
-  color: #737373;
-  margin-top: 0;
-  line-height: 1.1;
-  white-space: nowrap;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.brag-pick-cost {
-  flex-shrink: 0;
+.brag-pick-row-sub {
+  font-size: 11px;
+  color: #737373;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.brag-pick-row-meta--pass {
   font-size: 13px;
+  color: #737373;
+}
+.brag-pick-row-slot {
+  color: #d4d4d4;
+  text-align: right;
+}
+.brag-pick-row-sign {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   text-align: right;
-  line-height: 1.1;
-  align-self: flex-start;
-}
-.brag-pick-bottom {
-  font-size: 10px;
-  color: #737373;
-  margin-top: 0.15rem;
-  padding-top: 0.12rem;
-  line-height: 1.1;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-.brag-pick-cell-inner.brag-pick-pass {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  min-height: 2.85rem;
-  gap: 0.1rem;
-}
-.brag-pick-pass .brag-pick-pass-label {
-  font-size: 13px;
-  color: #737373;
-}
-.brag-pick-pass .brag-pick-slot {
-  font-size: 10px;
-  color: #525252;
 }
 
 /* Endgame: full pick-by-pick list (one row per pick, long scroll) */

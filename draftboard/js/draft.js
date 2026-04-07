@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.12';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.13';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -1504,23 +1504,22 @@
         </div>
       </div>`;
 
-    const grid = document.createElement('div');
-    grid.className = 'brag-pick-grid';
+    const list = document.createElement('div');
+    list.className = 'brag-pick-list';
 
     roundPicks.forEach((pick, i) => {
       const sel = selections[i];
       const slotStr = pick.value != null ? fmt(pick.value) : '—';
-      const cell = document.createElement('div');
-      cell.className = 'brag-pick-cell';
+      const row = document.createElement('div');
 
       if (!sel || sel.name === '(pass)') {
-        cell.innerHTML = `
-          <div class="brag-pick-cell-inner brag-pick-pass">
-            <span class="brag-pick-no">${pick.pick}</span>
-            <span class="brag-pick-pass-label">Pass</span>
-            <span class="brag-pick-slot">Slot ${escapeHtml(slotStr)}</span>
-          </div>`;
-        grid.appendChild(cell);
+        row.className = 'brag-pick-row brag-pick-row--pass';
+        row.innerHTML = `
+          <div class="brag-pick-row-pick"><span class="brag-pick-row-pick-badge">${pick.pick}</span></div>
+          <div class="brag-pick-row-meta brag-pick-row-meta--pass">Pass</div>
+          <div class="brag-pick-row-slot tabular-nums">${escapeHtml(slotStr)}</div>
+          <div class="brag-pick-row-sign text-neutral-600">—</div>`;
+        list.appendChild(row);
         return;
       }
 
@@ -1529,28 +1528,25 @@
       const costClass = pick.value != null
         ? (displayCost > pick.value ? 'text-overslot-red' : displayCost < pick.value ? 'text-green-400' : 'text-white')
         : 'text-white';
-      const photo = playerPhotoHtml(player, 'w-8 h-8 sm:w-9 sm:h-9', true, true);
-      const schoolLine = player.school
-        ? `<div class="brag-pick-school">${escapeHtml(player.school)}</div>`
-        : '';
-      const rankPosLine = player.name === 'Random senior sign'
-        ? 'Pool saver'
-        : `#${sel.rank != null ? sel.rank : '—'}${player.position ? ' · ' + escapeHtml(player.position) : ''}`;
-      cell.innerHTML = `
-        <div class="brag-pick-cell-inner">
-          <div class="brag-pick-top">
-            <span class="brag-pick-no">${pick.pick}</span>
-            <div class="brag-pick-photo">${photo}</div>
-            <div class="brag-pick-meta">
-              <div class="brag-pick-name">${escapeHtml(player.name || sel.name)}</div>
-              <div class="brag-pick-rank-pos">${rankPosLine}</div>
-              ${schoolLine}
-            </div>
-            <div class="brag-pick-cost ${costClass}">${fmt(displayCost)}</div>
-          </div>
-          <div class="brag-pick-bottom">Slot ${escapeHtml(slotStr)}</div>
-        </div>`;
-      grid.appendChild(cell);
+      const subParts =
+        player.name === 'Random senior sign'
+          ? ['Pool saver']
+          : [
+              `#${sel.rank != null ? sel.rank : '—'}`,
+              ...(player.position ? [escapeHtml(player.position)] : []),
+              ...(player.school ? [escapeHtml(player.school)] : [])
+            ];
+      const subLine = subParts.filter(Boolean).join(' · ');
+      row.className = 'brag-pick-row';
+      row.innerHTML = `
+        <div class="brag-pick-row-pick"><span class="brag-pick-row-pick-badge">${pick.pick}</span></div>
+        <div class="brag-pick-row-meta">
+          <span class="brag-pick-row-name">${escapeHtml(player.name || sel.name)}</span>
+          <span class="brag-pick-row-sub">${subLine}</span>
+        </div>
+        <div class="brag-pick-row-slot tabular-nums">${escapeHtml(slotStr)}</div>
+        <div class="brag-pick-row-sign ${costClass}">${fmt(displayCost)}</div>`;
+      list.appendChild(row);
     });
 
     const pool = teamData ? teamData.pool : 0;
@@ -1565,7 +1561,7 @@
       `;
 
     exportRoot.appendChild(header);
-    exportRoot.appendChild(grid);
+    exportRoot.appendChild(list);
     exportRoot.appendChild(footer);
 
     wrap.appendChild(exportRoot);
