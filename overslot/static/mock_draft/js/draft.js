@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.10';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.11';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -3185,6 +3185,15 @@
       return;
     }
 
+    const isMobile =
+      typeof window.matchMedia === 'function' && !window.matchMedia('(min-width: 1024px)').matches;
+    const keepMobileDeckExpanded =
+      isMobile &&
+      !el.classList.contains('hidden') &&
+      !el.classList.contains('human-budget-deck--peek');
+    const savedDeckMaxHeight =
+      keepMobileDeckExpanded && el.style.maxHeight ? el.style.maxHeight.trim() : '';
+
     el.classList.remove('hidden');
     draftEl?.classList.add('draft--team-deck-visible');
     el.innerHTML = '';
@@ -3245,12 +3254,16 @@
     });
     el.appendChild(body);
 
-    const isMobile =
-      typeof window.matchMedia === 'function' && !window.matchMedia('(min-width: 1024px)').matches;
     el.style.removeProperty('max-height');
     if (isMobile) {
-      el.classList.add('human-budget-deck--peek');
-      el.classList.remove('human-budget-deck--expanded');
+      if (keepMobileDeckExpanded) {
+        el.classList.remove('human-budget-deck--peek');
+        el.classList.add('human-budget-deck--expanded');
+        if (savedDeckMaxHeight) el.style.maxHeight = savedDeckMaxHeight;
+      } else {
+        el.classList.add('human-budget-deck--peek');
+        el.classList.remove('human-budget-deck--expanded');
+      }
     } else {
       el.classList.remove('human-budget-deck--peek', 'human-budget-deck--expanded');
     }

@@ -718,6 +718,10 @@ html.endgame-pending #btn-restart {
   #draft.draft--team-deck-visible #board {
     padding-bottom: 5.5rem;
   }
+  /* Fixed team deck covers the bottom of the viewport — lift pause/simulate/restart above it. */
+  #draft.draft--team-deck-visible #draft-body > div:first-of-type {
+    padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+  }
 
   .draft-controls-bar #status {
     -webkit-overflow-scrolling: touch;
