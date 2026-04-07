@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.11';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.12';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -1275,12 +1275,8 @@
     wrap.className =
       'draft-share-callout mb-4 p-3 sm:p-4 border border-overslot-grey-border bg-black/35 rounded-sm text-left max-w-3xl mx-auto w-full';
     const h = document.createElement('h3');
-    h.className = 'text-base font-semibold text-white mb-1.5';
+    h.className = 'text-base font-semibold text-white mb-2';
     h.textContent = 'Share your draft';
-    const p = document.createElement('p');
-    p.className = 'text-sm text-neutral-400 mb-3 leading-snug';
-    p.textContent =
-      'Copy a link to share this exact finished draft with anyone — they see all of the same picks, bonuses and mayhem!';
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className =
@@ -1326,7 +1322,6 @@
       }
     });
     wrap.appendChild(h);
-    wrap.appendChild(p);
     wrap.appendChild(btn);
     return wrap;
   }
@@ -1498,20 +1493,15 @@
     exportRoot.setAttribute('data-team', teamName);
 
     const header = document.createElement('div');
-    header.className =
-      'brag-share-header flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 pb-2 text-left';
+    header.className = 'brag-share-header flex flex-col gap-2 pb-2 text-left';
     const logoHtml = teamLogoHtml(teamId, 'w-14 h-14 sm:w-16 sm:h-16');
     header.innerHTML = `
-      <div class="flex flex-row gap-2 sm:gap-3 min-w-0 flex-1">
+      <div class="flex flex-row gap-2 sm:gap-3 min-w-0">
         <div class="flex-shrink-0">${logoHtml}</div>
         <div class="min-w-0 flex-1">
           <h3 class="brag-sheet-team-title text-xl sm:text-2xl font-bold text-white leading-tight tracking-tight">${escapeHtml(teamName)}</h3>
           <p class="text-sm text-neutral-400 mt-0.5 leading-snug">2026 Mock Draft class</p>
         </div>
-      </div>
-      <div class="brag-share-url-banner brag-share-url-banner--header">
-        <span class="brag-share-url-label">Run your own mock draft at</span>
-        <a class="brag-share-url-link" href="${escapeHtml(getMockDraftToolHomeUrl())}" target="_blank" rel="noopener noreferrer">${escapeHtml(getMockDraftToolHomeUrl())}</a>
       </div>`;
 
     const grid = document.createElement('div');
@@ -1655,7 +1645,8 @@
     state.endgameBrowseIndex = Math.max(0, Math.min(state.endgameBrowseIndex, Math.max(0, nPicks - 1)));
 
     const toolbar = document.createElement('div');
-    toolbar.className = 'endgame-toolbar flex flex-wrap items-center gap-2 sm:gap-2.5 mb-3';
+    toolbar.className =
+      'endgame-toolbar flex flex-col items-stretch gap-3 mb-4 w-full max-w-md mx-auto px-1';
 
     function makeEndgameTabButton(id, label) {
       const b = document.createElement('button');
@@ -1675,7 +1666,7 @@
     teamSel.id = 'endgame-team-select';
     teamSel.setAttribute('aria-label', 'Team for brag sheet');
     teamSel.className =
-      'text-base bg-black/50 border text-white px-2 py-1.5 max-w-[min(100%,20rem)] min-h-[2.5rem] rounded-sm cursor-pointer ' +
+      'text-base bg-black/50 border text-white px-3 py-2 w-full min-h-[2.75rem] rounded-sm cursor-pointer ' +
       (tab === 'team'
         ? 'border-overslot-red bg-red-950/40'
         : 'border-overslot-grey-border hover:border-neutral-500');
@@ -1692,17 +1683,23 @@
       renderEndgame();
     });
 
-    toolbar.appendChild(makeEndgameTabButton('my', 'My Team'));
+    const tabsRow = document.createElement('div');
+    tabsRow.className = 'flex flex-wrap justify-center gap-2';
+    tabsRow.appendChild(makeEndgameTabButton('my', 'My Team'));
+    tabsRow.appendChild(makeEndgameTabButton('browse', 'Browse picks'));
+    toolbar.appendChild(tabsRow);
     toolbar.appendChild(teamSel);
-    toolbar.appendChild(makeEndgameTabButton('browse', 'Browse picks'));
 
     const restartToolbar = document.createElement('button');
     restartToolbar.type = 'button';
     restartToolbar.className =
-      'endgame-restart text-base px-3 py-1.5 border border-amber-500/80 bg-amber-950/55 text-amber-100 font-semibold cursor-pointer hover:bg-amber-900/70 hover:border-amber-400 transition-colors';
+      'endgame-restart text-base px-5 py-2 border border-amber-500/80 bg-amber-950/55 text-amber-100 font-semibold cursor-pointer hover:bg-amber-900/70 hover:border-amber-400 transition-colors';
     restartToolbar.textContent = 'Restart';
     restartToolbar.addEventListener('click', () => restartToSetup());
-    toolbar.appendChild(restartToolbar);
+    const restartRow = document.createElement('div');
+    restartRow.className = 'flex justify-center w-full';
+    restartRow.appendChild(restartToolbar);
+    toolbar.appendChild(restartRow);
 
     $draftCompleteInner.appendChild(toolbar);
 
