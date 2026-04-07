@@ -9,10 +9,13 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.9';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.10';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
+
+  /** Pointers under this movement (px) count as a tap: toggle sheet height instead of dragging. */
+  const MOBILE_SHEET_DRAG_THRESHOLD_PX = 10;
 
   const MIN_COLLEGE = 150000;
   const MIN_HS = 400000;
@@ -234,9 +237,15 @@
 
     if (!open || !isMobile) {
       db.classList.remove('draft-body--mobile-pick-open');
-      if (side) side.style.removeProperty('max-height');
+      if (side) {
+        side.style.removeProperty('max-height');
+        delete side.dataset.mobilePickSheetTall;
+      }
     } else {
-      if (side) side.style.removeProperty('max-height');
+      if (side) {
+        side.style.removeProperty('max-height');
+        side.dataset.mobilePickSheetTall = '0';
+      }
       db.classList.add('draft-body--mobile-pick-open');
       if (budget && isMobile) {
         budget.classList.add('human-budget-deck--peek');
@@ -344,15 +353,26 @@
         handle.setPointerCapture(downEv.pointerId);
       } catch (_) { /* ignore */ }
       const startY = downEv.clientY;
+      const startX = downEv.clientX;
       const rect = side.getBoundingClientRect();
       const startH = rect.height;
       const winH = window.innerHeight || document.documentElement.clientHeight || 800;
+      let dragStarted = false;
       const clampSheetHeight = h => {
         const minH = Math.round(winH * 0.28);
         const maxH = Math.round(winH * 0.94);
         return Math.min(maxH, Math.max(minH, h));
       };
       function onMove(ev) {
+        if (!dragStarted) {
+          if (
+            Math.abs(ev.clientY - startY) <= MOBILE_SHEET_DRAG_THRESHOLD_PX &&
+            Math.abs(ev.clientX - startX) <= MOBILE_SHEET_DRAG_THRESHOLD_PX
+          ) {
+            return;
+          }
+          dragStarted = true;
+        }
         const dy = startY - ev.clientY;
         side.style.maxHeight = `${clampSheetHeight(startH + dy)}px`;
       }
@@ -363,6 +383,23 @@
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
         document.removeEventListener('pointercancel', onUp);
+        const winH2 = window.innerHeight || document.documentElement.clientHeight || 800;
+        if (!dragStarted) {
+          const tallPx = Math.round(winH2 * 0.75);
+          if (side.dataset.mobilePickSheetTall === '1') {
+            side.style.removeProperty('max-height');
+            side.dataset.mobilePickSheetTall = '0';
+          } else {
+            side.style.maxHeight = `${tallPx}px`;
+            side.dataset.mobilePickSheetTall = '1';
+          }
+        } else {
+          const mx = side.style.maxHeight;
+          let hPx = 0;
+          if (mx && mx.endsWith('px')) hPx = parseFloat(mx);
+          else hPx = side.getBoundingClientRect().height;
+          side.dataset.mobilePickSheetTall = hPx >= winH2 * 0.62 ? '1' : '0';
+        }
       }
       document.addEventListener('pointermove', onMove, { passive: true });
       document.addEventListener('pointerup', onUp);
@@ -3073,14 +3110,25 @@
         el.setPointerCapture(downEv.pointerId);
       } catch (_) { /* ignore */ }
       const startY = downEv.clientY;
+      const startX = downEv.clientX;
       const winH = window.innerHeight || document.documentElement.clientHeight || 800;
       const rect = el.getBoundingClientRect();
       const startH = rect.height;
       const minH = 68;
-      const maxH = Math.round(Math.min(winH * 0.62, 440));
+      const maxH = Math.round(winH * 0.94);
       const clampH = h => Math.min(maxH, Math.max(minH, h));
+      let dragStarted = false;
 
       function onMove(ev) {
+        if (!dragStarted) {
+          if (
+            Math.abs(ev.clientY - startY) <= MOBILE_SHEET_DRAG_THRESHOLD_PX &&
+            Math.abs(ev.clientX - startX) <= MOBILE_SHEET_DRAG_THRESHOLD_PX
+          ) {
+            return;
+          }
+          dragStarted = true;
+        }
         const dy = startY - ev.clientY;
         el.classList.remove('human-budget-deck--peek', 'human-budget-deck--expanded');
         el.style.maxHeight = `${clampH(startH + dy)}px`;
@@ -3093,8 +3141,23 @@
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
         document.removeEventListener('pointercancel', onUp);
+        const winH2 = window.innerHeight || document.documentElement.clientHeight || 800;
+        if (!dragStarted) {
+          const tallPx = Math.round(winH2 * 0.75);
+          if (el.classList.contains('human-budget-deck--peek')) {
+            el.classList.remove('human-budget-deck--peek');
+            el.classList.add('human-budget-deck--expanded');
+            el.style.maxHeight = `${tallPx}px`;
+          } else {
+            el.classList.add('human-budget-deck--peek');
+            el.classList.remove('human-budget-deck--expanded');
+            el.style.removeProperty('max-height');
+          }
+          return;
+        }
         const h = el.getBoundingClientRect().height;
-        const mid = minH + (maxH - minH) * 0.38;
+        const maxH2 = Math.round(winH2 * 0.94);
+        const mid = minH + (maxH2 - minH) * 0.38;
         el.style.removeProperty('max-height');
         if (h < mid) {
           el.classList.add('human-budget-deck--peek');
@@ -3102,6 +3165,7 @@
         } else {
           el.classList.remove('human-budget-deck--peek');
           el.classList.add('human-budget-deck--expanded');
+          el.style.maxHeight = `${Math.round(h)}px`;
         }
       }
       document.addEventListener('pointermove', onMove, { passive: true });
