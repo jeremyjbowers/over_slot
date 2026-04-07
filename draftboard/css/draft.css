@@ -683,25 +683,33 @@ html.endgame-pending #btn-restart {
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    padding: 0.5rem 0 0.35rem;
+    box-sizing: border-box;
+    min-height: 3.25rem;
+    padding: 0.85rem 1rem 0.65rem;
     touch-action: none;
     cursor: grab;
     background: #141414;
     border-bottom: 1px solid #262626;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
   }
   .mobile-pick-sheet-handle:active {
     cursor: grabbing;
   }
   .mobile-pick-sheet-handle-bar {
-    width: 2.25rem;
-    height: 0.28rem;
+    width: 3rem;
+    height: 0.35rem;
     border-radius: 999px;
     background: #525252;
+    flex-shrink: 0;
+    pointer-events: none;
   }
 
   /* Layer stack: board (base) → team deck (1006) → player pick sheet (1012) */
   #draft.draft--team-deck-visible #board {
-    padding-bottom: 4.5rem;
+    padding-bottom: 5.5rem;
   }
 
   .draft-controls-bar #status {
@@ -725,7 +733,7 @@ html.endgame-pending #btn-restart {
     transition: max-height 0.22s ease;
   }
   .human-budget-deck.human-budget-deck--peek {
-    max-height: 3.5rem;
+    max-height: 4.75rem;
   }
   .human-budget-deck.human-budget-deck--expanded {
     max-height: min(52vh, 26rem);
@@ -751,23 +759,31 @@ html.endgame-pending #btn-restart {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.2rem;
-    padding: 0.4rem 0.5rem 0.35rem;
+    box-sizing: border-box;
+    gap: 0.35rem;
+    min-height: 3.75rem;
+    padding: 0.65rem 1rem 0.55rem;
     flex-shrink: 0;
     touch-action: none;
     cursor: grab;
     background: #141414;
     border-bottom: 1px solid #262626;
     border-radius: 12px 12px 0 0;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
   }
   .mobile-team-deck-handle:active {
     cursor: grabbing;
   }
   .mobile-team-deck-handle-bar {
-    width: 2.25rem;
-    height: 0.28rem;
+    width: 3rem;
+    height: 0.35rem;
     border-radius: 999px;
     background: #525252;
+    flex-shrink: 0;
+    pointer-events: none;
   }
   .mobile-team-deck-peek-label {
     font-size: 0.65rem;
@@ -776,6 +792,9 @@ html.endgame-pending #btn-restart {
     text-transform: uppercase;
     color: #737373;
     white-space: nowrap;
+    -webkit-user-select: none;
+    user-select: none;
+    pointer-events: none;
   }
 
   /* Player pick list: no photos in bottom sheet; stacked lines (name / school / cost) */

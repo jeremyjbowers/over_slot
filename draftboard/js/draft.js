@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.7';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.8';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -324,6 +324,11 @@
     window.addEventListener('orientationchange', scheduleMockDraftViewportHeight);
   }
 
+  function clearUiTextSelection() {
+    const sel = typeof window.getSelection === 'function' ? window.getSelection() : null;
+    if (sel && typeof sel.removeAllRanges === 'function') sel.removeAllRanges();
+  }
+
   function installMobilePickSheetDrag() {
     const handle = $('mobile-pick-sheet-handle');
     const side = $('draft-side');
@@ -333,6 +338,7 @@
     handle.addEventListener('pointerdown', downEv => {
       if (!body.classList.contains('draft-body--mobile-pick-open')) return;
       if (downEv.pointerType === 'mouse' && downEv.button !== 0) return;
+      clearUiTextSelection();
       downEv.preventDefault();
       try {
         handle.setPointerCapture(downEv.pointerId);
@@ -3056,6 +3062,7 @@
       if (!handle || !el.contains(handle)) return;
       if (typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1024px)').matches) return;
       if (downEv.pointerType === 'mouse' && downEv.button !== 0) return;
+      clearUiTextSelection();
       downEv.preventDefault();
       try {
         el.setPointerCapture(downEv.pointerId);
@@ -3064,7 +3071,7 @@
       const winH = window.innerHeight || document.documentElement.clientHeight || 800;
       const rect = el.getBoundingClientRect();
       const startH = rect.height;
-      const minH = 52;
+      const minH = 68;
       const maxH = Math.round(Math.min(winH * 0.62, 440));
       const clampH = h => Math.min(maxH, Math.max(minH, h));
 
