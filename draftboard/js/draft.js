@@ -10,7 +10,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.14';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.15';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -2355,6 +2355,22 @@
   ];
 
   function applyTeamRules(candidates, team, pickIndex, slotValue) {
+    const pickRow = state.picks[pickIndex];
+    const soft = arr => arr[Math.floor(Math.random() * arr.length)];
+
+    // Roch Cholowsky: scouts have him top-3 overall — never let him slide past pick 3
+    if (pickRow && pickRow.pick >= 2 && pickRow.pick <= 3) {
+      const chol = candidates.find(p => p.name === 'Roch Cholowsky');
+      if (chol) {
+        const r = soft([
+          'Cholowsky was too good to still be on the board—we had to take him.',
+          'We could not pass on Cholowsky sliding this far.',
+          'Roch Cholowsky at this spot was easy value for us.'
+        ]);
+        return { candidates: [chol], reason: r };
+      }
+    }
+
     const teamData = state.teams.find(t => t.name === team);
     if (!teamData || !teamData.rules) return { candidates, reason: null };
 
@@ -2369,11 +2385,11 @@
     const isPositionPlayer = p => !isPitcher(p);
 
     if (isFirstPick) {
-      const soft = arr => arr[Math.floor(Math.random() * arr.length)];
-
-      // Specific player: "Will draft Roch Cholowsky with the No. 1 pick X% of the time"
-      const playerMatch = rules.match(/will draft ([a-z\s]+) with.*?(\d+)%/);
-      const pickRow = state.picks[pickIndex];
+      // Specific player: "Will draft X with ... Y% ..." or "Will draft X Y% of the time"
+      let playerMatch = rules.match(/will draft ([a-z][a-z\s]*) with.*?(\d+)%/);
+      if (!playerMatch) {
+        playerMatch = rules.match(/will draft ([a-z][a-z\s]*?)\s+(\d+)%/);
+      }
       if (playerMatch && pickRow && pickRow.pick === 1) {
         const namePart = playerMatch[1].trim();
         const pct = parseInt(playerMatch[2], 10) / 100;
