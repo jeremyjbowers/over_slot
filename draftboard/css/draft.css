@@ -778,6 +778,17 @@ html.endgame-pending #btn-restart {
     white-space: nowrap;
   }
 
+  /* Player pick list: no photos in bottom sheet; stacked lines (name / school / cost) */
+  #draft-body.draft-body--mobile-pick-open #available-players .player-pool-row > .player-photo-wrap {
+    display: none !important;
+  }
+  #draft-body.draft-body--mobile-pick-open #available-players .player-pool-row {
+    align-items: flex-start;
+  }
+  #draft-body.draft-body--mobile-pick-open #available-players .player-pool-rank {
+    margin-top: 0.1rem;
+  }
+
   #draft-body.draft-body--mobile-pick-open #draft-side {
     position: fixed;
     left: 0;

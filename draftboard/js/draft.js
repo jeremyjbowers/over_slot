@@ -9,7 +9,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.6';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-06.7';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -3351,9 +3351,9 @@
     function renderList(filter) {
       const q = (filter || '').trim().toLowerCase();
       const rowEnabledClass =
-        'player-pool-row flex items-center gap-3 py-2 px-2 cursor-pointer hover:bg-overslot-grey border border-transparent hover:border-overslot-grey-border text-sm';
+        'player-pool-row flex items-start lg:items-center gap-3 py-2 px-2 cursor-pointer hover:bg-overslot-grey border border-transparent hover:border-overslot-grey-border text-sm';
       const rowDisabledClass =
-        'player-pool-row player-pool-row--not-signable flex items-center gap-3 py-2 px-2 cursor-default opacity-[0.42] border border-transparent text-sm text-neutral-500';
+        'player-pool-row player-pool-row--not-signable flex items-start lg:items-center gap-3 py-2 px-2 cursor-default opacity-[0.42] border border-transparent text-sm text-neutral-500';
 
       const appendPlayerRows = (entries, chalk, clearFirst) => {
         if (!availableEl) return;
@@ -3370,7 +3370,23 @@
           const badge = !canPick
             ? '<span class="flex-shrink-0 text-[10px] font-semibold uppercase tracking-wide text-neutral-500 border border-neutral-600 px-1 py-0.5 rounded-sm">Not signable</span>'
             : '';
-          div.innerHTML = `${playerPhotoHtml(p)}<span class="${rankClass}">${p.rank}</span><span class="min-w-0 flex-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">${escapeHtml(p.position)} ${escapeHtml(p.name)}, ${escapeHtml(p.school)} » <span class="${dimCostClass}">${fmt(listCost)}</span></span>${badge}`;
+          const school = (p.school || '').trim();
+          const schoolLine = school
+            ? `<div class="player-pool-school text-xs text-neutral-400 leading-snug break-words">${escapeHtml(school)}</div>`
+            : '';
+          div.innerHTML =
+            `${playerPhotoHtml(p)}<span class="${rankClass} player-pool-rank">${p.rank}</span>` +
+            `<div class="player-pool-row-main min-w-0 flex-1 flex flex-col gap-0.5 lg:flex-row lg:items-center lg:justify-between lg:gap-3">` +
+            `<div class="player-pool-row-text min-w-0 flex flex-col gap-0.5 lg:flex-1">` +
+            `<div class="player-pool-line1 leading-snug text-neutral-100">` +
+            `${escapeHtml(p.position || '')}${p.position && p.name ? ' ' : ''}` +
+            `<span class="font-medium">${escapeHtml(p.name || '')}</span>` +
+            `</div>` +
+            `${schoolLine}` +
+            `</div>` +
+            `<div class="player-pool-cost text-sm font-semibold tabular-nums shrink-0 lg:text-right ${dimCostClass}">${fmt(listCost)}</div>` +
+            `</div>` +
+            `${badge}`;
           div.dataset.rank = String(p.rank);
           if (canPick) {
             div.addEventListener('click', () => makeHumanPick(p));
