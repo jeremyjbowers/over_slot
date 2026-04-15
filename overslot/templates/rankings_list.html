@@ -23,6 +23,7 @@
 /* Inline team name + logo for mock drafts */
 .players-list .team-inline { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .players-list .team-inline .team-logo { height: 18px; width: auto; display: inline-block; vertical-align: middle; background: #ffffff; border-radius: 50%; padding: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,0.1) inset; }
+.players-list .team-inline .team-logo.team-logo--mlb-cap-on-dark { width: 1.25rem; height: 1.25rem; object-fit: contain; object-position: center; background: transparent; border-radius: 0; padding: 0; box-shadow: none; flex-shrink: 0; }
 @media (max-width: 1024px) { .ranking-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px) { .ranking-grid { grid-template-columns: 1fr; } }
 </style>
@@ -51,10 +52,12 @@
                         <span class="num">{% if ranking.is_mock_draft and pr.mock_pick_number %}{{ pr.mock_pick_number }}.{% else %}{{ pr.rank }}.{% endif %}</span>
                         {% if pr.position %}<span class="pos">{{ pr.position }}</span>{% endif %}{{ pr.player.name }}
                         {% if ranking.is_mock_draft %}
-                            {% if pr.mock_team or pr.mock_team_logo_url %}
+                            {% if pr.mock_team or pr.mock_draft_board_team_logo_url %}
                                 <span class="team-inline">
                                     {% if pr.mock_team %} — {{ pr.mock_team }}{% endif %}
-                                    {% if pr.mock_team_logo_url %}<img class="team-logo" src="{{ pr.mock_team_logo_url }}" alt="{{ pr.mock_team }}"/>{% endif %}
+                                    {% if pr.mock_draft_board_team_logo_url %}
+                                        <img class="team-logo team-logo--mlb-cap-on-dark" src="{{ pr.mock_draft_board_team_logo_url }}" alt="" width="20" height="20" decoding="async" loading="lazy"/>
+                                    {% endif %}
                                 </span>
                             {% endif %}
                         {% endif %}

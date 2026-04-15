@@ -90,6 +90,37 @@ def get_sheet(sheet_id, sheet_range, value_cutoff=None):
     return []
 
 
+def sheet_tab_a1_range(tab_title, cell_range="A:Z"):
+    """
+    Build an A1 range with a correctly quoted worksheet title.
+    Required when the tab name contains spaces, quotes, or other special characters.
+    """
+    escaped = str(tab_title).replace("'", "''")
+    return f"'{escaped}'!{cell_range}"
+
+
+def list_spreadsheet_sheet_titles(sheet_id):
+    """
+    Return worksheet titles for a Google spreadsheet, in UI tab order.
+    Uses the same read-only Sheets scope as get_sheet.
+    """
+    SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+    creds = get_google_creds(SCOPES)
+    service = build("sheets", "v4", credentials=creds)
+    body = (
+        service.spreadsheets()
+        .get(spreadsheetId=sheet_id, fields="sheets.properties(title)")
+        .execute()
+    )
+    titles = []
+    for sh in body.get("sheets") or []:
+        props = sh.get("properties") or {}
+        t = props.get("title")
+        if t is not None:
+            titles.append(t)
+    return titles
+
+
 def kill_curly(s):
     if isinstance(s, str):
         return s.replace("“", '"').replace("”", '"').replace("‘", "'").replace("’", "'")

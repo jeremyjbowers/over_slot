@@ -566,6 +566,13 @@ class PlayerRanking(BaseModel):
 
     scouting_report = models.TextField(null=True, blank=True)
 
+    @property
+    def mock_draft_board_team_logo_url(self):
+        """Cap-on-dark SVG; same mlbstatic assets as the interactive mock draft draftboard."""
+        from overslot.mlb_mock_draft_teams import mlb_team_cap_on_dark_url_for_team_name
+
+        return mlb_team_cap_on_dark_url_for_team_name(self.mock_team)
+
     class Meta:
         ordering = ['ranking', 'rank']
 

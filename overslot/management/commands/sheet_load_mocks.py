@@ -1,12 +1,52 @@
+import re
+
 from django.core.management.base import BaseCommand, CommandError
-from django.conf import settings
 from django.db.models import Q
 
 from overslot import models, utils
 
+# Mock draft source spreadsheet (tabs named like "2026 Mock 1.0", "2026 Mock 2.0", …).
+MOCK_DRAFT_SPREADSHEET_ID = "1n91_DpIkNKncmTpRWgnCdVrEF_eVjA_NTGZJUYSKqbU"
+
+# Tab titles: "<YEAR> Mock <NUMBER>" — YEAR is the draft year; NUMBER is a release label (e.g. 1.0, 2.0).
+_MOCK_TAB_TITLE_RE = re.compile(r"^(\d{4})\s+mock\s+(.+)$", re.IGNORECASE)
+
+
+def _parse_mock_tab_title(tab_title):
+    """
+    If tab_title matches "<YEAR> Mock <VERSION>", return (year, version) with whitespace trimmed.
+    Otherwise return None.
+    """
+    if not tab_title or not isinstance(tab_title, str):
+        return None
+    normalized = " ".join(tab_title.split())
+    m = _MOCK_TAB_TITLE_RE.match(normalized)
+    if not m:
+        return None
+    year, version = m.group(1), (m.group(2) or "").strip()
+    if not version:
+        return None
+    return year, version
+
+
+def _mock_version_sort_key(version):
+    """Sort key so numeric releases (1.0, 2.0) order before non-numeric labels like Final."""
+    v = (version or "").strip()
+    if v.lower() == "final":
+        return (2, 0.0, v.lower())
+    try:
+        return (0, float(v), v.lower())
+    except (TypeError, ValueError):
+        return (1, 0.0, v.lower())
+
 
 class Command(BaseCommand):
-    help = 'Load rankings, players and player rankings from Google Sheets'
+    help = (
+        "Load mock drafts from the Google Sheet: each tab named like "
+        '"2026 Mock 1.0" becomes one Ranking (unique by draft year + version). '
+        "With no arguments, all matching tabs are discovered and imported. "
+        "Re-running updates the same mock for the same tab."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -17,18 +57,18 @@ class Command(BaseCommand):
         parser.add_argument(
             '--year',
             type=str,
-            help='Year to load (e.g., 2025). Must be used with --version.'
+            help='Draft year to load (e.g. 2026). Must be used with --mock-version.',
         )
         parser.add_argument(
             '--mock-version',
             dest='mock_version',
             type=str,
-            help='Mock version to load (e.g., 1.0 or Final). Must be used with --year.'
+            help='Mock release label from the tab (e.g. 1.0 or 2.0). Must be used with --year.',
         )
         parser.add_argument(
             'tab',
             nargs='?',
-            help='Only load a specific tab (e.g., "2025 Mock 1.0")',
+            help='Only load one tab by title (e.g. "2026 Mock 1.0"). Must match a sheet tab name.',
         )
 
     def handle(self, *args, **options):
@@ -124,39 +164,76 @@ class Command(BaseCommand):
             except Exception:
                 return None
 
-        # Pre-populated years/versions to iterate over when no specific tab is provided
-        # Update this list over time (e.g., ["2026", "2027"]).
-        default_years = ["2026"]
-        default_versions = ["1.0", "Final"]  # Extend as needed (e.g., "2.0", "3.0")
-
         explicit_year = options.get('year')
         explicit_version = options.get('mock_version')
         tab = options.get('tab')
 
+        if (explicit_year or explicit_version) and not (explicit_year and explicit_version):
+            raise CommandError('Use --year and --mock-version together (e.g. --year 2026 --mock-version 1.0).')
+
+        tab_jobs = []
+
         if explicit_year and explicit_version:
             year = str(explicit_year).strip()
             version = str(explicit_version).strip()
-            year_version_pairs = [(year, version)]
-            self.stdout.write(self.style.WARNING(f'Only loading explicit: {year} Mock {version}'))
+            tab_title = f"{year} Mock {version}"
+            tab_jobs.append({"tab_title": tab_title, "year": year, "version": version})
+            self.stdout.write(self.style.WARNING(f'Only loading: {tab_title}'))
         elif tab:
             tab_normalized = ' '.join(str(tab).split())
-            if ' Mock ' not in tab_normalized:
-                raise CommandError('Tab must be in the format "YYYY Mock X.Y", e.g., "2025 Mock 1.0"')
-            year, _, version = tab_normalized.partition(' Mock ')
-            year_version_pairs = [(year, version)]
-            self.stdout.write(self.style.WARNING(f'Only loading tab: {year} Mock {version}'))
+            parsed = _parse_mock_tab_title(tab_normalized)
+            if not parsed:
+                raise CommandError(
+                    'Tab title must look like "<YEAR> Mock <NUMBER>", e.g. "2026 Mock 1.0".'
+                )
+            year, version = parsed
+            tab_jobs.append({"tab_title": tab_normalized, "year": year, "version": version})
+            self.stdout.write(self.style.WARNING(f'Only loading tab: {tab_normalized}'))
         else:
-            year_version_pairs = [(y, v) for y in default_years for v in default_versions]
+            try:
+                all_titles = utils.list_spreadsheet_sheet_titles(MOCK_DRAFT_SPREADSHEET_ID)
+            except Exception as exc:
+                raise CommandError(f'Could not list spreadsheet tabs: {exc}') from exc
+            for raw_title in all_titles:
+                parsed = _parse_mock_tab_title(raw_title)
+                if not parsed:
+                    continue
+                y, ver = parsed
+                tab_jobs.append({"tab_title": raw_title, "year": y, "version": ver})
+            tab_jobs.sort(
+                key=lambda job: (int(job['year']), _mock_version_sort_key(job['version']))
+            )
+            if not tab_jobs:
+                self.stdout.write(
+                    self.style.WARNING(
+                        'No tabs matching "<YEAR> Mock <NUMBER>" (e.g. "2026 Mock 1.0"). '
+                        'Add tabs to the sheet, or pass a tab name / --year and --mock-version.'
+                    )
+                )
+                return
+            self.stdout.write(
+                self.style.NOTICE(
+                    f'Discovered {len(tab_jobs)} mock tab(s): '
+                    + ', '.join(j['tab_title'] for j in tab_jobs)
+                )
+            )
 
-        for (year, mock_number) in year_version_pairs:
+        for job in tab_jobs:
+                tab_title = job['tab_title']
+                year = job['year']
+                mock_number = job['version']
+
                 print(year, mock_number)
 
                 sheet = None
+                range_a1 = utils.sheet_tab_a1_range(tab_title)
 
                 try:
-                    sheet = utils.get_sheet("1n91_DpIkNKncmTpRWgnCdVrEF_eVjA_NTGZJUYSKqbU", f"{year} Mock {mock_number}!A:Z", value_cutoff=None)
-                except:
-                    print(f"Error getting sheet for {year} {mock_number}")
+                    sheet = utils.get_sheet(MOCK_DRAFT_SPREADSHEET_ID, range_a1, value_cutoff=None)
+                except Exception as exc:
+                    self.stderr.write(
+                        self.style.ERROR(f'Error reading sheet tab {tab_title!r} ({range_a1}): {exc}')
+                    )
                     continue
 
                 if sheet:
