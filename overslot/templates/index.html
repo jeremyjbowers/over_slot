@@ -1075,7 +1075,7 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
         <div>
             <h2 class="section-title"><span class="title-text">Rankings</span></h2>
             <div class="ranking-grid">
-                {% for ranking in current_rankings|slice:":6" %}
+                {% for ranking in current_rankings %}
                 <div class="ranking-card">
                     {% if ranking.featured_image %}
                     <div class="ranking-media">
