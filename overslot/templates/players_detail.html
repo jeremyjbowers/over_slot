@@ -1123,8 +1123,12 @@ body {
                             {% for sc in hitter_seasons %}
                             <li class="{% if forloop.first %}is-active{% endif %}">
                                 <a href="#" data-target="season-{{ sc.chart_index }}">
+                                    {% if sc.level == "College" %}
+                                    <span>{{ sc.year }} college</span>
+                                    {% else %}
                                     <span>{{ sc.year }}</span>
                                     <span class="is-size-7 tab-level" style="margin-left: 6px;">{{ sc.level }}</span>
+                                    {% endif %}
                                 </a>
                             </li>
                             {% endfor %}
@@ -1137,7 +1141,11 @@ body {
                     <div class="info-section">
                         <div class="info-section-header">
                             <h3 class="info-section-title">
+                                {% if sc.level == "College" %}
+                                {{ sc.year }} college
+                                {% else %}
                                 {{ sc.year }} Hitter Performance ({{ sc.level }})
+                                {% endif %}
                             </h3>
                         </div>
                         <div class="info-section-content">
@@ -1146,7 +1154,7 @@ body {
                             <span class="info-section-subtitle">"Explosiveness" is a composite score based on general athletic testing and force plate outputs.</span>
                             <span class="info-section-subtitle">High school deltas show actual points vs median (±).</span>
                             {% else %}
-                            <span class="info-section-subtitle">Percentile ranks and raw values based on Trackman hitter metrics.</span>
+                            <span class="info-section-subtitle">Percentile ranks and raw values based on hitter data for the selected year.</span>
                             {% endif %}
                         </div>
                         {% if sc.hs_statline %}

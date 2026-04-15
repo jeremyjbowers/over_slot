@@ -17,10 +17,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """
-        Load college hitters data from sheets named like "{YEAR} Hitters"
+        Load college hitters data from sheets named like "{YEAR} Hitters" (e.g. 2026 Hitters).
         """
         debug = options.get('debug', False)
-        years = ['2025', '2024']
+        years = ['2026', '2025', '2024']
         tab_type = "Hitters"
 
         for year in years:

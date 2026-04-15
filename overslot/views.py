@@ -1056,9 +1056,17 @@ def players_detail(request, slug):
             if year not in pitcher_seasons_by_year:
                 pitcher_seasons_by_year[year] = []
             pitcher_seasons_by_year[year].append(sc)
-        else:
+        if sc.get('hitter_json'):
             hitter_seasons.append(sc)
-    
+
+    def _stat_year_sort_key(entry):
+        try:
+            return int(entry['year'])
+        except (TypeError, ValueError):
+            return 0
+
+    hitter_seasons.sort(key=_stat_year_sort_key, reverse=True)
+
     context['season_charts'] = season_charts
     context['pitcher_seasons_by_year'] = pitcher_seasons_by_year
     context['hitter_seasons'] = hitter_seasons
@@ -1487,7 +1495,7 @@ def college_hitters_year(request, year: int):
         return get_object_or_404(models.PlayerStatSeason, level="College", year=year_str)  # raises 404
 
     # Hard-coded year navigation lists (stable; data changes infrequently)
-    college_years = [2025, 2024]
+    college_years = [2026, 2025, 2024]
     hs_years = [2025, 2024, 2023, 2022]
 
     rows = []
@@ -1574,7 +1582,7 @@ def hs_hitters_year(request, year: int):
         return get_object_or_404(models.PlayerStatSeason, level="High School", year=year_str)  # raises 404
 
     # Hard-coded year navigation lists (stable; data changes infrequently)
-    college_years = [2025, 2024]
+    college_years = [2026, 2025, 2024]
     hs_years = [2025, 2024, 2023, 2022]
 
     rows = []
