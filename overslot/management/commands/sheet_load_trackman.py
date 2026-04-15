@@ -8,10 +8,13 @@ This file is kept for backward compatibility but should not be used for new cron
 Use the individual loaders instead for better maintenance and separate scheduling.
 """
 
+import re
+
 import numpy as np
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from django.db.models import Q
+from googleapiclient.errors import HttpError
 from thefuzz import fuzz
 from nicknames import NickNamer
 
@@ -32,6 +35,16 @@ class Command(BaseCommand):
             '--debug',
             action='store_true',
             help='Enable verbose logging for player matching and saves'
+        )
+        parser.add_argument(
+            '--tab',
+            type=str,
+            default=None,
+            help=(
+                'Load only this spreadsheet tab by exact name (e.g. "2025 Hitters", "2024 Fourseam", '
+                '"2024 Changeups/Splitters", "2027 HS Hitters - 2025"). Ignores default year/tab iteration '
+                'for college tabs; for HS tabs, only that tab is tried. Combine with --group when needed.'
+            ),
         )
 
     def fix_blanks(self, row):
@@ -270,10 +283,56 @@ class Command(BaseCommand):
 
         debug = options.get('debug', False)
 
+        specific_tab_raw = options.get('tab')
+        specific_tab = ' '.join(str(specific_tab_raw).split()) if specific_tab_raw else None
+        skip_college = False
+        hs_tabs_override = None
+
+        if specific_tab:
+            if 'HS Hitters' in specific_tab:
+                if group == 'pitchers':
+                    raise CommandError(
+                        f'--tab "{specific_tab}" is a high school tab; use --group all or hitters, not pitchers.'
+                    )
+                skip_college = True
+                hs_tabs_override = [specific_tab]
+                self.stdout.write(self.style.WARNING(f'Only loading HS tab: {specific_tab}'))
+            else:
+                m = re.match(r'^(\d{4})\s+(.+)$', specific_tab)
+                if not m:
+                    raise CommandError(
+                        f'Could not parse --tab "{specific_tab}". '
+                        'Expected a college tab like "2025 Hitters" or "2024 Fourseam", '
+                        'or an HS tab containing "HS Hitters" (e.g. "2027 HS Hitters - 2025").'
+                    )
+                year_from_tab, suffix = m.group(1), m.group(2).strip()
+                if suffix == 'Hitters':
+                    tab_from_arg = 'Hitters'
+                elif suffix == 'Changeups/Splitters':
+                    tab_from_arg = 'Changeups/Splitters'
+                elif suffix in ('Fourseam', 'Sinkers', 'Sliders', 'Sweepers', 'Curveballs'):
+                    tab_from_arg = suffix
+                else:
+                    raise CommandError(
+                        f'Unrecognized tab suffix "{suffix}" in --tab. '
+                        'Use Hitters, Fourseam, Sinkers, Sliders, Sweepers, Curveballs, or Changeups/Splitters.'
+                    )
+                if tab_from_arg == 'Hitters' and group == 'pitchers':
+                    raise CommandError(f'--tab "{specific_tab}" is hitters data; use --group all or hitters.')
+                if tab_from_arg != 'Hitters' and group == 'hitters':
+                    raise CommandError(f'--tab "{specific_tab}" is pitcher data; use --group all or pitchers.')
+                years = [year_from_tab]
+                tab_types = [tab_from_arg]
+                self.stdout.write(self.style.WARNING(f'Only loading college tab: {specific_tab}'))
+
         for year in years:
+            if skip_college:
+                break
             for tab_type in tab_types:
                 # Handle Changeups/Splitters tab name
-                if tab_type == "Changeups/Splitters":
+                if specific_tab and 'HS Hitters' not in specific_tab:
+                    tab_candidates = [specific_tab]
+                elif tab_type == "Changeups/Splitters":
                     tab_candidates = [f"{year} Changeups/Splitters"]
                 else:
                     tab_candidates = [f"{year} {tab_type}"]
@@ -315,8 +374,11 @@ class Command(BaseCommand):
                 if tab is None:
                     tab = tab_candidates[0]  # Fallback, though this shouldn't happen
 
-                # Different minimum pitches for hitters vs pitchers
-                min_pitches = 250 if tab_type == "Hitters" else 100
+                # Different minimum pitches for hitters vs pitchers (2026 hitters: lower bar early in season)
+                if tab_type == "Hitters":
+                    min_pitches = 150 if str(year) == "2026" else 250
+                else:
+                    min_pitches = 100
                 total_sheet_rows = len(sheet)
                 rows = [self.fix_blanks(row) for row in sheet if int(row.get('Pitches', 0)) >= min_pitches]
                 if debug:
@@ -746,23 +808,26 @@ class Command(BaseCommand):
 
         # Additional processing for High School Hitters tabs (skip if only loading pitchers)
         if group != 'pitchers':
-            # Supported patterns:
-            #   "{DRAFT_YEAR} HS Hitters - {STATS_YEAR}"
-            #   "{DRAFT_YEAR} HS Hitters {STATS_YEAR}"
-            # The stat season should be STATS_YEAR.
-            # Discover all HS Hitters tabs across the requested ranges.
-            # Draft years: 2027-2023; Data years: 2025-2022; constraint: draft > data.
-            draft_years = [str(y) for y in range(2027, 2022, -1)]
-            data_years = [str(y) for y in range(2025, 2021, -1)]
-            hs_tabs = []
-            for draft_year in draft_years:
-                for stats_year in data_years:
-                    if int(draft_year) > int(stats_year):
-                        # Only support dash-separated naming pattern created by editor
-                        hs_tabs.append(f"{draft_year} HS Hitters - {stats_year}")
-            # De-duplicate while preserving order
-            seen = set()
-            hs_tabs = [t for t in hs_tabs if not (t in seen or seen.add(t))]
+            if hs_tabs_override is not None:
+                hs_tabs = hs_tabs_override
+            else:
+                # Supported patterns:
+                #   "{DRAFT_YEAR} HS Hitters - {STATS_YEAR}"
+                #   "{DRAFT_YEAR} HS Hitters {STATS_YEAR}"
+                # The stat season should be STATS_YEAR.
+                # Discover all HS Hitters tabs across the requested ranges.
+                # Draft years: 2027-2023; Data years: 2025-2022; constraint: draft > data.
+                draft_years = [str(y) for y in range(2027, 2022, -1)]
+                data_years = [str(y) for y in range(2025, 2021, -1)]
+                hs_tabs = []
+                for draft_year in draft_years:
+                    for stats_year in data_years:
+                        if int(draft_year) > int(stats_year):
+                            # Only support dash-separated naming pattern created by editor
+                            hs_tabs.append(f"{draft_year} HS Hitters - {stats_year}")
+                # De-duplicate while preserving order
+                seen = set()
+                hs_tabs = [t for t in hs_tabs if not (t in seen or seen.add(t))]
 
             for hs_tab in hs_tabs:
                 sheet = None

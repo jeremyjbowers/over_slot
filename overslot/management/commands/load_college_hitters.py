@@ -50,7 +50,8 @@ class Command(BaseCommand):
                 print(f"No sheet found for {tab}")
                 continue
 
-            min_pitches = 250
+            # 2026: lower threshold while the season is still building sample sizes
+            min_pitches = 150 if year == "2026" else 250
             total_sheet_rows = len(sheet)
             rows = [utils.fix_blanks(row) for row in sheet if int(row.get('Pitches', 0)) >= min_pitches]
             if debug:
