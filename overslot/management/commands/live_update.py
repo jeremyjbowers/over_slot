@@ -11,7 +11,7 @@ class Command(BaseCommand):
 
         call_command('generate_player_duplicates')
         call_command('sheet_load_rankings')
-        # call_command('sheet_load_mocks')
+        call_command('sheet_load_mocks')
         call_command('load_college_hitters')
         call_command('load_college_pitchers')
         call_command('load_hs_hitters')
