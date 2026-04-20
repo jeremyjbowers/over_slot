@@ -237,7 +237,7 @@ class ViewsTestCase(TestCase):
         self.ranking.save()
         response = self.client.get(reverse('rankings_detail', kwargs={'slug': self.ranking.slug}))
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Preview: Top 5 Players")
+        self.assertNotContains(response, "Preview: Top")
 
     def test_mock_drafts_detail_view_free_skips_preview(self):
         """Free mock drafts show full content without subscription."""
@@ -259,7 +259,7 @@ class ViewsTestCase(TestCase):
         )
         response = self.client.get(reverse('mock_drafts_detail', kwargs={'slug': mock.slug}))
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, "Preview: Top 5 Players")
+        self.assertNotContains(response, "Preview: Top")
     
     def test_rankings_detail_view_404(self):
         """Ranking detail should return 404 for non-existent rankings"""

@@ -536,6 +536,7 @@ class RankingAdmin(SummernoteModelAdmin):
                     "current",
                     "publish",
                     "is_free",
+                    "free_number_to_show",
                     "is_carousel",
                 )
             },

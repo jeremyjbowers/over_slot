@@ -1003,10 +1003,10 @@
         <!-- Preview Mode: Show partial ranking with subscription prompt -->
         <div class="player-rankings-container">
             <div class="player-rankings-header">
-                <h2 style="color: var(--dark-text); font-size: var(--text-xl); margin: 0;">Preview: Top 5 Players</h2>
+                <h2 style="color: var(--dark-text); font-size: var(--text-xl); margin: 0;">Preview: Top {{ ranking.free_number_to_show }} players</h2>
             </div>
             
-            {% for pr in ranking.get_playerrankings|slice:":5" %}
+            {% for pr in ranking.get_preview_playerrankings %}
                 {% include 'includes/player_ranking_card.html' with player_ranking=pr %}
             {% endfor %}
         </div>

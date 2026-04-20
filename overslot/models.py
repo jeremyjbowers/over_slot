@@ -302,6 +302,10 @@ class Ranking(BaseModel):
         help_text="When checked, the full board is visible without a subscription. "
         "Unchecked (default) keeps content subscriber-only; mock drafts default to paid.",
     )
+    free_number_to_show = models.PositiveIntegerField(
+        default=5,
+        help_text="How many players non-subscribers see in the subscription preview (full board requires subscription or is_free).",
+    )
     is_carousel = models.BooleanField(default=False, help_text="Display in homepage carousel")
     body = models.TextField(null=True, blank=True)
 
@@ -313,6 +317,12 @@ class Ranking(BaseModel):
 
     def get_initial_players(self):
         return PlayerRanking.objects.filter(ranking=self, active=True, rank__lte=10).order_by("rank")
+
+    def get_preview_playerrankings(self):
+        """Player rows shown in subscription preview (non-subscribers)."""
+        n = self.free_number_to_show if self.free_number_to_show is not None else 5
+        n = max(0, min(int(n), 500))
+        return self.get_playerrankings()[:n]
 
     def save(self, *args, **kwargs):
         if self.regenerate_slug or not self.slug:
