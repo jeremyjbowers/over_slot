@@ -230,6 +230,36 @@ class ViewsTestCase(TestCase):
         response = self.client.get(reverse('rankings_detail', kwargs={'slug': self.ranking.slug}))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.ranking.headline)
+
+    def test_rankings_detail_view_free_skips_preview(self):
+        """Free rankings show full content to anonymous users (no subscription preview)."""
+        self.ranking.is_free = True
+        self.ranking.save()
+        response = self.client.get(reverse('rankings_detail', kwargs={'slug': self.ranking.slug}))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Preview: Top 5 Players")
+
+    def test_mock_drafts_detail_view_free_skips_preview(self):
+        """Free mock drafts show full content without subscription."""
+        mock = Ranking.objects.create(
+            year="2026",
+            is_mock_draft=True,
+            mock_draft_version="1.0",
+            is_draft=True,
+            publish=True,
+            is_free=True,
+            slug="test-mock-2026-1",
+        )
+        PlayerRanking.objects.create(
+            player=self.player,
+            ranking=mock,
+            rank=1,
+            position="SS",
+            school="Test University",
+        )
+        response = self.client.get(reverse('mock_drafts_detail', kwargs={'slug': mock.slug}))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Preview: Top 5 Players")
     
     def test_rankings_detail_view_404(self):
         """Ranking detail should return 404 for non-existent rankings"""

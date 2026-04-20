@@ -477,11 +477,13 @@ class RankingAdmin(SummernoteModelAdmin):
         "is_final",
         "current",
         "publish",
+        "is_free",
         "is_carousel",
     ]
-    list_editable = ["current", "publish", "is_carousel"]
+    list_editable = ["current", "publish", "is_free", "is_carousel"]
     list_filter = [
         "publish",
+        "is_free",
         "is_carousel",
         "current",
         "year",
@@ -533,6 +535,7 @@ class RankingAdmin(SummernoteModelAdmin):
                 "fields": (
                     "current",
                     "publish",
+                    "is_free",
                     "is_carousel",
                 )
             },

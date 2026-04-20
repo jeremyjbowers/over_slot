@@ -44,7 +44,20 @@ def subscription_required(view_func):
                     return view_func(request, *args, **kwargs)
             except Article.DoesNotExist:
                 pass
-        
+
+        # Free rankings and mock drafts (same template; scope by is_mock_draft)
+        if view_name in ('rankings_detail', 'mock_drafts_detail'):
+            slug = kwargs.get('slug')
+            is_mock = view_name == 'mock_drafts_detail'
+            try:
+                ranking = Ranking.objects.get(
+                    slug=slug, publish=True, is_mock_draft=is_mock,
+                )
+                if ranking.is_free:
+                    return view_func(request, *args, **kwargs)
+            except Ranking.DoesNotExist:
+                pass
+
         # If user has subscription, show full content
         if user_has_subscription:
             return view_func(request, *args, **kwargs)
@@ -56,7 +69,8 @@ def subscription_required(view_func):
         template_mapping = {
             'articles_detail': 'articles_detail.html',
             'stock_watch_detail': 'stock_watch_detail.html',
-            'rankings_detail': 'rankings_detail.html', 
+            'rankings_detail': 'rankings_detail.html',
+            'mock_drafts_detail': 'rankings_detail.html',
             'players_detail': 'players_detail.html',
             # Hitters data tables (year-specific views only)
             'college_hitters_year': 'hitters_list.html',
@@ -105,7 +119,14 @@ def subscription_required(view_func):
             if view_name == 'articles_detail':
                 context['article'] = get_object_or_404(Article, slug=kwargs.get('slug'), publish=True, active=True)
             elif view_name == 'rankings_detail':
-                context['ranking'] = get_object_or_404(Ranking, slug=kwargs.get('slug'), publish=True)
+                context['ranking'] = get_object_or_404(
+                    Ranking, slug=kwargs.get('slug'), publish=True, is_mock_draft=False,
+                )
+                context['recent_articles'] = Article.objects.filter(publish=True, active=True).order_by('-created')[:5]
+            elif view_name == 'mock_drafts_detail':
+                context['ranking'] = get_object_or_404(
+                    Ranking, slug=kwargs.get('slug'), publish=True, is_mock_draft=True,
+                )
                 context['recent_articles'] = Article.objects.filter(publish=True, active=True).order_by('-created')[:5]
             elif view_name == 'players_detail':
                 player = get_object_or_404(Player, slug=kwargs.get('slug'))

@@ -297,6 +297,11 @@ class Ranking(BaseModel):
     blurb = models.CharField(max_length=255, blank=True, null=True)
     featured_image = models.ImageField(upload_to='rankings/featured/', blank=True, null=True, help_text="Featured image for the ranking")
     publish = models.BooleanField(default=False)
+    is_free = models.BooleanField(
+        default=False,
+        help_text="When checked, the full board is visible without a subscription. "
+        "Unchecked (default) keeps content subscriber-only; mock drafts default to paid.",
+    )
     is_carousel = models.BooleanField(default=False, help_text="Display in homepage carousel")
     body = models.TextField(null=True, blank=True)
 
