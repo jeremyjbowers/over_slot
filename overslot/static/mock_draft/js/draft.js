@@ -10,7 +10,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-06.15';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-29.3';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -22,7 +22,8 @@
   const MIN_HS = 400000;
   /** Random senior sign amount; also MLB-realistic floor for any signing in rounds 1–10 when pool allows. */
   const RANDOM_SENIOR_SIGN = 150000;
-  const MIN_SLOT_PCT_TOP3 = 0.75; // First 3 rounds: teams cannot spend less than 75% of slot (MLB Combine rule)
+  /** Early-board picks only (Round 1, Comp Balance A “late first”, Round 2): min bonus vs combine-style slot; not rounds 3+ so tight pools after overslots aren’t stuck. */
+  const MIN_SLOT_PCT_EARLY_BOARD = 0.75;
   /** After Round 2 ends: chance that 1–3 top remaining HS players “go to college” and leave the pool. */
   const HS_GTC_AFTER_R2_CHANCE = 0.08;
   /** First pick only: P(lock onto Grady Emerson | he remains in the AI candidate pool). Editor override. */
@@ -434,9 +435,10 @@
       const poolStr = fmt(t.pool != null ? t.pool : 0);
       btn.innerHTML = `${teamLogoHtml(t.id, 'w-8 h-8')}<span class="flex flex-col gap-0.5 min-w-0"><span class="break-words">${escapeHtml(t.name)}</span><span class="text-xs text-neutral-100 font-normal tabular-nums">${pickCount} pick${pickCount !== 1 ? 's' : ''} · ${poolStr} pool</span></span>`;
       btn.dataset.team = t.name;
+      btn.setAttribute('aria-pressed', 'false');
       btn.addEventListener('click', () => {
-        container.querySelectorAll('.team-square.selected').forEach(el => el.classList.remove('selected'));
-        btn.classList.add('selected');
+        btn.classList.toggle('selected');
+        btn.setAttribute('aria-pressed', btn.classList.contains('selected') ? 'true' : 'false');
       });
       container.appendChild(btn);
     });
@@ -1632,10 +1634,13 @@
 
     const tab = state.endgameTab || 'my';
     const allNames = getAllTeamNamesSorted();
-    if (!state.endgameTeamChoice && allNames.length) {
-      state.endgameTeamChoice = allNames[0];
+    const humanTeamsSorted = [...state.originalHumanTeams].sort((a, b) => a.localeCompare(b));
+    const defaultTeamChoice =
+      humanTeamsSorted.length ? humanTeamsSorted[0] : (allNames.length ? allNames[0] : null);
+    if (!state.endgameTeamChoice && defaultTeamChoice) {
+      state.endgameTeamChoice = defaultTeamChoice;
     } else if (state.endgameTeamChoice && !allNames.includes(state.endgameTeamChoice)) {
-      state.endgameTeamChoice = allNames[0] || null;
+      state.endgameTeamChoice = defaultTeamChoice;
     }
 
     const nPicks = state.picks.length;
@@ -1682,7 +1687,10 @@
 
     const tabsRow = document.createElement('div');
     tabsRow.className = 'flex flex-wrap justify-center gap-2';
-    tabsRow.appendChild(makeEndgameTabButton('my', 'My Team'));
+    tabsRow.appendChild(makeEndgameTabButton(
+      'my',
+      state.originalHumanTeams.size > 1 ? 'My teams' : 'My Team'
+    ));
     tabsRow.appendChild(makeEndgameTabButton('browse', 'Browse picks'));
     toolbar.appendChild(tabsRow);
     toolbar.appendChild(teamSel);
@@ -1735,7 +1743,7 @@
       if (myTeams.length === 0) {
         const p = document.createElement('p');
         p.className = 'text-neutral-500 text-base text-center leading-snug';
-        p.innerHTML = 'Select a human team before <strong class="text-neutral-400">Start Draft</strong> next time to unlock &ldquo;My Team&rdquo; here.';
+        p.innerHTML = 'Select one or more teams before <strong class="text-neutral-400">Start Draft</strong> next time to see your class summary here.';
         content.appendChild(p);
       } else {
         myTeams.forEach(name => content.appendChild(buildBragSheetWrap(name)));
@@ -1889,15 +1897,22 @@
     return Math.max(0, remaining - reserve);
   }
 
-  function isTopThreeRounds(pick) {
-    const r = (pick?.round || '').trim();
-    return r === 'Round 1' || r === 'Round 2' || r === 'Round 3';
+  /**
+   * Combine-style %-of-slot signing floor applies to early-board slots (not “round numbers” alone):
+   * Round 1, Competitive Balance Round A (late-first money), Round 2. Round 3+ and CB-B onward: no %-of-slot bump.
+   */
+  function isCombineSlotFloorRound(pick) {
+    return (
+      isRound1(pick) ||
+      isCompetitiveBalanceA(pick) ||
+      isRound2(pick)
+    );
   }
 
-  /** Rounds 1–3: minimum bonus allowed for this slot (Combine 75% rule). */
+  /** Minimum bonus where the early-board combine floor applies. */
   function getSlotFloorMinSpend(pick, slotValue) {
-    if (!pick || slotValue == null || !isTopThreeRounds(pick)) return 0;
-    return Math.floor(slotValue * MIN_SLOT_PCT_TOP3);
+    if (!pick || slotValue == null || !isCombineSlotFloorRound(pick)) return 0;
+    return Math.floor(slotValue * MIN_SLOT_PCT_EARLY_BOARD);
   }
 
   function isCompAOrRound2Or3(pick) {
@@ -3405,7 +3420,7 @@
       ? `<span title="After this signing, you must keep at least $150k × ${reserveSlots} pick(s) still to come (~$150k per future pick). That amount is subtracted from &quot;Max&quot; for this pick."><span class="text-neutral-400">Reserve</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(futureReserve)}</span> <span class="text-neutral-500">(${reserveSlots}×$150k)</span></span>`
       : '';
     const floorSeg = minFloor > 0
-      ? `<span title="Rounds 1–3: signing must be at least 75% of slot."><span class="text-neutral-400">Floor</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(minFloor)}</span></span>`
+      ? `<span title="Early board (R1, Comp Balance A, R2): signing must be at least ~75% of slot (simulate combine floor). Round 3+: no %-of-slot floor."><span class="text-neutral-400">Floor</span> <span class="text-neutral-100 font-medium tabular-nums">${fmt(minFloor)}</span></span>`
       : '';
     const headerArea = $currentPick.querySelector('#pick-header-area');
     if (headerArea) {
