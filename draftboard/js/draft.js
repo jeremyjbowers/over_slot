@@ -10,7 +10,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-29.3';
+  const MOCK_DRAFT_JS_VERSION = '2026-04-29.4';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -183,7 +183,9 @@
     /** After draft: which endgame tab is active. */
     endgameTab: 'my', // 'my' | 'team' | 'browse'
     endgameTeamChoice: null, // string | null — team chosen in endgame dropdown for brag sheet
-    endgameBrowseIndex: 0 // pick index in state.picks
+    endgameBrowseIndex: 0, // pick index in state.picks
+    /** When controlling multiple teams, which team's budget grid is shown in the sidebar deck. */
+    humanBudgetTabTeam: null
   };
 
   function resetPhraseEntropy() {
@@ -842,6 +844,7 @@
     const container = $('human-teams');
     state.humanTeams = new Set([...container.querySelectorAll('.team-square.selected')].map(el => el.dataset.team));
     state.originalHumanTeams = new Set([...state.humanTeams]);
+    state.humanBudgetTabTeam = null;
     state.currentPickIndex = 0;
     state.drafted = new Set();
     state.hsGoToCollege = new Set();
@@ -912,6 +915,7 @@
     state.pickDelay = 0;
 
     state.humanTeams = new Set();
+    state.humanBudgetTabTeam = null;
 
     const $budget = $('human-budget-summary');
     if ($budget) {
@@ -951,6 +955,7 @@
     state.pickIndexToRow = {};
     state.pickRationales = {};
     state.originalHumanTeams = new Set();
+    state.humanBudgetTabTeam = null;
     state.endgameTab = 'my';
     state.endgameTeamChoice = null;
     state.endgameBrowseIndex = 0;
@@ -1130,6 +1135,7 @@
     state.drafted = new Set();
     state.originalHumanTeams = new Set(humanIndices.map(i => state.teams[i].name));
     state.humanTeams = new Set();
+    state.humanBudgetTabTeam = null;
     state.pickRationales = {};
     state.currentPickIndex = nPicks;
 
@@ -3048,6 +3054,10 @@
     if (isHuman) {
       state._pendingAdvance = null;
       state._pickTimeoutId = null;
+      if (state.humanTeams.size > 1) {
+        state.humanBudgetTabTeam = pick.team;
+      }
+      renderHumanBudgetSummary();
       $status.textContent = newsPrefix + `Waiting for ${pick.team} to pick...`;
       $status.classList.add('picking');
       $currentPick.classList.remove('hidden');
@@ -3235,14 +3245,27 @@
     body.className = 'human-budget-deck-body flex flex-col gap-3 overflow-y-auto min-h-0 flex-1 p-3';
 
     const currentPick = state.picks[state.currentPickIndex];
-    state.humanTeams.forEach(team => {
+    const sortedTeams = [...state.humanTeams].sort((a, b) => a.localeCompare(b));
+    const activeTeam =
+      sortedTeams.length === 0
+        ? null
+        : sortedTeams.length === 1
+          ? sortedTeams[0]
+          : (state.humanBudgetTabTeam && state.humanTeams.has(state.humanBudgetTabTeam))
+            ? state.humanBudgetTabTeam
+            : sortedTeams[0];
+
+    const tabbed = sortedTeams.length > 1;
+    el.classList.toggle('human-budget-deck--multi', tabbed);
+
+    function buildTeamBudgetSection(team) {
       const teamData = state.teams.find(t => t.name === team);
       const teamPicks = state.picks.filter(p => p.team === team);
       const selections = state.teamPicks[team] || [];
       const remaining = getTeamRemaining(team);
       const picksRemaining = teamPicks.length - selections.length;
       const section = document.createElement('div');
-      section.className = 'flex flex-col gap-2';
+      section.className = 'flex flex-col gap-2 min-h-0';
       const header = document.createElement('div');
       header.className = 'font-semibold text-overslot-red text-sm flex items-center gap-2';
       header.innerHTML = teamLogoHtml(teamData?.id, 'w-6 h-6') + escapeHtml(team);
@@ -3275,8 +3298,43 @@
       footer.className = 'text-neutral-100 text-xs';
       footer.textContent = `${fmt(remaining)} left · ${picksRemaining} pick${picksRemaining !== 1 ? 's' : ''} left`;
       section.appendChild(footer);
-      body.appendChild(section);
-    });
+      return section;
+    }
+
+    if (tabbed && activeTeam) {
+      const tabRow = document.createElement('div');
+      tabRow.className =
+        'human-budget-deck-tabs flex flex-wrap gap-1.5 flex-shrink-0 pb-2 -mx-3 px-3 -mt-1 mb-1 border-b border-overslot-grey-border/70';
+      tabRow.setAttribute('role', 'tablist');
+      tabRow.setAttribute('aria-label', 'Controlled teams');
+      sortedTeams.forEach(team => {
+        const teamDataTab = state.teams.find(t => t.name === team);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.dataset.humanBudgetTabTeam = team;
+        btn.setAttribute('role', 'tab');
+        btn.setAttribute('aria-selected', team === activeTeam ? 'true' : 'false');
+        btn.className =
+          'inline-flex items-center gap-1.5 min-h-[2.25rem] px-2.5 py-1 rounded-sm text-xs font-semibold border transition-colors ' +
+          (team === activeTeam
+            ? 'border-overslot-red bg-overslot-black text-white shadow-sm shadow-red-950/25'
+            : 'border-overslot-grey-border bg-black/40 text-neutral-300 hover:border-neutral-500 hover:text-neutral-100');
+        btn.title = team;
+        btn.innerHTML =
+          `${teamLogoHtml(teamDataTab?.id, 'w-5 h-5')}<span class="max-w-[8.5rem] truncate">${escapeHtml(shortName(team))}</span>`;
+        btn.addEventListener('click', () => {
+          if (state.humanBudgetTabTeam === team) return;
+          state.humanBudgetTabTeam = team;
+          renderHumanBudgetSummary();
+        });
+        tabRow.appendChild(btn);
+      });
+      body.appendChild(tabRow);
+    }
+
+    if (activeTeam) {
+      body.appendChild(buildTeamBudgetSection(activeTeam));
+    }
     el.appendChild(body);
 
     el.style.removeProperty('max-height');

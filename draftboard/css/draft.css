@@ -861,4 +861,9 @@ html.endgame-pending #btn-restart {
   .mobile-team-deck-handle {
     display: none !important;
   }
+  /** Multi-team sidebar: deck scrolls internally so stacked grids don’t push the player list off-screen. */
+  .human-budget-deck--multi.human-budget-deck:not(.hidden) .human-budget-deck-body {
+    max-height: min(36vh, 19rem) !important;
+    overflow-y: auto !important;
+  }
 }
