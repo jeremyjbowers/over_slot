@@ -49,15 +49,32 @@ function parseCSV(content) {
   });
 }
 
+/**
+ * Parse currency from CSV cells. Ignores non-money decimals and small bare integers
+ * (e.g. stray "21.2" or "20" in a money field) so they don’t become bogus bonuses.
+ */
 function parseDollar(str) {
   if (!str || typeof str !== 'string') return 0;
-  const cleaned = str.replace(/[$,]/g, '');
-  return parseInt(cleaned, 10) || 0;
+  const trimmed = str.trim();
+  if (!trimmed) return 0;
+  const hasDollar = trimmed.includes('$');
+  const cleaned = trimmed.replace(/[$,\s]/g, '');
+  if (!cleaned) return 0;
+  // Small-number decimals are not bonus amounts in this sheet.
+  if (/^\d{1,2}\.\d+$/.test(cleaned)) return 0;
+  const asFloat = parseFloat(cleaned);
+  if (!Number.isFinite(asFloat) || asFloat <= 0) return 0;
+  const n = Math.round(asFloat);
+  if (!hasDollar && n < 10000) return 0;
+  return n;
 }
 
 const dataDir = path.join(__dirname, 'data');
 const outDir = path.join(__dirname, 'js');
 const djangoStaticJsDir = path.join(__dirname, '..', 'overslot', 'static', 'mock_draft', 'js');
+// List ranks at/after this with no Player Cost / Note → senior-sign default (sync with draft.js LATE_BOARD_SENIOR_SIGN_RANK_MIN).
+const LATE_BOARD_SENIOR_SIGN_RANK_MIN = 300;
+const LATE_BOARD_SENIOR_SIGN_AMOUNT = 150000;
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 if (!fs.existsSync(djangoStaticJsDir)) fs.mkdirSync(djangoStaticJsDir, { recursive: true });
 
@@ -65,12 +82,18 @@ if (!fs.existsSync(djangoStaticJsDir)) fs.mkdirSync(djangoStaticJsDir, { recursi
 const playersCsv = fs.readFileSync(path.join(dataDir, 'mock_draft_sim_players_cost.csv'), 'utf8');
 const playersRaw = parseCSV(playersCsv);
 const players = playersRaw.map((row, idx) => {
+  let rank = parseInt(row.Rank, 10) || idx + 1;
   let cost = parseDollar(row['Player Cost']) || parseDollar(row['Player Cost Note']);
   if (!cost) {
-    cost = row.Class === 'H' ? 400000 : 150000;
+    cost =
+      rank >= LATE_BOARD_SENIOR_SIGN_RANK_MIN
+        ? LATE_BOARD_SENIOR_SIGN_AMOUNT
+        : row.Class === 'H'
+          ? 400000
+          : 150000;
   }
   return {
-    rank: parseInt(row.Rank, 10) || idx + 1,
+    rank,
     name: row.Player || '',
     position: row.Position || '',
     school: row.School || '',

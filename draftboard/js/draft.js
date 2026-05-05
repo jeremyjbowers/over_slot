@@ -10,7 +10,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-04-29.4';
+  const MOCK_DRAFT_JS_VERSION = '2026-05-05.3';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -22,10 +22,32 @@
   const MIN_HS = 400000;
   /** Random senior sign amount; also MLB-realistic floor for any signing in rounds 1–10 when pool allows. */
   const RANDOM_SENIOR_SIGN = 150000;
+  /**
+   * List ranks at/after this with no dollars in source use senior-sign money only (sync with build-data.js).
+   */
+  const LATE_BOARD_SENIOR_SIGN_RANK_MIN = 300;
+
+  function playerUsesSeniorSignFallback(player, pickSlotValue) {
+    if (!player || player.rank == null) return false;
+    if (player.rank < LATE_BOARD_SENIOR_SIGN_RANK_MIN) return false;
+    const noSlot = pickSlotValue == null || pickSlotValue <= 0;
+    const noCost = player.cost == null || player.cost <= 0;
+    return noSlot && noCost;
+  }
+
   /** Early-board picks only (Round 1, Comp Balance A “late first”, Round 2): min bonus vs combine-style slot; not rounds 3+ so tight pools after overslots aren’t stuck. */
   const MIN_SLOT_PCT_EARLY_BOARD = 0.75;
   /** After Round 2 ends: chance that 1–3 top remaining HS players “go to college” and leave the pool. */
   const HS_GTC_AFTER_R2_CHANCE = 0.08;
+  /**
+   * Post–sheet rounds (“round 3–x”): CB-B, R3, R4, … — anything after R1, Comp Balance A, and R2.
+   * If an HS ask is this many times the pick slot or higher, they will not accept a slot deal.
+   * Pair with slide threshold so only “fell too far” profiles hold out (otherwise slot modeling stays in play).
+   */
+  const HS_HOLDOUT_MIN_BONUS_VS_SLOT = 3;
+  /** Pick # minus list rank; positive means snapped after that landing zone (slid). */
+  const HS_HOLDOUT_MIN_SLIDE_SPOTS = 45;
+
   /** First pick only: P(lock onto Grady Emerson | he remains in the AI candidate pool). Editor override. */
   const GRADY_EMERSON_FIRST_PICK_BY_TEAM = {
     'Tampa Bay Rays': 0.7,
@@ -1946,9 +1968,29 @@
     return r === 'Round 3';
   }
 
-  /** R1, CB-A, R2, R3: college slot-modeled signing; HS with demand above slot uses the same model here so tight pools aren’t locked out. */
-  function isEarlyBoardSlotModeledRound(pick) {
-    return isRound1(pick) || isRound2(pick) || isCompetitiveBalanceA(pick) || isRound3(pick);
+  /** R1, CB-A, R2: HS bonuses use list/sheet demand. Round 3–x (rest of draft): HS demand above slot is modeled vs that pick’s slot so tight pools stay playable. */
+  function isHighSchoolSheetValueRound(pick) {
+    return isRound1(pick) || isRound2(pick) || isCompetitiveBalanceA(pick);
+  }
+
+  /** Pick # minus list rank; positive ⇒ still on board that many spots “below” list landing (slid). */
+  function getHighSchoolSlideSpotsBelowBoard(pick, player) {
+    if (!pick || !player || pick.pick == null || player.rank == null) return 0;
+    return pick.pick - player.rank;
+  }
+
+  /**
+   * Round 3–x: HS with extreme bonus vs this pick’s slot who have slid far enough are campus-or-bust —
+   * they won’t take a slot deal here (not signable).
+   */
+  function isHighSchoolCampusOrBustHoldout(player, pick, slotValue) {
+    if (!player || !pick || slotValue == null || slotValue <= 0) return false;
+    if (player.class !== 'H') return false;
+    if (isHighSchoolSheetValueRound(pick)) return false;
+    if (!(player.cost > slotValue)) return false;
+    if (player.cost < slotValue * HS_HOLDOUT_MIN_BONUS_VS_SLOT) return false;
+    if (getHighSchoolSlideSpotsBelowBoard(pick, player) < HS_HOLDOUT_MIN_SLIDE_SPOTS) return false;
+    return true;
   }
 
   /** Teams that deliberately shave R1–2/CB-A to redeploy pool (explicit big-discount strategy in rules). */
@@ -2002,9 +2044,11 @@
    * so availability matches pool resolution.
    */
   function upperBoundSigningCostForFilter(player, pick, slotValue, teamName) {
-    if (!player || !pick || !slotValue) return player?.cost ?? 0;
+    if (!player || !pick) return player?.cost ?? 0;
+    if (playerUsesSeniorSignFallback(player, slotValue)) return RANDOM_SENIOR_SIGN;
+    if (!slotValue) return player?.cost ?? 0;
     if (player.class === 'H') {
-      if (!(player.cost > slotValue && isEarlyBoardSlotModeledRound(pick))) return player.cost;
+      if (!(player.cost > slotValue && !isHighSchoolSheetValueRound(pick))) return player.cost;
     } else if (player.class !== 'C') {
       return player.cost;
     } else if (player.cost > 0 && player.cost <= slotValue) {
@@ -2017,7 +2061,7 @@
       baseMax = Math.ceil(slotValue * 1.03);
     } else if (isRound2(pick) || isCompetitiveBalanceA(pick)) {
       baseMax = poolSaver ? slotValue : Math.ceil(slotValue * 1.03);
-    } else if (isRound3(pick)) {
+    } else if (isRound3(pick) || (player.class === 'H' && !isHighSchoolSheetValueRound(pick))) {
       baseMax = slotValue;
     } else {
       return applyCollegeRankVsPickToCost(player.cost, player, pick);
@@ -2026,9 +2070,11 @@
   }
 
   function getEffectiveSigningCost(player, pick, slotValue, teamName) {
-    if (!player || !slotValue) return player?.cost ?? 0;
+    if (!player) return 0;
+    if (playerUsesSeniorSignFallback(player, slotValue)) return RANDOM_SENIOR_SIGN;
+    if (!slotValue) return player?.cost ?? 0;
     if (player.class === 'H') {
-      if (!(player.cost > slotValue && isEarlyBoardSlotModeledRound(pick))) return player.cost;
+      if (!(player.cost > slotValue && !isHighSchoolSheetValueRound(pick))) return player.cost;
     } else if (player.class === 'C') {
       if (player.cost > 0 && player.cost <= slotValue) {
         return applyCollegeRankVsPickToCost(player.cost, player, pick);
@@ -2076,7 +2122,7 @@
           base = Math.floor(slotValue * (1 - discountPct));
         }
       }
-    } else if (isRound3(pick)) {
+    } else if (isRound3(pick) || (player.class === 'H' && !isHighSchoolSheetValueRound(pick))) {
       if (Math.random() < 0.6) base = slotValue;
       else {
         const discountPct = 0.01 + Math.random() * 0.02;
@@ -2091,11 +2137,13 @@
    * Does not apply the 75% slot floor bump — use max(..., getSlotFloorMinSpend) for resolved pay.
    */
   function getEffectiveMinSigningDemand(p, pick, slotValue) {
-    if (!p || !pick || slotValue == null) return p?.cost ?? 0;
+    if (!p || !pick) return p?.cost ?? 0;
+    if (playerUsesSeniorSignFallback(p, slotValue)) return RANDOM_SENIOR_SIGN;
+    if (slotValue == null || slotValue <= 0) return p?.cost ?? 0;
     const collegeSlotBand = p.class === 'C' && isCompAOrRound2Or3(pick);
-    const hsOverslotEarlyBoard =
-      p.class === 'H' && p.cost > slotValue && isEarlyBoardSlotModeledRound(pick);
-    if (collegeSlotBand || hsOverslotEarlyBoard) {
+    const hsOverslotSlotModeled =
+      p.class === 'H' && p.cost > slotValue && !isHighSchoolSheetValueRound(pick);
+    if (collegeSlotBand || hsOverslotSlotModeled) {
       return p.cost > 0 && p.cost <= slotValue
         ? applyCollegeRankVsPickToCost(p.cost, p, pick)
         : Math.floor(slotValue * 0.97);
@@ -2120,6 +2168,12 @@
     const minSpend = getSlotFloorMinSpend(pick, slotValue);
     if (!isPlayerSelectableInPool(p)) {
       return { signable: false, reason: 'Already drafted or off the board.' };
+    }
+    if (pick && isHighSchoolCampusOrBustHoldout(p, pick, slotValue)) {
+      return {
+        signable: false,
+        reason: 'Prep ask far above slot after a long slide — likely to school, not a slot deal here.'
+      };
     }
     const signingMax = pick ? upperBoundSigningCostForFilter(p, pick, slotValue, team) : (p?.cost ?? 0);
     const effectiveMin = getEffectiveMinSigningDemand(p, pick, slotValue);
@@ -2975,8 +3029,10 @@
     const maxSpend = getMaxSpendThisPick(slotValue, team, pickIndex);
     const pick = state.picks[pickIndex];
     const byCost = getUndraftedByCostAsc();
-    const affordable = byCost.filter(p =>
-      upperBoundSigningCostForFilter(p, pick, slotValue, team) <= maxSpend
+    const affordable = byCost.filter(
+      p =>
+        !isHighSchoolCampusOrBustHoldout(p, pick, slotValue) &&
+        upperBoundSigningCostForFilter(p, pick, slotValue, team) <= maxSpend
     );
     return affordable[0] || null;
   }
@@ -2988,8 +3044,10 @@
     if (candidates.length === 0) candidates = getAvailablePlayers(slotValue, pick.team, pickIndex);
     if (candidates.length === 0) {
       const maxSpend = getMaxSpendThisPick(slotValue, pick.team, pickIndex);
-      candidates = getUndraftedByCostAsc().filter(p =>
-        upperBoundSigningCostForFilter(p, pick, slotValue, pick.team) <= maxSpend
+      candidates = getUndraftedByCostAsc().filter(
+        p =>
+          !isHighSchoolCampusOrBustHoldout(p, pick, slotValue) &&
+          upperBoundSigningCostForFilter(p, pick, slotValue, pick.team) <= maxSpend
       );
     }
     let { candidates: filtered, reason } = applyTeamRules(candidates, pick.team, pickIndex, slotValue);
