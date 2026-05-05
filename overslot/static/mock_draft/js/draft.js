@@ -1946,6 +1946,11 @@
     return r === 'Round 3';
   }
 
+  /** R1, CB-A, R2, R3: college slot-modeled signing; HS with demand above slot uses the same model here so tight pools aren’t locked out. */
+  function isEarlyBoardSlotModeledRound(pick) {
+    return isRound1(pick) || isRound2(pick) || isCompetitiveBalanceA(pick) || isRound3(pick);
+  }
+
   /** Teams that deliberately shave R1–2/CB-A to redeploy pool (explicit big-discount strategy in rules). */
   function teamPrefersEarlyUnderslotStrategy(teamName) {
     if (!teamName) return false;
@@ -1998,8 +2003,11 @@
    */
   function upperBoundSigningCostForFilter(player, pick, slotValue, teamName) {
     if (!player || !pick || !slotValue) return player?.cost ?? 0;
-    if (player.class !== 'C') return player.cost;
-    if (player.cost > 0 && player.cost <= slotValue) {
+    if (player.class === 'H') {
+      if (!(player.cost > slotValue && isEarlyBoardSlotModeledRound(pick))) return player.cost;
+    } else if (player.class !== 'C') {
+      return player.cost;
+    } else if (player.cost > 0 && player.cost <= slotValue) {
       return applyCollegeRankVsPickToCost(player.cost, player, pick);
     }
     const team = teamName != null ? teamName : pick.team;
@@ -2019,9 +2027,14 @@
 
   function getEffectiveSigningCost(player, pick, slotValue, teamName) {
     if (!player || !slotValue) return player?.cost ?? 0;
-    if (player.class !== 'C') return player.cost;
-    if (player.cost > 0 && player.cost <= slotValue) {
-      return applyCollegeRankVsPickToCost(player.cost, player, pick);
+    if (player.class === 'H') {
+      if (!(player.cost > slotValue && isEarlyBoardSlotModeledRound(pick))) return player.cost;
+    } else if (player.class === 'C') {
+      if (player.cost > 0 && player.cost <= slotValue) {
+        return applyCollegeRankVsPickToCost(player.cost, player, pick);
+      }
+    } else {
+      return player.cost;
     }
     const team = teamName != null ? teamName : pick?.team;
     const poolSaver = teamPrefersEarlyUnderslotStrategy(team);
@@ -2080,7 +2093,9 @@
   function getEffectiveMinSigningDemand(p, pick, slotValue) {
     if (!p || !pick || slotValue == null) return p?.cost ?? 0;
     const collegeSlotBand = p.class === 'C' && isCompAOrRound2Or3(pick);
-    if (collegeSlotBand) {
+    const hsOverslotEarlyBoard =
+      p.class === 'H' && p.cost > slotValue && isEarlyBoardSlotModeledRound(pick);
+    if (collegeSlotBand || hsOverslotEarlyBoard) {
       return p.cost > 0 && p.cost <= slotValue
         ? applyCollegeRankVsPickToCost(p.cost, p, pick)
         : Math.floor(slotValue * 0.97);
@@ -2106,10 +2121,7 @@
     if (!isPlayerSelectableInPool(p)) {
       return { signable: false, reason: 'Already drafted or off the board.' };
     }
-    const signingMax =
-      pick && p.class === 'C'
-        ? upperBoundSigningCostForFilter(p, pick, slotValue, team)
-        : p.cost;
+    const signingMax = pick ? upperBoundSigningCostForFilter(p, pick, slotValue, team) : (p?.cost ?? 0);
     const effectiveMin = getEffectiveMinSigningDemand(p, pick, slotValue);
     if (signingMax > maxSpend) {
       return {
