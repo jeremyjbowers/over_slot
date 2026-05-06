@@ -1160,7 +1160,7 @@ window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__ = "{{ mock_draft_share_payload_b64 }}";
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-05-06.1';
+  const MOCK_DRAFT_JS_VERSION = '2026-05-06.2';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -4762,9 +4762,9 @@ window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__ = "{{ mock_draft_share_payload_b64 }}";
         if (labelEl) {
           labelEl.textContent = fullBoard.length ? labelText : 'No players available';
           labelEl.title =
-            fullBoard.length && state.topViewMode === 'highestRanked'
+            state.topViewMode === 'highestRanked'
               ? 'Dimmed rows are still undrafted but cannot be signed on this pick (pool / slot rules). Hover for detail.'
-              : '';
+              : 'Affordable players for this pick’s Max only — no undraftable fill-ins. Pool tight vs slot? Random senior sign is listed first when it fits.';
         }
         if (!fullBoard.length) {
           appendPlayerRows([], null, true);
@@ -4775,23 +4775,30 @@ window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__ = "{{ mock_draft_share_payload_b64 }}";
           const chalk = entries.find(e => e.signable)?.player || null;
           appendPlayerRows(entries, chalk, true);
         } else {
+          const tightPool = pick.value > 0 && maxThisPick < pick.value;
+          const seniorPlayer = makeRandomSeniorSignPlayer(pickIdx);
+          const seniorSig = signability(seniorPlayer);
+
           const highestRanked = rankSorted[0];
           const orderedAvailable = highestRanked
             ? [highestRanked, ...fitSorted.filter(p => p.rank !== highestRanked.rank)]
             : [];
-          const orderedRanks = new Set(orderedAvailable.map(p => p.rank));
-          const tail = fullBoard.filter(p => !orderedRanks.has(p.rank));
+
           const headEntries = toEntries(orderedAvailable);
-          const chalk = headEntries.find(e => e.signable)?.player || null;
-          appendPlayerRows(headEntries, chalk, true);
-          if (tail.length) {
-            const sep = document.createElement('div');
-            sep.className =
-              'text-xs text-neutral-500 px-2 py-2 mt-1 border-t border-overslot-grey-border sticky top-0 bg-overslot-black/95 backdrop-blur-sm';
-            sep.textContent = 'Rest of draft board (rank order)';
-            availableEl.appendChild(sep);
-            appendPlayerRows(toEntries(tail), chalk, false);
+          if (tightPool && seniorSig.signable) {
+            headEntries.unshift({
+              player: seniorPlayer,
+              signable: true,
+              reason:
+                'Pool-tight vs this slot — senior sign fits Max while holding $150k × each pick still to come.'
+            });
           }
+
+          const chalk = headEntries.find(e => e.signable)?.player || null;
+          if (labelEl && headEntries.length === 0 && fullBoard.length) {
+            labelEl.textContent = 'No one fits this pick’s Max — try Ranked or search';
+          }
+          appendPlayerRows(headEntries, chalk, true);
         }
       }
     }
