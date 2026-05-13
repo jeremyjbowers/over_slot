@@ -270,7 +270,7 @@ class Command(BaseCommand):
             return score / total_weight
 
         # Load current and prior college seasons named like "{YEAR} Hitters"
-        years = ['2025', '2024']
+        years = ['2026', '2025', '2024']
         all_tab_types = ["Hitters", "Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeups/Splitters"]
 
         group = options.get('group', 'all')
@@ -374,9 +374,9 @@ class Command(BaseCommand):
                 if tab is None:
                     tab = tab_candidates[0]  # Fallback, though this shouldn't happen
 
-                # Different minimum pitches for hitters vs pitchers (2026 hitters: lower bar early in season)
+                # Different minimum pitches for hitters vs pitchers (2026 college hitters: stable contact-rate sample)
                 if tab_type == "Hitters":
-                    min_pitches = 150 if str(year) == "2026" else 250
+                    min_pitches = 300 if str(year) == "2026" else 250
                 else:
                     min_pitches = 100
                 total_sheet_rows = len(sheet)

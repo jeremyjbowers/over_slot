@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.db.models.signals import pre_save, post_save, m2m_changed
+from django.db.models.signals import pre_save, post_save, m2m_changed, pre_delete
 from django.dispatch import receiver
 
 from overslot.cache_utils import (
@@ -9,6 +9,8 @@ from overslot.cache_utils import (
     bust_stock_watch,
     bust_rankings_list,
     bust_ranking,
+    bust_collection,
+    bust_collections_for_article,
 )
 
 # Stash old slugs in pre_save so post_save can bust both old and new when slug changes
@@ -55,13 +57,17 @@ def _stash_stock_watch_slug(sender, instance, **kwargs):
 
 
 @receiver(pre_save)
+def _stash_collection_slug(sender, instance, **kwargs):
+    from overslot.models import Collection
+    if sender is Collection:
+        _stash_old_slug(Collection, instance)
+
+
+@receiver(pre_save)
 def _stash_ranking_slug(sender, instance, **kwargs):
     from overslot.models import Ranking
     if sender is Ranking:
         _stash_old_slug(Ranking, instance)
-
-
-def _bust_article_caches(article):
     """Bust caches affected by article save."""
     from overslot.models import Article
     old_slug = _pop_old_slug(Article, article)
@@ -69,6 +75,7 @@ def _bust_article_caches(article):
     if old_slug and old_slug != article.slug:
         bust_article(old_slug)
     bust_articles_list()
+    bust_collections_for_article(article)
     # Articles appear on homepage: carousel, scouting, non-scouting
     bust_homepage()
 
@@ -89,6 +96,37 @@ def bust_cache_on_article_m2m_changed(sender, instance, action, **kwargs):
             bust_article(instance.slug)
             bust_articles_list()
             bust_homepage()
+
+
+@receiver(post_save)
+def bust_cache_on_collection_save(sender, instance, **kwargs):
+    from overslot.models import Collection
+    if sender is Collection:
+        old_slug = _pop_old_slug(Collection, instance)
+        if instance.slug:
+            bust_collection(instance.slug)
+        if old_slug and old_slug != instance.slug:
+            bust_collection(old_slug)
+        bust_homepage()
+
+
+@receiver(m2m_changed)
+def bust_cache_on_collection_articles_changed(sender, instance, action, **kwargs):
+    from overslot.models import Article, Collection
+    if sender is Collection.articles.through and action in ('post_add', 'post_remove', 'post_clear'):
+        if isinstance(instance, Collection):
+            if instance.slug:
+                bust_collection(instance.slug)
+        elif isinstance(instance, Article):
+            bust_collections_for_article(instance)
+        bust_homepage()
+
+
+@receiver(pre_delete)
+def bust_collection_caches_on_article_delete(sender, instance, **kwargs):
+    from overslot.models import Article
+    if sender is Article:
+        bust_collections_for_article(instance)
 
 
 @receiver(post_save)

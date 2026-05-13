@@ -24,6 +24,7 @@ KEY_STOCK_WATCH = 'overslot:stock_watch'
 KEY_RANKINGS = 'overslot:rankings'
 KEY_RANKING = 'overslot:ranking'
 KEY_MOCK_DRAFT = 'overslot:mock_draft'
+KEY_COLLECTION = 'overslot:collection'
 # Fixed string only — never vary by URL path, query, or draft_share payload.
 KEY_MY_MOCK_DRAFT_HTML = 'overslot:my_mock_draft:html:v10'
 
@@ -73,6 +74,7 @@ def bust_homepage():
         f'{KEY_HOMEPAGE}:videos_count',
         f'{KEY_HOMEPAGE}:featured_games',
         f'{KEY_HOMEPAGE}:podcasts',
+        f'{KEY_HOMEPAGE}:collections',
     ]
     _safe_delete_many(keys)
 
@@ -110,3 +112,19 @@ def bust_ranking(slug, is_mock_draft=False):
     if slug:
         key = f'{KEY_MOCK_DRAFT}:{slug}' if is_mock_draft else f'{KEY_RANKING}:{slug}'
         _safe_delete(key)
+
+
+def bust_collection(slug):
+    """Invalidate cached article list for a collection detail page."""
+    if slug:
+        _safe_delete(f'{KEY_COLLECTION}:{slug}')
+
+
+def bust_collections_for_article(article):
+    """Bust collection page caches that include this article."""
+    if not article or not article.pk:
+        return
+    from overslot.models import Collection
+
+    for coll_slug in Collection.objects.filter(articles=article).values_list('slug', flat=True):
+        bust_collection(coll_slug)

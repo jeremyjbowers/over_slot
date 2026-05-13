@@ -23,6 +23,7 @@ class ContentEditorAdminSite(AdminSite):
         # Define the order we want for content editing
         content_priority_order = [
             ('overslot', 'Articles'),
+            ('overslot', 'Collections'),
             ('overslot', 'Stock watch articles'),
             ('overslot', 'Rankings'), 
             ('overslot', 'Authors'),
@@ -131,6 +132,7 @@ admin.site = admin_site
 from overslot.models import (
     Article,
     Author,
+    Collection,
     PodcastEpisode,
     Player,
     Ranking,
@@ -294,6 +296,46 @@ class ArticleAdmin(SummernoteModelAdmin):
                     "slug",
                     "regenerate_slug",
                 ),
+            },
+        ),
+    )
+
+
+@admin.register(Collection, site=admin_site)
+class CollectionAdmin(admin.ModelAdmin):
+    model = Collection
+    list_display = ['title', 'slug', 'show_on_homepage', 'active', 'last_modified']
+    list_editable = ['show_on_homepage', 'active']
+    list_filter = ['show_on_homepage', 'active']
+    search_fields = ['title', 'deck', 'slug']
+    autocomplete_fields = ['articles']
+    prepopulated_fields = {'slug': ('title',)}
+
+    fieldsets = (
+        (
+            'Collection',
+            {
+                'classes': ['wide'],
+                'fields': ('title', 'deck', 'slug'),
+            },
+        ),
+        (
+            'Articles',
+            {
+                'description': 'Search and select articles to include (publishers can add unpublished drafts; only published articles appear on the public list).',
+                'fields': ('articles',),
+            },
+        ),
+        (
+            'Homepage',
+            {
+                'fields': ('show_on_homepage',),
+            },
+        ),
+        (
+            'Status',
+            {
+                'fields': ('active',),
             },
         ),
     )

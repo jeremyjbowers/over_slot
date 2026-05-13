@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block title %}{% if collection %}{{ collection.title }} | Over Slot{% else %}Articles | Over Slot{% endif %}{% endblock %}
+{% block meta_description %}{% if collection and collection.deck %}{{ collection.deck }}{% elif collection %}{{ collection.title }} — curated articles on Over Slot.{% else %}Over Slot articles: scouting reports, analysis, and prospect news.{% endif %}{% endblock %}
+{% block og_title %}{% if collection %}{{ collection.title }}{% else %}Articles | Over Slot{% endif %}{% endblock %}
+{% block og_description %}{% if collection and collection.deck %}{{ collection.deck }}{% elif collection %}{{ collection.title }}{% else %}Scouting reports, analysis, and prospect coverage from Over Slot.{% endif %}{% endblock %}
 {% block og_image %}{% if news_items and news_items.0.featured_image %}{{ news_items.0.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
 {% block twitter_image %}{% if news_items and news_items.0.featured_image %}{{ news_items.0.featured_image.url }}{% else %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endif %}{% endblock %}
 
@@ -120,6 +124,14 @@
 <!-- Main content area with sidebar layout -->
 <div class="main-layout">
     <div class="content-area">
+        {% if collection %}
+        <header class="mb-5">
+            <h1 class="title is-2 mb-3">{{ collection.title }}</h1>
+            {% if collection.deck %}
+            <p class="subtitle is-5" style="color: var(--dark-text-muted);">{{ collection.deck }}</p>
+            {% endif %}
+        </header>
+        {% endif %}
         <div class="article-list">
             {% for item in news_items %}
     <article class="article-card">

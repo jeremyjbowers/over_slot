@@ -110,6 +110,7 @@ def cache_dashboard(request):
         f'{KEY_HOMEPAGE}:videos_count',
         f'{KEY_HOMEPAGE}:featured_games',
         f'{KEY_HOMEPAGE}:podcasts',
+        f'{KEY_HOMEPAGE}:collections',
         f'{KEY_ARTICLES}:list_items',
         f'{KEY_ARTICLES}:recent_rankings',
         f'{KEY_RANKINGS}:list',

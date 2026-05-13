@@ -3,7 +3,7 @@ import csv
 import os
 import datetime
 import itertools
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Count, Avg, Sum, Max, Min, Q, Case, When, Value, IntegerField, F
@@ -35,6 +35,8 @@ from overslot.cache_utils import (
     RANKING_TIMEOUT,
     MOCK_DRAFT_SIM_PAGE_TIMEOUT,
     KEY_MY_MOCK_DRAFT_HTML,
+    KEY_COLLECTION,
+    KEY_HOMEPAGE,
 )
 
 # Client endgame binary (inlined in mock_draft_sim.html): magic OSD1 + version + picks.
@@ -195,7 +197,34 @@ def index(request):
         ).order_by('-featured', '-published_at')[:5])
     context['latest_podcasts'] = get_cached('overslot:homepage:podcasts', _latest_podcasts, HOMEPAGE_TIMEOUT)
 
+    def _homepage_collections():
+        return list(
+            models.Collection.objects.filter(active=True, show_on_homepage=True).order_by('-last_modified')[:20]
+        )
+
+    context['homepage_collections'] = get_cached(
+        f'{KEY_HOMEPAGE}:collections',
+        _homepage_collections,
+        HOMEPAGE_TIMEOUT,
+    )
+
     return render(request, "index.html", context)
+
+
+def _news_item_sort_ts(item):
+    """Unix timestamp for ordering news list items (articles and stock watch)."""
+    d = item['date']
+    if d is None:
+        return 0.0
+    if isinstance(d, datetime.date) and not isinstance(d, datetime.datetime):
+        dt = datetime.datetime.combine(d, datetime.time.min)
+    else:
+        dt = d
+    try:
+        return dt.timestamp()
+    except (TypeError, OSError):
+        return 0.0
+
 
 def _build_news_items():
     """Build combined articles + stock watch list, sorted by date. Cached."""
@@ -224,20 +253,7 @@ def _build_news_items():
             'date': sw.date,
             'players': [swp.player for swp in sw.stock_watch_players.all() if swp.active],
         })
-
-    def _news_sort_key(item):
-        d = item['date']
-        if d is None:
-            return 0.0
-        if isinstance(d, datetime.date) and not isinstance(d, datetime.datetime):
-            dt = datetime.datetime.combine(d, datetime.time.min)
-        else:
-            dt = d
-        try:
-            return dt.timestamp()
-        except (TypeError, OSError):
-            return 0.0
-    items.sort(key=_news_sort_key, reverse=True)
+    items.sort(key=_news_item_sort_ts, reverse=True)
     return items
 
 
@@ -260,6 +276,42 @@ def articles_list(request):
     context = {}
     context['news_items'] = get_cached('overslot:articles:list_items', _build_news_items, ARTICLE_TIMEOUT)
     context['recent_rankings'] = get_cached('overslot:articles:recent_rankings', _recent_rankings, ARTICLE_TIMEOUT)
+    return render(request, "articles_list.html", context)
+
+
+def _build_collection_news_items(slug):
+    """Published articles in a collection as news_items-shaped dicts."""
+    collection = models.Collection.objects.filter(slug=slug, active=True).first()
+    if not collection:
+        raise Http404("Collection not found")
+    qs = collection.articles.filter(publish=True, active=True).prefetch_related('authors', 'players')
+    items = []
+    for a in qs:
+        items.append({
+            'item_type': 'article',
+            'url': f'/articles/{a.slug}/',
+            'headline': a.headline,
+            'subhead': a.subhead,
+            'featured_image': a.featured_image,
+            'authors': list(a.authors.all()),
+            'date': a.created,
+            'players': [p for p in a.players.all() if p.active],
+        })
+    items.sort(key=_news_item_sort_ts, reverse=True)
+    return items
+
+
+def collection_articles_list(request, slug):
+    collection = get_object_or_404(models.Collection, slug=slug, active=True)
+    context = {
+        'collection': collection,
+        'news_items': get_cached(
+            f'{KEY_COLLECTION}:{slug}',
+            lambda: _build_collection_news_items(slug),
+            ARTICLE_TIMEOUT,
+        ),
+        'recent_rankings': get_cached('overslot:articles:recent_rankings', _recent_rankings, ARTICLE_TIMEOUT),
+    }
     return render(request, "articles_list.html", context)
 
 

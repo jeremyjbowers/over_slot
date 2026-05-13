@@ -5,6 +5,58 @@ from googleapiclient.errors import HttpError
 from overslot import models, utils
 
 
+_COLLEGE_HITTER_TRACKMAN_FIELDS = (
+    "hitter_percentile",
+    "game_power_percentile",
+    "raw_power_percentile",
+    "approach_percentile",
+    "hitter_score",
+    "game_power_score",
+    "raw_power_score",
+    "approach_score",
+    "whiff_pct",
+    "whiff_pct_percentile",
+    "whiff_pct_points_above_median",
+    "iz_whiff_pct",
+    "iz_whiff_pct_percentile",
+    "iz_whiff_pct_points_above_median",
+    "ooz_whiff_pct",
+    "ooz_whiff_pct_percentile",
+    "ooz_whiff_pct_points_above_median",
+    "chase_pct",
+    "chase_pct_percentile",
+    "chase_pct_points_above_median",
+    "k_pct",
+    "k_pct_percentile",
+    "k_pct_points_above_median",
+    "bb_pct",
+    "bb_pct_percentile",
+    "bb_pct_points_above_median",
+    "avg_exit_velocity",
+    "avg_exit_velocity_percentile",
+    "avg_exit_velocity_points_above_median",
+    "ev_90th",
+    "ev_90th_percentile",
+    "ev_90th_points_above_median",
+    "barrel_pct",
+    "barrel_pct_percentile",
+    "barrel_pct_points_above_median",
+    "pull_air_pct",
+    "pull_air_pct_percentile",
+    "pull_air_pct_points_above_median",
+    "xwoba",
+    "xwoba_percentile",
+    "xwoba_points_above_median",
+)
+
+
+def _clear_college_hitter_trackman_fields(season):
+    """Clear college hitter TrackMan columns only (pitcher & HS fields unchanged)."""
+    for name in _COLLEGE_HITTER_TRACKMAN_FIELDS:
+        setattr(season, name, None)
+    season.save()
+
+
 class Command(BaseCommand):
     help = 'Load College Hitters Trackman data from Google Sheets'
 
@@ -50,8 +102,8 @@ class Command(BaseCommand):
                 print(f"No sheet found for {tab}")
                 continue
 
-            # 2026: lower threshold while the season is still building sample sizes
-            min_pitches = 150 if year == "2026" else 250
+            # 2026: higher minimum stabilizes contact-rate-driven percentiles and visuals (Statcast-style charts).
+            min_pitches = 300 if year == "2026" else 250
             total_sheet_rows = len(sheet)
             rows = [utils.fix_blanks(row) for row in sheet if int(row.get('Pitches', 0)) >= min_pitches]
             if debug:
@@ -327,5 +379,30 @@ class Command(BaseCommand):
                 else:
                     if debug and row.get('Name'):
                         self.stdout.write(f"[hitters] No Player match for '{row.get('Name')}' — skipping updates")
-            
+
+            # Remove college hitter TrackMan data when sheet row is below min_pitches (avoids stale visuals after thresholds move).
+            for sheet_row in [utils.fix_blanks(r) for r in sheet]:
+                try:
+                    p_seen = int(sheet_row.get("Pitches", 0))
+                except (TypeError, ValueError):
+                    continue
+                if p_seen >= min_pitches:
+                    continue
+                name = sheet_row.get("Name")
+                if not name:
+                    continue
+                obj = utils.fuzzy_find_player(name, debug=debug, stdout=self.stdout)
+                if not obj:
+                    continue
+                season = models.PlayerStatSeason.objects.filter(
+                    player=obj, year=str(year), level="College"
+                ).first()
+                if season and any(getattr(season, f) is not None for f in _COLLEGE_HITTER_TRACKMAN_FIELDS):
+                    _clear_college_hitter_trackman_fields(season)
+                    if debug:
+                        self.stdout.write(
+                            f"[hitters] Cleared college hitter TrackMan metrics for '{obj.name}' "
+                            f"({year}, pitches={p_seen} < {min_pitches})"
+                        )
+
             print(f"Completed processing {total_rows} players for {tab}")

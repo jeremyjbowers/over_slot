@@ -17,7 +17,7 @@ class Command(BaseCommand):
             '--tab',
             type=str,
             default=None,
-            help='Load a specific tab name (e.g., "2025 Fourseam" or "2024 Changeups/Splitters"). If not specified, loads all tabs.'
+            help='Load a specific tab name (e.g., "2026 Fourseam" or "2024 Changeups/Splitters"). If not specified, loads all tabs.'
         )
 
     def handle(self, *args, **options):
@@ -42,14 +42,14 @@ class Command(BaseCommand):
                 else:
                     tab_type = tab_type_raw.split()[0] if tab_type_raw.split() else tab_type_raw
             else:
-                self.stdout.write(self.style.ERROR(f"Could not parse tab name '{specific_tab}'. Expected format: '2025 Fourseam' or '2024 Changeups/Splitters'"))
+                self.stdout.write(self.style.ERROR(f"Could not parse tab name '{specific_tab}'. Expected format: '2026 Fourseam' or '2024 Changeups/Splitters'"))
                 return
             
             # Process just this one tab
             years = [year]
             tab_types = [tab_type]
         else:
-            years = ['2025', '2024']
+            years = ['2026', '2025', '2024']
             tab_types = ["Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeups/Splitters", "Cutters"]
 
         for year in years:

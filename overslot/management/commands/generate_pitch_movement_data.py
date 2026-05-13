@@ -23,7 +23,7 @@ class Command(BaseCommand):
         Generate JSON files with movement plot data for all pitchers.
         Files are named like: {year}_{pitchtype}.json
         """
-        years = ['2025', '2024']
+        years = ['2026', '2025', '2024']
         tab_types = ["Fourseam", "Sinkers", "Sliders", "Sweepers", "Curveballs", "Changeups/Splitters", "Cutters"]
         
         # Map tab types to file-safe names

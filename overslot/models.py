@@ -873,6 +873,38 @@ class Article(BaseModel):
         return self.headline
 
 
+class Collection(BaseModel):
+    """
+    Curated group of articles with its own URL; optional homepage module.
+    """
+
+    title = models.CharField(max_length=255)
+    deck = models.CharField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Subtitle or dek displayed with the title",
+    )
+    slug = models.SlugField(max_length=255, unique=True)
+    articles = models.ManyToManyField(Article, blank=True, related_name="collections")
+    show_on_homepage = models.BooleanField(
+        default=False,
+        help_text="Include this collection in the homepage module (layout TBD).",
+    )
+
+    class Meta:
+        ordering = ["-last_modified"]
+        verbose_name_plural = "Collections"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+    def __unicode__(self):
+        return self.title
+
+
 class StockWatchArticle(BaseModel):
     """
     Stock watch article: tracks players whose stock is up or down.

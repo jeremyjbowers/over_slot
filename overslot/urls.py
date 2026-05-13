@@ -46,6 +46,7 @@ urlpatterns = [
     path('summernote/', include('django_summernote.urls')),
 
     path("articles/", views.articles_list, name="articles_list"),
+    path("articles/collections/<slug:slug>/", views.collection_articles_list, name="collection_articles_list"),
     path("articles/<slug:slug>/", views.articles_detail, name="articles_detail"),
 
     path("stock-watch/<slug:slug>/", views.stock_watch_detail, name="stock_watch_detail"),
