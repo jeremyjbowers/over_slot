@@ -20,12 +20,26 @@
             {% endfor %}
         {% endif %}
 
+        {% if show_subscription_resync_card %}
+        <div class="mb-6 p-4 rounded-md bg-amber-50 text-amber-900 border border-amber-200">
+            <h2 class="text-sm font-semibold mb-2">Paid but premium pages still locked?</h2>
+            <p class="text-sm mb-3">Pull the latest Stripe subscription onto this account immediately. Use this while webhooks catch up or if checkout produced duplicate charges—the site follows Stripe&apos;s newest active membership for your billing profile.</p>
+            <form method="post" action="{% url 'stripe_subscription_resync' %}">
+                {% csrf_token %}
+                <button type="submit"
+                        class="inline-flex bg-amber-700 text-white py-2 px-4 rounded-md hover:bg-amber-800 transition duration-200 text-sm font-medium">
+                    Refresh subscription status from Stripe
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
         <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-            {% if subscription and subscription.is_active %}
+            {% if subscription and subscription.can_access_premium_content %}
                 <!-- Active Subscription -->
                 <div class="bg-green-50 px-6 py-4 border-b border-green-200">
-                    <h2 class="text-xl font-semibold text-green-800">Active Subscription</h2>
-                    <p class="text-green-600 mt-1">You have access to all premium content</p>
+                    <h2 class="text-xl font-semibold text-green-800">Premium access</h2>
+                    <p class="text-green-600 mt-1">You are cleared for subscriber content while Stripe shows active, trialing, or past-due (retry) membership.</p>
                 </div>
                 
                 <div class="px-6 py-6">

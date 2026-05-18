@@ -113,8 +113,12 @@ class Subscription(BaseModel):
         return self.status in ['trialing', 'active'] and self.current_period_start and self.current_period_end
     
     def can_access_premium_content(self):
-        """Determine if user can access premium content."""
-        return self.is_active or self.is_trial
+        """
+        Align site access with Stripe subscription states where a customer has paid membership.
+
+        Includes past_due (Stripe retries card failures; service usually continues meanwhile).
+        """
+        return self.status in ('active', 'trialing', 'past_due')
 
 
 # --- New subscription pricing models ---

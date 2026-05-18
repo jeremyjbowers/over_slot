@@ -155,6 +155,12 @@
         
         <p class="welcome-closing">Glad you're along for the ride.</p>
         
+        <p class="welcome-message text-sm opacity-90" style="margin-top:-1rem">
+            Paid but still seeing locked articles? Visit
+            <a href="{% url 'subscription_dashboard' %}">subscription settings</a>
+            and use <strong>Refresh subscription status from Stripe</strong>.
+        </p>
+
         <div class="welcome-actions">
             <a href="{% url 'index' %}" class="welcome-btn welcome-btn-primary">
                 <i class="fas fa-home"></i>

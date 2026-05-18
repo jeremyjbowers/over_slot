@@ -116,6 +116,7 @@ urlpatterns = [
     path('subscription/success/', subscription_views.subscription_success, name='subscription_success'),
     path('subscription/cancel/', subscription_views.cancel_subscription, name='cancel_subscription'),
     path('subscription/billing/', subscription_views.manage_billing, name='manage_billing'),
+    path('subscription/resync/', subscription_views.stripe_subscription_resync, name='stripe_subscription_resync'),
     path('webhooks/stripe/', subscription_views.stripe_webhook, name='stripe_webhook'),
 
     # Authentication URLs
