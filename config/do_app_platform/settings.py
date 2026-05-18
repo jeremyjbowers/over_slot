@@ -10,6 +10,12 @@ from config.dev.settings import *
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 
+# collectstatic for remote storages only compares S3 LastModified vs source mtimes (not file
+# contents). Wheel-extracted static files often have older mtimes than objects touched by prior
+# uploads, so Django skips every file ("N unmodified") while the bucket stays stale. Overwrites
+# must be allowed so manifest updates and in-place replacements work.
+AWS_S3_FILE_OVERWRITE = True
+
 # All other AWS/storage settings inherited from dev settings
 
 WSGI_APPLICATION = "config.do_app_platform.app.application"
@@ -76,7 +82,10 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Static and media files settings
 # Serve static from DigitalOcean Spaces CDN in production
 STORAGES['staticfiles'] = {
-    'BACKEND': 'storages.backends.s3boto3.S3StaticStorage',
+    # Hashed filenames (cf. dev ManifestStaticFilesStorage): content changes create new keys,
+    # so collectstatic uploads instead of trusting mtime-only skips. URLs from {% static %}
+    # pick up hashes from staticfiles.json automatically.
+    'BACKEND': 'storages.backends.s3boto3.S3ManifestStaticStorage',
     'OPTIONS': {
         'location': 'static',
     },
