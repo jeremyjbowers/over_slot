@@ -67,6 +67,11 @@ def settings_context(request):
         'settings': {
             'SUBSCRIPTION_PRICE_MONTHLY': getattr(settings, 'SUBSCRIPTION_PRICE_MONTHLY', 9.99),
         },
+        'pitch_shapes_base_url': getattr(
+            settings,
+            'PITCH_SHAPES_BASE_URL',
+            f"https://{getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', '')}/pitch-shapes/",
+        ),
         # Template hooks for pricing availability
         'has_monthly_price': has_monthly_price,
         'has_annual_price': has_annual_price,

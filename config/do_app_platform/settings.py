@@ -85,7 +85,8 @@ STORAGES['staticfiles'] = {
     # Hashed filenames (cf. dev ManifestStaticFilesStorage): content changes create new keys,
     # so collectstatic uploads instead of trusting mtime-only skips. URLs from {% static %}
     # pick up hashes from staticfiles.json automatically.
-    'BACKEND': 'storages.backends.s3boto3.S3ManifestStaticStorage',
+    # Lenient: avoid 500s when the CDN serves a stale/partial manifest (see manifest_strict).
+    'BACKEND': 'overslot.storage_backends.LenientS3ManifestStaticStorage',
     'OPTIONS': {
         'location': 'static',
     },

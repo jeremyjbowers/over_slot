@@ -2210,7 +2210,7 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
         const handednessPrefix = `${handedness}_`;
         const promises = pitchTypes.map(pitchType => {
             const filename = pitchTypeToFilename[pitchType];
-            const url = `https://nyc3.digitaloceanspaces.com/the-over-slot/static/${year}_${handednessPrefix}${filename}.json`;
+            const url = `{{ pitch_shapes_base_url }}${year}_${handednessPrefix}${filename}.json`;
             return d3.json(url).then(data => ({ pitchType, data })).catch(() => ({ pitchType, data: null }));
         });
         

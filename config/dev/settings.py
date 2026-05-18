@@ -167,6 +167,8 @@ AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', default=None)
 AWS_DEFAULT_ACL = "public-read"
 AWS_STORAGE_BUCKET_NAME = "the-over-slot"
 AWS_S3_CUSTOM_DOMAIN = "the-over-slot.nyc3.cdn.digitaloceanspaces.com"
+# Pitch movement "shape" JSON files live in bucket prefix pitch-shapes/ (CDN); not Django collectstatic.
+PITCH_SHAPES_BASE_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/pitch-shapes/"
 
 # AWS S3 / DigitalOcean Spaces additional settings
 AWS_S3_OBJECT_PARAMETERS = {

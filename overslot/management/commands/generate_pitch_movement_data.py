@@ -8,7 +8,10 @@ from overslot import utils
 
 
 class Command(BaseCommand):
-    help = 'Generate JSON files with movement plot data for all pitchers by pitch type and year'
+    help = (
+        'Generate JSON files with movement plot data for all pitchers by pitch type and year. '
+        'Upload outputs to Spaces prefix pitch-shapes/ (served at PITCH_SHAPES_BASE_URL).'
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
