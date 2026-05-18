@@ -24,6 +24,7 @@ from django.views.decorators.http import require_GET, require_POST
 from dateutil import parser
 from datetime import timedelta
 import json
+from packaging.version import InvalidVersion, Version
 
 from overslot import models, utils
 from overslot.decorators import subscription_required
@@ -478,9 +479,38 @@ def rankings_list(request):
     return render(request, "rankings_list.html", context)
 
 
+def _mock_draft_list_year_key(year_str):
+    """Sortable year: newest first via reverse sort below."""
+    if not year_str:
+        return 0
+    try:
+        return int(str(year_str).strip())
+    except (TypeError, ValueError):
+        return 0
+
+
+def _mock_draft_list_version_key(version_str):
+    """PEP-440 style version for ordering (e.g. 3.0 > 2.0 > 1.0)."""
+    if not version_str or not str(version_str).strip():
+        return Version("0")
+    raw = str(version_str).strip().lstrip("vV")
+    try:
+        return Version(raw)
+    except InvalidVersion:
+        return Version("0")
+
+
 def _mock_drafts_list_data():
-    """Published mock drafts. Cached."""
-    return list(models.Ranking.objects.filter(is_mock_draft=True, publish=True))
+    """Published mock drafts, newest year and newest version first. Cached."""
+    qs = models.Ranking.objects.filter(is_mock_draft=True, publish=True).order_by("slug")
+    return sorted(
+        qs,
+        key=lambda r: (
+            _mock_draft_list_year_key(r.year),
+            _mock_draft_list_version_key(r.mock_draft_version),
+        ),
+        reverse=True,
+    )
 
 
 def mock_drafts_list(request):
