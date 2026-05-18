@@ -28,6 +28,24 @@ def _stripe_object_id(field):
     return getattr(field, 'id', None)
 
 
+def _stripe_pick(obj, key, default=None):
+    """
+    Safely read a field from Stripe webhook payloads.
+
+    Newer stripe-python parses `event.data.object` as StripeObject (`obj['status']`
+    works, but `.get('status')` does not — it raises AttributeError/KeyError).
+    """
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    try:
+        val = obj[key]
+    except KeyError:
+        return default
+    return val if val is not None else default
+
+
 def apply_stripe_subscription_to_record(local_sub, stripe_subscription):
     """Populate local Subscription fields from Stripe Subscription.retrieve() result."""
     local_sub.stripe_subscription_id = stripe_subscription.id
@@ -306,7 +324,8 @@ def stripe_webhook(request):
 def handle_checkout_session_completed(session):
     """Handle completed checkout session."""
     try:
-        user_id = (session.get('metadata') or {}).get('user_id')
+        meta = _stripe_pick(session, 'metadata') or {}
+        user_id = _stripe_pick(meta, 'user_id')
         if user_id:
             user = User.objects.get(id=user_id)
             sync_subscription_from_checkout_session(user, session)
@@ -317,19 +336,28 @@ def handle_checkout_session_completed(session):
 def handle_subscription_created(subscription_data):
     """Handle subscription creation."""
     try:
-        customer_id = subscription_data.get('customer')
+        customer_id = _stripe_pick(subscription_data, 'customer')
         subscription_obj = Subscription.objects.get(stripe_customer_id=customer_id)
         
-        subscription_obj.stripe_subscription_id = subscription_data.get('id')
-        subscription_obj.status = subscription_data.get('status')
-        subscription_obj.current_period_start = stripe_timestamp_to_datetime(subscription_data.get('current_period_start'))
-        subscription_obj.current_period_end = stripe_timestamp_to_datetime(subscription_data.get('current_period_end'))
+        subscription_obj.stripe_subscription_id = _stripe_pick(subscription_data, 'id')
+        subscription_obj.status = _stripe_pick(subscription_data, 'status')
+        subscription_obj.current_period_start = stripe_timestamp_to_datetime(
+            _stripe_pick(subscription_data, 'current_period_start')
+        )
+        subscription_obj.current_period_end = stripe_timestamp_to_datetime(
+            _stripe_pick(subscription_data, 'current_period_end')
+        )
         
         # Get plan details
-        if subscription_data.get('items', {}).get('data'):
-            price_data = subscription_data['items']['data'][0]['price']
-            subscription_obj.price_id = price_data['id']
-            subscription_obj.plan_name = price_data.get('nickname', 'Premium Plan')
+        items = _stripe_pick(subscription_data, 'items')
+        row_data = _stripe_pick(items, 'data') if items is not None else None
+        if row_data:
+            first = row_data[0]
+            price_data = _stripe_pick(first, 'price')
+            if price_data:
+                subscription_obj.price_id = _stripe_pick(price_data, 'id')
+                nickname = _stripe_pick(price_data, 'nickname')
+                subscription_obj.plan_name = nickname or 'Premium Plan'
         
         subscription_obj.save()
     except Subscription.DoesNotExist:
@@ -343,9 +371,13 @@ def handle_subscription_updated(subscription_data):
             stripe_subscription_id=subscription_data['id']
         )
         
-        subscription_obj.status = subscription_data.get('status')
-        subscription_obj.current_period_start = stripe_timestamp_to_datetime(subscription_data.get('current_period_start'))
-        subscription_obj.current_period_end = stripe_timestamp_to_datetime(subscription_data.get('current_period_end'))
+        subscription_obj.status = _stripe_pick(subscription_data, 'status')
+        subscription_obj.current_period_start = stripe_timestamp_to_datetime(
+            _stripe_pick(subscription_data, 'current_period_start')
+        )
+        subscription_obj.current_period_end = stripe_timestamp_to_datetime(
+            _stripe_pick(subscription_data, 'current_period_end')
+        )
         subscription_obj.save()
     except Subscription.DoesNotExist:
         pass
@@ -365,8 +397,8 @@ def handle_subscription_deleted(subscription_data):
 
 def handle_payment_succeeded(invoice):
     """Handle successful payment."""
-    subscription_id = invoice.get('subscription')
-    customer_id = invoice.get('customer')
+    subscription_id = _stripe_pick(invoice, 'subscription')
+    customer_id = _stripe_pick(invoice, 'customer')
     subscription_obj = None
     try:
         if subscription_id:
@@ -395,7 +427,7 @@ def handle_payment_succeeded(invoice):
 def handle_payment_failed(invoice):
     """Handle failed payment."""
     try:
-        subscription_id = invoice.get('subscription')
+        subscription_id = _stripe_pick(invoice, 'subscription')
         if subscription_id:
             subscription_obj = Subscription.objects.get(
                 stripe_subscription_id=subscription_id
