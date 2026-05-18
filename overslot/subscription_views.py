@@ -1,21 +1,76 @@
-import json
+import logging
 import stripe
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from django.utils.decorators import method_decorator
 from django.contrib import messages
 from django.urls import reverse
+from django.utils import timezone
 
 from overslot.models import Subscription
 from overslot.pricing import get_price_id, get_default_amounts
 
+logger = logging.getLogger(__name__)
+
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
+
+def _stripe_object_id(field):
+    if field is None:
+        return None
+    if isinstance(field, str):
+        return field
+    return getattr(field, 'id', None)
+
+
+def apply_stripe_subscription_to_record(local_sub, stripe_subscription):
+    """Populate local Subscription fields from Stripe Subscription.retrieve() result."""
+    local_sub.stripe_subscription_id = stripe_subscription.id
+    local_sub.status = stripe_subscription.status
+    local_sub.current_period_start = stripe_timestamp_to_datetime(stripe_subscription.current_period_start)
+    local_sub.current_period_end = stripe_timestamp_to_datetime(stripe_subscription.current_period_end)
+    items = getattr(stripe_subscription, 'items', None)
+    if items and getattr(items, 'data', None) and stripe_subscription.items.data:
+        price_data = stripe_subscription.items.data[0].price
+        local_sub.price_id = price_data.id
+        nickname = getattr(price_data, 'nickname', None) or ''
+        local_sub.plan_name = nickname if nickname else local_sub.plan_name or 'Premium Plan'
+    elif not local_sub.plan_name:
+        local_sub.plan_name = 'Premium Plan'
+
+
+def sync_subscription_from_checkout_session(user, session):
+    """
+    Upsert local Subscription using a completed Stripe Checkout Session.
+    Accepts webhook dict payload or a StripeObject from Session.retrieve(...).
+    """
+    def _sess(key):
+        return session[key] if isinstance(session, dict) else getattr(session, key, None)
+
+    if _sess('mode') != 'subscription' or _sess('payment_status') != 'paid':
+        return None
+
+    customer_id = _stripe_object_id(_sess('customer'))
+    subscription_id = _stripe_object_id(_sess('subscription'))
+    local_sub, _ = Subscription.objects.get_or_create(user=user)
+
+    if customer_id:
+        local_sub.stripe_customer_id = customer_id
+
+    stripe_sub_full = None
+    if subscription_id:
+        stripe_sub_full = stripe.Subscription.retrieve(subscription_id)
+
+    if stripe_sub_full:
+        apply_stripe_subscription_to_record(local_sub, stripe_sub_full)
+
+    local_sub.save()
+    return local_sub
 
 
 @login_required
@@ -79,7 +134,11 @@ def create_checkout_session(request):
                 messages.error(request, 'Pricing is temporarily unavailable. Please try again later.')
                 return redirect('subscription_dashboard')
             
-            # Create checkout session
+            base_success = request.build_absolute_uri(reverse('subscription_success'))
+            sep = '&' if ('?' in base_success) else '?'
+            success_url = f'{base_success}{sep}session_id={{CHECKOUT_SESSION_ID}}'
+
+            minute_bucket = timezone.now().strftime('%Y%m%d%H%M')
             checkout_session = stripe.checkout.Session.create(
                 customer=subscription.stripe_customer_id,
                 payment_method_types=['card'],
@@ -89,9 +148,10 @@ def create_checkout_session(request):
                 }],
                 mode='subscription',
                 allow_promotion_codes=False,
-                success_url=request.build_absolute_uri(reverse('subscription_success')),
+                success_url=success_url,
                 cancel_url=request.build_absolute_uri(reverse('subscription_dashboard')),
-                metadata={'user_id': request.user.id, 'plan': plan_slug, 'interval': interval}
+                metadata={'user_id': request.user.id, 'plan': plan_slug, 'interval': interval},
+                idempotency_key=f'checkout-session-user-{request.user.pk}-price-{price_id}-{minute_bucket}',
             )
             
             return redirect(checkout_session.url)
@@ -105,8 +165,49 @@ def create_checkout_session(request):
 
 @login_required
 def subscription_success(request):
-    """Handle successful subscription creation."""
-    messages.success(request, 'Your subscription has been created successfully!')
+    """After Checkout: reconcile subscription from Stripe using session_id (webhook fallback)."""
+    session_id = request.GET.get('session_id')
+    if session_id and settings.STRIPE_SECRET_KEY:
+        try:
+            session = stripe.checkout.Session.retrieve(
+                session_id,
+                expand=['subscription'],
+            )
+            meta = getattr(session, 'metadata', None)
+            md = dict(meta) if meta else {}
+            checkout_user_id = md.get('user_id')
+            if checkout_user_id is not None:
+                verified = str(checkout_user_id) == str(request.user.pk)
+            else:
+                cust_id = _stripe_object_id(session.customer)
+                verified = False
+                if cust_id:
+                    customer = stripe.Customer.retrieve(cust_id)
+                    stripe_email = (getattr(customer, 'email', None) or '').strip().lower()
+                    user_email = (request.user.email or '').strip().lower()
+                    verified = stripe_email and stripe_email == user_email
+
+            if not verified:
+                messages.warning(
+                    request,
+                    'We could not match this checkout to your account. If you were charged, contact support.'
+                )
+            elif session.payment_status != 'paid' or session.mode != 'subscription':
+                messages.info(request, 'Your payment may still be processing. Refresh in a moment or check the subscription dashboard.')
+            else:
+                sync_subscription_from_checkout_session(request.user, session)
+                messages.success(request, 'Your subscription has been activated.')
+        except stripe.error.InvalidRequestError:
+            messages.warning(request, 'That checkout session is invalid or has expired.')
+        except Exception as e:
+            logger.exception('subscription_success reconcile failed session_id=%s', session_id)
+            messages.warning(
+                request,
+                'We could not confirm your checkout from Stripe automatically. '
+                'If billing shows a charge but you still lack access, try again shortly or contact support.'
+            )
+    else:
+        messages.success(request, 'Your subscription has been created successfully!')
     return render(request, 'subscription/success.html')
 
 
@@ -205,27 +306,10 @@ def stripe_webhook(request):
 def handle_checkout_session_completed(session):
     """Handle completed checkout session."""
     try:
-        user_id = session.get('metadata', {}).get('user_id')
+        user_id = (session.get('metadata') or {}).get('user_id')
         if user_id:
             user = User.objects.get(id=user_id)
-            # Try to get existing subscription first
-            try:
-                subscription = Subscription.objects.get(user=user)
-                # Update customer ID if not already set
-                if not subscription.stripe_customer_id and session.get('customer'):
-                    subscription.stripe_customer_id = session.get('customer')
-            except Subscription.DoesNotExist:
-                # Create new subscription if none exists
-                subscription = Subscription.objects.create(
-                    user=user,
-                    stripe_customer_id=session.get('customer', '')
-                )
-            
-            # Update subscription ID if provided
-            if session.get('subscription'):
-                subscription.stripe_subscription_id = session['subscription']
-            
-            subscription.save()
+            sync_subscription_from_checkout_session(user, session)
     except User.DoesNotExist:
         pass
 
@@ -281,16 +365,31 @@ def handle_subscription_deleted(subscription_data):
 
 def handle_payment_succeeded(invoice):
     """Handle successful payment."""
+    subscription_id = invoice.get('subscription')
+    customer_id = invoice.get('customer')
+    subscription_obj = None
     try:
-        subscription_id = invoice.get('subscription')
         if subscription_id:
-            subscription_obj = Subscription.objects.get(
-                stripe_subscription_id=subscription_id
-            )
-            subscription_obj.status = 'active'
-            subscription_obj.save()
+            subscription_obj = Subscription.objects.get(stripe_subscription_id=subscription_id)
     except Subscription.DoesNotExist:
         pass
+    try:
+        if subscription_obj is None and customer_id:
+            subscription_obj = Subscription.objects.get(stripe_customer_id=customer_id)
+            if subscription_id and not subscription_obj.stripe_subscription_id:
+                subscription_obj.stripe_subscription_id = subscription_id
+    except Subscription.DoesNotExist:
+        pass
+    except Subscription.MultipleObjectsReturned:
+        logger.warning(
+            'invoice.payment_succeeded: multiple Subscription rows for customer %s',
+            customer_id,
+        )
+        subscription_obj = None
+
+    if subscription_obj:
+        subscription_obj.status = 'active'
+        subscription_obj.save()
 
 
 def handle_payment_failed(invoice):
@@ -311,4 +410,4 @@ def handle_payment_failed(invoice):
 def stripe_timestamp_to_datetime(timestamp):
     """Convert Stripe timestamp to Django datetime."""
     from datetime import datetime
-    return datetime.fromtimestamp(timestamp) if timestamp else None 
+    return datetime.fromtimestamp(timestamp) if timestamp else None
