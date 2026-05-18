@@ -704,6 +704,6 @@ def handle_payment_failed(invoice):
 
 
 def stripe_timestamp_to_datetime(timestamp):
-    """Convert Stripe timestamp to Django datetime."""
-    from datetime import datetime
-    return datetime.fromtimestamp(timestamp) if timestamp else None
+    """Convert Stripe UNIX timestamp to an aware UTC datetime (Django-safe with USE_TZ)."""
+    from datetime import UTC, datetime
+    return datetime.fromtimestamp(timestamp, tz=UTC) if timestamp else None

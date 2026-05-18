@@ -10,6 +10,12 @@ We have multiple test runners available depending on your needs:
 ./bin/quick_test.sh
 ```
 
+Stripe billing regressions only:
+
+```bash
+django-admin test tests.test_stripe_integration --settings=config.dev.settings -v 2
+```
+
 - Runs all tests in one command
 - No detailed reporting
 - Fast and simple
