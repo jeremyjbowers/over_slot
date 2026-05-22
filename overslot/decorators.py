@@ -72,6 +72,7 @@ def subscription_required(view_func):
             'rankings_detail': 'rankings_detail.html',
             'mock_drafts_detail': 'rankings_detail.html',
             'players_detail': 'players_detail.html',
+            'reels_list': 'reels_list.html',
             # Hitters data tables (year-specific views only)
             'college_hitters_year': 'hitters_list.html',
             'hs_hitters_year': 'hitters_list.html',

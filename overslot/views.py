@@ -530,7 +530,6 @@ def _build_stock_watch_list_items():
     return items
 
 
-@subscription_required
 def stock_watch_list(request):
     context = {
         'news_items': get_cached(
@@ -799,9 +798,10 @@ def _draft_highlight_reel_list_items():
     return items
 
 
+@subscription_required
 def reels_list(request):
     context = {'reels': _draft_highlight_reel_list_items()}
-    return render(request, "reels_list.html", context)
+    return TemplateResponse(request, "reels_list.html", context)
 
 
 def games_list(request, year=None, month=None, day=None):
