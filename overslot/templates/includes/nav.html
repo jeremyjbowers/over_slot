@@ -26,42 +26,42 @@
 
         <div id="navMenu" class="navbar-menu" style="background: var(--dark-surface); padding: 0;">
             <div class="navbar-start">
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
-                   href="/articles/">
-                    News
-                </a>
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
-                   href="/rankings/">
-                    Rankings
-                </a>
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <span class="navbar-link nav-link nav-dropdown-parent has-text-grey-lighter">News</span>
+                    <div class="navbar-dropdown">
+                        <a class="navbar-item" href="{% url 'articles_list' %}?category=scouting">Scouting</a>
+                        <a class="navbar-item" href="{% url 'articles_list' %}?category=news">News + analysis</a>
+                        <a class="navbar-item" href="{% url 'stock_watch_list' %}">Stock watch</a>
+                        <a class="navbar-item" href="https://patreon.com/overslot" target="_blank" rel="noopener noreferrer">Podcasts</a>
+                    </div>
+                </div>
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <span class="navbar-link nav-link nav-dropdown-parent has-text-grey-lighter">Rankings</span>
+                    <div class="navbar-dropdown">
+                        <a class="navbar-item" href="{% url 'rankings_list' %}">Draft rankings</a>
+                        {% if has_published_mock_drafts %}
+                        <a class="navbar-item" href="{% url 'mock_drafts_list' %}">Mock drafts</a>
+                        {% endif %}
+                    </div>
+                </div>
                 <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link nav-link-live-games" 
                    href="/live-games/">
                     Games
                 </a>
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
-                   href="/hitters/college/">
-                    Data
-                </a>
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
-                   href="/stats/">
-                    Stats
-                </a>
-                {% if has_published_mock_drafts %}
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
-                   href="/mock-drafts/">
-                    Mocks
-                </a>
-                {% endif %}
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
-                   href="/videos/">
-                    Videos
-                </a>
-                <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
-                   href="https://patreon.com/overslot"
-                   target="_blank"
-                   rel="noopener noreferrer">
-                    Podcast
-                </a>
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <span class="navbar-link nav-link nav-dropdown-parent has-text-grey-lighter">Data</span>
+                    <div class="navbar-dropdown">
+                        <a class="navbar-item" href="{% url 'stats_list' %}">Season stats</a>
+                        <a class="navbar-item" href="{% url 'college_hitters_list' %}">Performance data</a>
+                    </div>
+                </div>
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <span class="navbar-link nav-link nav-dropdown-parent has-text-grey-lighter">Videos</span>
+                    <div class="navbar-dropdown">
+                        <a class="navbar-item" href="{% url 'reels_list' %}">Draft highlight reels</a>
+                        <a class="navbar-item" href="{% url 'videos_list' %}">Spotlight interviews</a>
+                    </div>
+                </div>
                 <a class="navbar-item has-text-grey-lighter has-text-weight-medium nav-link" 
                    href="/about-us/">
                     About
@@ -322,6 +322,24 @@
 
 .nav-link-live-games {
     /* Styling same as other nav items - red background can be added back later */
+}
+
+/* Navbar-start dropdowns (News, Rankings, Data, Videos): nav-link shorthand padding overrides Bulma's
+   2.5em right padding → chevron overlaps text; Bulma chevron uses link blue (#485fc7). */
+.navbar-start .navbar-item.has-dropdown.is-hoverable > .navbar-link.nav-dropdown-parent {
+    padding: 0.75rem 2.5em 0.75rem 0.75rem !important;
+    background-color: transparent !important;
+    color: var(--dark-text) !important;
+}
+
+.navbar-start .navbar-item.has-dropdown.is-hoverable:hover > .navbar-link.nav-dropdown-parent,
+.navbar-start .navbar-item.has-dropdown.is-hoverable > .navbar-link.nav-dropdown-parent:hover {
+    background-color: var(--dark-surface-hover) !important;
+    color: var(--theme-primary) !important;
+}
+
+.navbar-start .navbar-item.has-dropdown.is-hoverable > .navbar-link.nav-dropdown-parent::after {
+    border-color: currentColor !important;
 }
 
 

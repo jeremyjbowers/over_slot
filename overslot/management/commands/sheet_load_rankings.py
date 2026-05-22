@@ -293,6 +293,12 @@ class Command(BaseCommand):
                         pr.age_at_draft = row.get('age_at_draft', None)
                         pr.active = True
                         pr.scouting_report = ''  # Will set below after processing blurb
+
+                        reel_raw = row.get('draft_highlight_reel')
+                        if reel_raw and str(reel_raw).strip():
+                            pr.highlight_reel_url = str(reel_raw).strip()
+                        else:
+                            pr.highlight_reel_url = None
                         
                         # Link to Team object if this is a college player
                         if pr.level == "College" and pr.school:

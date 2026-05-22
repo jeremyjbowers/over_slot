@@ -148,6 +148,7 @@ def bust_cache_on_stock_watch_player_save(sender, instance, **kwargs):
         article = getattr(instance, 'stock_watch_article', None)
         if article and article.slug:
             bust_stock_watch(article.slug)
+            bust_articles_list()
 
 
 @receiver(post_save)

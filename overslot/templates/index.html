@@ -338,6 +338,79 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
     margin-top: 0.15rem;
 }
 
+/* 2026 draft highlight reels belt (homepage) */
+.highlight-reels-home-section {
+    margin-top: 3rem;
+}
+
+.highlight-reels-belt {
+    margin: 2rem auto 2rem auto;
+    border: 1px solid var(--dark-border);
+    background: var(--dark-surface);
+    overflow: hidden;
+}
+
+.highlight-reels-belt-inner {
+    padding: 1rem;
+}
+
+.highlight-reels-list {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--dark-border) transparent;
+}
+
+.highlight-reels-list::-webkit-scrollbar {
+    height: 6px;
+}
+
+.highlight-reels-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.highlight-reels-list::-webkit-scrollbar-thumb {
+    background: var(--dark-border);
+    border-radius: 3px;
+}
+
+.highlight-reel-card {
+    flex: 0 0 min(340px, 85vw);
+    min-width: min(340px, 85vw);
+    max-width: 340px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--dark-border);
+    background: var(--dark-bg);
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.highlight-reel-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.highlight-reel-media {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    background: #000;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.highlight-reel-media iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
 /* Podcast belt */
 .podcast-belt {
     margin: 2rem auto 0 auto;
@@ -1008,6 +1081,32 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
         <span class="mock-draft-home-banner-cta">Start a mock draft <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
     </a>
 </div>
+
+{% if draft_highlight_reels %}
+<div class="content-section highlight-reels-home-section">
+    <h2 class="section-title"><span class="title-text">2026 Draft: Highlight Reels</span></h2>
+    <div class="highlight-reels-belt">
+        <div class="highlight-reels-belt-inner">
+            <div class="highlight-reels-list">
+                {% for reel in draft_highlight_reels %}
+                <div class="highlight-reel-card">
+                    <div class="highlight-reel-media">
+                        <iframe
+                            src="{{ reel.embed_url }}"
+                            title="2026 Draft highlight reel — {{ reel.player_name }}"
+                            loading="lazy"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowfullscreen
+                            referrerpolicy="strict-origin-when-cross-origin"
+                        ></iframe>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Rankings grid + Player Videos sidebar -->
 <div class="content-section" style="margin-top: 2.5rem;">

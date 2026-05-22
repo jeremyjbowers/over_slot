@@ -73,6 +73,7 @@ def bust_homepage():
         f'{KEY_HOMEPAGE}:player_videos',
         f'{KEY_HOMEPAGE}:videos_count',
         f'{KEY_HOMEPAGE}:featured_games',
+        f'{KEY_HOMEPAGE}:draft_highlight_reels',
         f'{KEY_HOMEPAGE}:podcasts',
         f'{KEY_HOMEPAGE}:collections',
     ]
@@ -81,7 +82,14 @@ def bust_homepage():
 
 def bust_articles_list():
     """Invalidate articles list and sidebar."""
-    _safe_delete_many([f'{KEY_ARTICLES}:list_items', f'{KEY_ARTICLES}:recent_rankings'])
+    _safe_delete_many(
+        [
+            f'{KEY_ARTICLES}:list_items',
+            f'{KEY_ARTICLES}:list_items:scouting',
+            f'{KEY_ARTICLES}:list_items:news',
+            f'{KEY_ARTICLES}:recent_rankings',
+        ]
+    )
 
 
 def bust_article(slug):
@@ -90,8 +98,9 @@ def bust_article(slug):
         _safe_delete(f'{KEY_ARTICLE}:{slug}')
 
 
-def bust_stock_watch(slug):
-    """Invalidate a single stock watch article detail."""
+def bust_stock_watch(slug=None):
+    """Invalidate stock watch list and optional single detail page."""
+    _safe_delete(f'{KEY_STOCK_WATCH}:list_items')
     if slug:
         _safe_delete(f'{KEY_STOCK_WATCH}:{slug}')
 

@@ -49,6 +49,7 @@ urlpatterns = [
     path("articles/collections/<slug:slug>/", views.collection_articles_list, name="collection_articles_list"),
     path("articles/<slug:slug>/", views.articles_detail, name="articles_detail"),
 
+    path("stock-watch/", views.stock_watch_list, name="stock_watch_list"),
     path("stock-watch/<slug:slug>/", views.stock_watch_detail, name="stock_watch_detail"),
 
     path("rankings/", views.rankings_list, name="rankings_list"),
@@ -77,6 +78,7 @@ urlpatterns = [
     path("stats/pitch/<int:year>/", views.stats_pitch_year, name="stats_pitch_year"),
 
     path("videos/", views.videos_list, name="videos_list"),
+    path("reels/", views.reels_list, name="reels_list"),
 
     path("live-games/", views.games_list, name="games_list"),
     path("live-games/<int:year>/<int:month>/<int:day>/", views.games_list, name="games_list_date"),

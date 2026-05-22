@@ -26,10 +26,12 @@ class StaticViewSitemap(BaseForcedDomainSitemap):
         return [
             "index",
             "articles_list",
+            "stock_watch_list",
             "rankings_list",
             "mock_drafts_list",
             "my_mock_draft",
             "videos_list",
+            "reels_list",
             "games_list",  # Live games main page
         ]
 

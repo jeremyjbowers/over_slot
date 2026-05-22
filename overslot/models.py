@@ -269,6 +269,25 @@ class Player(BaseModel):
 
         super().save(*args, **kwargs)
 
+    def get_highlight_reel_url(self):
+        """
+        URL from this player's latest draft-board PlayerRanking row that has a highlight reel.
+
+        Prefer higher draft year (e.g. 2028 over 2026), then most recently synced row.
+        """
+        qs = PlayerRanking.objects.filter(
+            player=self,
+            active=True,
+            ranking__is_draft=True,
+            ranking__is_mock_draft=False,
+            ranking__publish=True,
+        ).order_by("-ranking__year", "-last_modified")
+        for pr in qs:
+            url = (pr.highlight_reel_url or "").strip()
+            if url:
+                return url
+        return None
+
 
 class Ranking(BaseModel):
     """
@@ -584,6 +603,11 @@ class PlayerRanking(BaseModel):
     confidence = models.IntegerField(blank=True, null=True)
 
     scouting_report = models.TextField(null=True, blank=True)
+    highlight_reel_url = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Highlight reel URL (e.g. from draft sheet draft_highlight_reel column)",
+    )
 
     @property
     def mock_draft_board_team_logo_url(self):

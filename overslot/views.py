@@ -27,6 +27,7 @@ import json
 from packaging.version import InvalidVersion, Version
 
 from overslot import models, utils
+from overslot.templatetags.overslot_tags import video_embed_url
 from overslot.decorators import subscription_required
 from overslot.cache_utils import (
     get_cached,
@@ -38,6 +39,8 @@ from overslot.cache_utils import (
     KEY_MY_MOCK_DRAFT_HTML,
     KEY_COLLECTION,
     KEY_HOMEPAGE,
+    KEY_ARTICLES,
+    KEY_STOCK_WATCH,
 )
 
 # Client endgame binary (inlined in mock_draft_sim.html): magic OSD1 + version + picks.
@@ -180,6 +183,48 @@ def index(request):
         ).exclude(photo_url="").count()
     context['videos_count'] = get_cached('overslot:homepage:videos_count', _videos_count, HOMEPAGE_TIMEOUT)
 
+    def _draft_highlight_reels():
+        """
+        Random sample of YouTube-backed 2026 draft highlight reels from sheet-loaded PlayerRanking rows.
+        """
+        qs = models.PlayerRanking.objects.filter(
+            active=True,
+            ranking__year='2026',
+            ranking__is_draft=True,
+            ranking__is_mock_draft=False,
+            ranking__publish=True,
+            player__isnull=False,
+            player__active=True,
+        ).exclude(
+            highlight_reel_url__isnull=True
+        ).exclude(
+            highlight_reel_url=''
+        ).select_related('player')
+
+        candidates = list(qs.order_by('?')[:80])
+        reels = []
+        seen_player = set()
+        for pr in candidates:
+            if pr.player_id in seen_player:
+                continue
+            embed = video_embed_url(pr.highlight_reel_url or '')
+            if not embed or 'youtube.com/embed' not in embed:
+                continue
+            seen_player.add(pr.player_id)
+            reels.append({
+                'embed_url': embed,
+                'player_name': pr.player.name,
+            })
+            if len(reels) >= 6:
+                break
+        return reels
+
+    context['draft_highlight_reels'] = get_cached(
+        f'{KEY_HOMEPAGE}:draft_highlight_reels',
+        _draft_highlight_reels,
+        HOMEPAGE_TIMEOUT,
+    )
+
     # Featured games belt
     from django.utils import timezone
     now = timezone.now()
@@ -227,11 +272,35 @@ def _news_item_sort_ts(item):
         return 0.0
 
 
-def _build_news_items():
-    """Build combined articles + stock watch list, sorted by date. Cached."""
-    articles_qs = models.Article.objects.filter(publish=True, active=True).prefetch_related('authors', 'players')
-    stock_watch_qs = models.StockWatchArticle.objects.filter(publish=True, active=True).select_related('author').prefetch_related('stock_watch_players__player')
+def _build_news_items(list_filter='all'):
+    """
+    Build combined articles (+ optional stock watch), sorted by date.
+    list_filter: 'all' (default), 'scouting' (scouting articles only), or 'news' (non-scouting articles only; stock watch is /stock-watch/).
+    """
     items = []
+
+    if list_filter == 'all':
+        stock_watch_qs = models.StockWatchArticle.objects.filter(publish=True, active=True).select_related('author').prefetch_related(
+            'stock_watch_players__player'
+        )
+        for sw in stock_watch_qs:
+            items.append({
+                'item_type': 'stock_watch',
+                'url': f'/stock-watch/{sw.slug}/',
+                'headline': sw.headline,
+                'subhead': sw.deck,
+                'featured_image': sw.featured_image,
+                'author': sw.author,
+                'date': sw.date,
+                'players': [swp.player for swp in sw.stock_watch_players.all() if swp.active],
+            })
+
+    articles_qs = models.Article.objects.filter(publish=True, active=True).prefetch_related('authors', 'players')
+    if list_filter == 'scouting':
+        articles_qs = articles_qs.filter(article_type='scouting')
+    elif list_filter == 'news':
+        articles_qs = articles_qs.exclude(article_type='scouting')
+
     for a in articles_qs:
         items.append({
             'item_type': 'article',
@@ -242,17 +311,6 @@ def _build_news_items():
             'authors': list(a.authors.all()),
             'date': a.created,
             'players': [p for p in a.players.all() if p.active],
-        })
-    for sw in stock_watch_qs:
-        items.append({
-            'item_type': 'stock_watch',
-            'url': f'/stock-watch/{sw.slug}/',
-            'headline': sw.headline,
-            'subhead': sw.deck,
-            'featured_image': sw.featured_image,
-            'author': sw.author,
-            'date': sw.date,
-            'players': [swp.player for swp in sw.stock_watch_players.all() if swp.active],
         })
     items.sort(key=_news_item_sort_ts, reverse=True)
     return items
@@ -275,8 +333,26 @@ def _recent_rankings():
 
 def articles_list(request):
     context = {}
-    context['news_items'] = get_cached('overslot:articles:list_items', _build_news_items, ARTICLE_TIMEOUT)
-    context['recent_rankings'] = get_cached('overslot:articles:recent_rankings', _recent_rankings, ARTICLE_TIMEOUT)
+    category = (request.GET.get('category') or '').strip().lower()
+    if category == 'scouting':
+        list_filter = 'scouting'
+        cache_suffix = 'scouting'
+    elif category == 'news':
+        list_filter = 'news'
+        cache_suffix = 'news'
+    else:
+        list_filter = 'all'
+        cache_suffix = 'all'
+        category = ''
+
+    cache_key = f'{KEY_ARTICLES}:list_items' if cache_suffix == 'all' else f'{KEY_ARTICLES}:list_items:{cache_suffix}'
+    context['news_items'] = get_cached(
+        cache_key,
+        lambda lf=list_filter: _build_news_items(lf),
+        ARTICLE_TIMEOUT,
+    )
+    context['recent_rankings'] = get_cached(f'{KEY_ARTICLES}:recent_rankings', _recent_rankings, ARTICLE_TIMEOUT)
+    context['articles_list_category'] = category
     return render(request, "articles_list.html", context)
 
 
@@ -431,6 +507,41 @@ def _stock_watch_detail_context(slug):
             statline = None
         swp.statline = statline
     return article, sw_players
+
+
+def _build_stock_watch_list_items():
+    """Published stock watch entries as article-list-shaped dicts."""
+    items = []
+    qs = models.StockWatchArticle.objects.filter(publish=True, active=True).select_related('author').prefetch_related(
+        'stock_watch_players__player'
+    )
+    for sw in qs:
+        items.append({
+            'item_type': 'stock_watch',
+            'url': f'/stock-watch/{sw.slug}/',
+            'headline': sw.headline,
+            'subhead': sw.deck,
+            'featured_image': sw.featured_image,
+            'author': sw.author,
+            'date': sw.date,
+            'players': [swp.player for swp in sw.stock_watch_players.all() if swp.active],
+        })
+    items.sort(key=_news_item_sort_ts, reverse=True)
+    return items
+
+
+@subscription_required
+def stock_watch_list(request):
+    context = {
+        'news_items': get_cached(
+            f'{KEY_STOCK_WATCH}:list_items',
+            _build_stock_watch_list_items,
+            ARTICLE_TIMEOUT,
+        ),
+        'recent_rankings': get_cached(f'{KEY_ARTICLES}:recent_rankings', _recent_rankings, ARTICLE_TIMEOUT),
+        'stock_watch_list_only': True,
+    }
+    return render(request, 'articles_list.html', context)
 
 
 @subscription_required
@@ -621,6 +732,76 @@ def videos_list(request):
     context['players'] = players
 
     return render(request, "videos_list.html", context)
+
+
+def _draft_highlight_reel_list_items():
+    """
+    One entry per active player with a usable YouTube highlight reel on published draft rankings.
+    Picks best PlayerRanking per player (highest year, then Overall > College > HS, then last_modified).
+    """
+    from collections import defaultdict
+    from django.utils import timezone as dj_tz
+
+    qs = models.PlayerRanking.objects.filter(
+        active=True,
+        ranking__is_draft=True,
+        ranking__is_mock_draft=False,
+        ranking__publish=True,
+        player__isnull=False,
+        player__active=True,
+    ).exclude(
+        highlight_reel_url__isnull=True
+    ).exclude(
+        highlight_reel_url=''
+    ).select_related('player', 'ranking')
+
+    by_player = defaultdict(list)
+    for pr in qs:
+        by_player[pr.player_id].append(pr)
+
+    level_pri = {'Overall': 0, 'College': 1, 'High School': 2}
+
+    def _pr_sort_key(pr):
+        y = 0
+        if pr.ranking_id and pr.ranking.year:
+            ys = str(pr.ranking.year).strip()
+            if ys.isdigit():
+                y = int(ys)
+        dl = level_pri.get((pr.ranking.draft_level if pr.ranking else '') or '', 99)
+        lm = pr.last_modified or pr.created
+        if lm is None:
+            lm = dj_tz.now()
+        return (y, -dl, lm)
+
+    items = []
+    for player_id, prs in by_player.items():
+        best = max(prs, key=_pr_sort_key)
+        embed = (video_embed_url(best.highlight_reel_url or '') or '').strip()
+        if not embed or 'youtube.com/embed' not in embed:
+            continue
+        pos = (best.position or best.player.position or '').strip()
+        items.append({
+            'embed_url': embed,
+            'player': best.player,
+            'position': pos,
+        })
+
+    def _name_sort_key(entry):
+        p = entry['player']
+        parts = (p.name or "").strip().split()
+        if not parts:
+            return ("", "")
+        if len(parts) == 1:
+            return (parts[0].lower(), "")
+        return (parts[-1].lower(), " ".join(parts[:-1]).lower())
+
+    items.sort(key=_name_sort_key)
+    return items
+
+
+def reels_list(request):
+    context = {'reels': _draft_highlight_reel_list_items()}
+    return render(request, "reels_list.html", context)
 
 
 def games_list(request, year=None, month=None, day=None):
@@ -1184,6 +1365,14 @@ def players_detail(request, slug):
     context['has_stats_643'] = has_hitting_stats or has_pitching_stats
     context['has_hitting_stats'] = has_hitting_stats
     context['has_pitching_stats'] = has_pitching_stats
+
+    # Draft highlight reel (sheet → PlayerRanking), when embed differs from spotlight video
+    hr_raw = context['player'].get_highlight_reel_url()
+    hr_embed = (video_embed_url(hr_raw or '') or '').strip()
+    spotlight_embed = (video_embed_url(context['player'].video_url or '') or '').strip()
+    if hr_embed and spotlight_embed and hr_embed == spotlight_embed:
+        hr_embed = ''
+    context['highlight_reel_embed_url'] = hr_embed
 
     return render(request, "players_detail.html", context)
 

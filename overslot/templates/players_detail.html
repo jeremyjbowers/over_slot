@@ -316,6 +316,27 @@ html {
     font-size: 0.875rem;
 }
 
+.player-highlight-reel-block {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--dark-border);
+}
+
+.highlight-reel-heading {
+    margin: 0 0 0.5rem 0;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    color: var(--dark-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.player-highlight-reel-embed {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
 
 .player-info-card {
     background: var(--dark-surface);
@@ -1026,6 +1047,21 @@ body {
                 </div>
                 {% endif %}
                 {% endwith %}
+                {% endif %}
+
+                {% if highlight_reel_embed_url %}
+                <div class="player-highlight-reel-block">
+                    <p class="highlight-reel-heading">Draft highlight reel</p>
+                    <div class="player-video-embed player-highlight-reel-embed">
+                        <iframe
+                            src="{{ highlight_reel_embed_url }}"
+                            title="Draft highlight reel — {{ player.name }}"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
                 {% endif %}
             </div>
         </div>
