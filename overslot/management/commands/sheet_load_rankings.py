@@ -243,7 +243,9 @@ class Command(BaseCommand):
                                     pass
 
                         p.photo_url = row.get('photo_url', None)
-                        p.video_url = row.get('draft_spotlight', None)
+                        spotlight = row.get('draft_spotlight')
+                        if spotlight and str(spotlight).strip():
+                            p.video_url = str(spotlight).strip()
 
                         p.save()
                         if debug:
