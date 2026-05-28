@@ -298,7 +298,7 @@
     }
 
     .navbar-mobile-search {
-        display: flex;
+        display: flex !important;
         flex: 1;
         min-width: 0;
         align-items: center;
@@ -371,20 +371,20 @@
     }
 }
 
-.navbar-mobile-search {
-    display: none;
+/* Ensure burger menu is properly hidden at desktop */
+@media screen and (min-width: 1024px) {
+    .navbar-burger {
+        display: none !important;
+    }
+
+    .navbar-mobile-search {
+        display: none !important;
+    }
 }
 
 @media screen and (max-width: 420px) {
     .logo-text {
         display: none;
-    }
-}
-
-/* Ensure burger menu is properly hidden at desktop */
-@media screen and (min-width: 1024px) {
-    .navbar-burger {
-        display: none !important;
     }
 }
 
