@@ -911,7 +911,11 @@
 
 @media screen and (max-width: 768px) {
     .hero-title {
-        font-size: 3rem;
+        font-size: clamp(1.75rem, 7vw, 2.5rem);
+    }
+
+    .hero-with-image {
+        min-height: 280px;
     }
 
     .main-layout {

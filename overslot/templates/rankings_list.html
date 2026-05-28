@@ -25,7 +25,13 @@
 .players-list .team-inline .team-logo { height: 18px; width: auto; display: inline-block; vertical-align: middle; background: #ffffff; border-radius: 50%; padding: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,0.1) inset; }
 .players-list .team-inline .team-logo.team-logo--mlb-cap-on-dark { width: 1.25rem; height: 1.25rem; object-fit: contain; object-position: center; background: transparent; border-radius: 0; padding: 0; box-shadow: none; flex-shrink: 0; }
 @media (max-width: 1024px) { .ranking-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .ranking-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+    .ranking-grid {
+        grid-template-columns: 1fr;
+        padding: 1.5rem 1rem;
+        gap: 1rem;
+    }
+}
 </style>
 
 <div class="ranking-grid">

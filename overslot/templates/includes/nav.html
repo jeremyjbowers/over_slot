@@ -13,6 +13,21 @@
                 </div>
             </a>
 
+            <div class="navbar-mobile-search" aria-label="Site search">
+                <div class="search-wrapper">
+                    <input type="text"
+                           class="search-input search-input--mobile"
+                           placeholder="Search"
+                           id="navSearchMobile"
+                           autocomplete="off"
+                           aria-controls="searchResults"
+                           aria-expanded="false">
+                    <div class="search-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+            </div>
+
             <a role="button" 
                class="navbar-burger" 
                aria-label="menu" 
@@ -69,43 +84,17 @@
             </div>
 
             <div class="navbar-end">
-                <div class="navbar-item search-container">
+                <div class="navbar-item search-container search-container--desktop">
                     <div class="search-wrapper">
                         <input type="text" 
                                class="search-input" 
                                placeholder="Search news, rankings, players or teams"
                                id="navSearch"
-                               autocomplete="off">
+                               autocomplete="off"
+                               aria-controls="searchResults"
+                               aria-expanded="false">
                         <div class="search-icon">
                             <i class="fas fa-search"></i>
-                        </div>
-                    </div>
-                    <div class="search-results" id="searchResults">
-                        <div class="search-results-content">
-                            <div class="search-column">
-                                <h3 class="search-column-title">
-                                    News
-                                </h3>
-                                <div class="search-items" id="articleResults"></div>
-                            </div>
-                            <div class="search-column">
-                                <h3 class="search-column-title">
-                                    Rankings
-                                </h3>
-                                <div class="search-items" id="rankingResults"></div>
-                            </div>
-                            <div class="search-column">
-                                <h3 class="search-column-title">
-                                    Players
-                                </h3>
-                                <div class="search-items" id="playerResults"></div>
-                            </div>
-                            <div class="search-column">
-                                <h3 class="search-column-title">
-                                    Teams
-                                </h3>
-                                <div class="search-items" id="teamResults"></div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -162,6 +151,35 @@
                     </div>
                 </div>
                 {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="search-results" id="searchResults" role="listbox" aria-label="Search results">
+        <div class="search-results-content">
+            <div class="search-column">
+                <h3 class="search-column-title">
+                    News
+                </h3>
+                <div class="search-items" id="articleResults"></div>
+            </div>
+            <div class="search-column">
+                <h3 class="search-column-title">
+                    Rankings
+                </h3>
+                <div class="search-items" id="rankingResults"></div>
+            </div>
+            <div class="search-column">
+                <h3 class="search-column-title">
+                    Players
+                </h3>
+                <div class="search-items" id="playerResults"></div>
+            </div>
+            <div class="search-column">
+                <h3 class="search-column-title">
+                    Teams
+                </h3>
+                <div class="search-items" id="teamResults"></div>
             </div>
         </div>
     </div>
@@ -262,8 +280,43 @@
 
 /* Mobile menu styles */
 @media screen and (max-width: 1023px) {
+    .navbar > .container {
+        max-width: 100%;
+        padding-left: 0.5rem;
+        padding-right: 0.25rem;
+    }
+
     .navbar-brand {
         flex: 1;
+        min-width: 0;
+        gap: 0.25rem;
+    }
+
+    .navbar-item.logo {
+        padding: 0 0.5rem;
+        flex-shrink: 0;
+    }
+
+    .navbar-mobile-search {
+        display: flex;
+        flex: 1;
+        min-width: 0;
+        align-items: center;
+        padding: 0 0.25rem;
+    }
+
+    .navbar-burger {
+        margin-left: 0.25rem;
+        flex-shrink: 0;
+    }
+
+    .search-container--desktop {
+        display: none !important;
+    }
+
+    .search-input--mobile {
+        padding: 0.55rem 2rem 0.55rem 0.75rem;
+        font-size: 16px; /* prevent iOS zoom on focus */
     }
 
     .navbar-menu {
@@ -281,6 +334,22 @@
         border-bottom: 1px solid var(--dark-border);
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         z-index: 999;
+        max-height: calc(100dvh - 3.5rem);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .navbar-menu.is-active .navbar-item.has-dropdown .navbar-dropdown {
+        display: none;
+        padding-left: 0.5rem;
+    }
+
+    .navbar-menu.is-active .navbar-item.has-dropdown.is-active .navbar-dropdown {
+        display: block;
+    }
+
+    .navbar-menu.is-active .navbar-item.has-dropdown > .navbar-link.nav-dropdown-parent {
+        cursor: pointer;
     }
 
     .navbar-menu.is-active .navbar-item {
@@ -299,6 +368,16 @@
 
     .navbar-menu.is-active .navbar-end .navbar-item {
         border-top: 1px solid var(--dark-border);
+    }
+}
+
+.navbar-mobile-search {
+    display: none;
+}
+
+@media screen and (max-width: 420px) {
+    .logo-text {
+        display: none;
     }
 }
 
@@ -413,9 +492,10 @@
     background: var(--dark-surface);
     border: 1px solid var(--dark-border);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 998;
-    max-height: calc(100vh - 6rem);
+    z-index: 1001;
+    max-height: calc(100dvh - 5rem);
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .search-results.active {
@@ -478,6 +558,14 @@
 @media screen and (max-width: 1023px) {
     .search-container {
         min-width: 100%;
+    }
+
+    .search-results {
+        width: calc(100% - 1rem);
+        max-width: none;
+        left: 0.5rem;
+        right: 0.5rem;
+        transform: none;
     }
 
     .search-results-content {
@@ -561,122 +649,174 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Get all "navbar-burger" elements
     const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+    const navMenu = document.getElementById('navMenu');
 
-    // Add a click event on each of them
     $navbarBurgers.forEach(el => {
         el.addEventListener('click', () => {
-            // Get the target from the "data-target" attribute
             const target = el.dataset.target;
             const $target = document.getElementById(target);
 
-            // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
             el.classList.toggle('is-active');
             $target.classList.toggle('is-active');
+            el.setAttribute('aria-expanded', $target.classList.contains('is-active'));
         });
     });
 
-    const searchInput = document.getElementById('navSearch');
+    // Mobile nav dropdown toggles (hover doesn't work on touch)
+    const mobileNavDropdowns = document.querySelectorAll('.navbar-start .navbar-item.has-dropdown');
+    mobileNavDropdowns.forEach(item => {
+        const trigger = item.querySelector('.navbar-link.nav-dropdown-parent');
+        if (!trigger) return;
+
+        trigger.addEventListener('click', (e) => {
+            if (window.innerWidth > 1023) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            mobileNavDropdowns.forEach(other => {
+                if (other !== item) other.classList.remove('is-active');
+            });
+            item.classList.toggle('is-active');
+        });
+    });
+
+    const searchInputs = [
+        document.getElementById('navSearch'),
+        document.getElementById('navSearchMobile'),
+    ].filter(Boolean);
     const searchResults = document.getElementById('searchResults');
     const articleResults = document.getElementById('articleResults');
     const rankingResults = document.getElementById('rankingResults');
     const playerResults = document.getElementById('playerResults');
     const teamResults = document.getElementById('teamResults');
-    
+
     let searchTimeout;
 
-    searchInput.addEventListener('input', (e) => {
-        clearTimeout(searchTimeout);
-        const query = e.target.value.trim();
-        
-        if (query.length < 2) {
-            searchResults.classList.remove('active');
-            return;
-        }
+    function setSearchExpanded(isExpanded) {
+        searchInputs.forEach(input => input.setAttribute('aria-expanded', isExpanded ? 'true' : 'false'));
+    }
 
-        searchTimeout = setTimeout(() => {
-            fetch(`/api/search/?q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                    // Clear previous results
-                    articleResults.innerHTML = '';
-                    rankingResults.innerHTML = '';
-                    playerResults.innerHTML = '';
-                    teamResults.innerHTML = '';
+    function syncSearchInputs(sourceInput) {
+        searchInputs.forEach(input => {
+            if (input !== sourceInput) {
+                input.value = sourceInput.value;
+            }
+        });
+    }
 
-                    // Populate articles
-                    data.articles.forEach(article => {
-                        articleResults.innerHTML += `
-                            <a href="/articles/${article.slug}/" class="search-item">
-                                <div class="search-item-title">
-                                    ${article.headline}
-                                </div>
-                                <div class="search-item-meta">${article.created}</div>
-                            </a>
-                        `;
-                    });
+    function closeSearchResults() {
+        searchResults.classList.remove('active');
+        setSearchExpanded(false);
+    }
 
-                    // Populate rankings (including mock drafts)
-                    data.rankings.forEach(ranking => {
-                        const rankingHref = ranking.is_mock_draft ? `/mock-drafts/${ranking.slug}/` : `/rankings/${ranking.slug}/`;
-                        rankingResults.innerHTML += `
-                            <a href="${rankingHref}" class="search-item">
-                                <div class="search-item-title">
-                                    ${ranking.headline}
-                                </div>
-                                <div class="search-item-meta">
-                                    ${ranking.year}
-                                    ${ranking.preview ? `<span class="search-item-preview">• Contains ${ranking.preview}</span>` : ''}
-                                </div>
-                            </a>
-                        `;
-                    });
+    function performSearch(query) {
+        fetch(`/api/search/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                articleResults.innerHTML = '';
+                rankingResults.innerHTML = '';
+                playerResults.innerHTML = '';
+                teamResults.innerHTML = '';
 
-                    // Populate players
-                    data.players.forEach(player => {
-                        playerResults.innerHTML += `
-                            <a href="/players/${player.slug}/" class="search-item">
-                                <div class="search-item-title">
-                                    ${player.name}
-                                </div>
-                                <div class="search-item-meta">${player.position} | ${player.school}</div>
-                            </a>
-                        `;
-                    });
-
-                    // Populate teams
-                    data.teams.forEach(team => {
-                        if (!team.slug) return; // Skip teams without slugs
-                        const rankingText = team.ranking ? `#${team.ranking} ` : '';
-                        const abbreviationText = team.abbreviation ? ` (${team.abbreviation})` : '';
-                        teamResults.innerHTML += `
-                            <a href="/teams/${team.slug}/" class="search-item">
-                                <div class="search-item-title">
-                                    ${rankingText}${team.name}${abbreviationText}
-                                </div>
-                                <div class="search-item-meta">Team</div>
-                            </a>
-                        `;
-                    });
-
-                    searchResults.classList.add('active');
+                data.articles.forEach(article => {
+                    articleResults.innerHTML += `
+                        <a href="/articles/${article.slug}/" class="search-item">
+                            <div class="search-item-title">
+                                ${article.headline}
+                            </div>
+                            <div class="search-item-meta">${article.created}</div>
+                        </a>
+                    `;
                 });
-        }, 300);
+
+                data.rankings.forEach(ranking => {
+                    const rankingHref = ranking.is_mock_draft ? `/mock-drafts/${ranking.slug}/` : `/rankings/${ranking.slug}/`;
+                    rankingResults.innerHTML += `
+                        <a href="${rankingHref}" class="search-item">
+                            <div class="search-item-title">
+                                ${ranking.headline}
+                            </div>
+                            <div class="search-item-meta">
+                                ${ranking.year}
+                                ${ranking.preview ? `<span class="search-item-preview">• Contains ${ranking.preview}</span>` : ''}
+                            </div>
+                        </a>
+                    `;
+                });
+
+                data.players.forEach(player => {
+                    playerResults.innerHTML += `
+                        <a href="/players/${player.slug}/" class="search-item">
+                            <div class="search-item-title">
+                                ${player.name}
+                            </div>
+                            <div class="search-item-meta">${player.position} | ${player.school}</div>
+                        </a>
+                    `;
+                });
+
+                data.teams.forEach(team => {
+                    if (!team.slug) return;
+                    const rankingText = team.ranking ? `#${team.ranking} ` : '';
+                    const abbreviationText = team.abbreviation ? ` (${team.abbreviation})` : '';
+                    teamResults.innerHTML += `
+                        <a href="/teams/${team.slug}/" class="search-item">
+                            <div class="search-item-title">
+                                ${rankingText}${team.name}${abbreviationText}
+                            </div>
+                            <div class="search-item-meta">Team</div>
+                        </a>
+                    `;
+                });
+
+                searchResults.classList.add('active');
+                setSearchExpanded(true);
+
+                // Close burger menu when searching on mobile so results aren't obscured
+                if (window.innerWidth <= 1023 && navMenu && navMenu.classList.contains('is-active')) {
+                    navMenu.classList.remove('is-active');
+                    $navbarBurgers.forEach(burger => {
+                        burger.classList.remove('is-active');
+                        burger.setAttribute('aria-expanded', 'false');
+                    });
+                }
+            });
+    }
+
+    searchInputs.forEach(searchInput => {
+        searchInput.addEventListener('input', (e) => {
+            syncSearchInputs(e.target);
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+
+            if (query.length < 2) {
+                closeSearchResults();
+                return;
+            }
+
+            searchTimeout = setTimeout(() => performSearch(query), 300);
+        });
+
+        searchInput.addEventListener('focus', () => {
+            if (searchInput.value.trim().length >= 2) {
+                searchResults.classList.add('active');
+                setSearchExpanded(true);
+            }
+        });
     });
 
-    // Close search results when clicking outside
     document.addEventListener('click', (e) => {
-        if (!searchResults.contains(e.target) && e.target !== searchInput) {
-            searchResults.classList.remove('active');
+        const clickedSearch = searchInputs.some(input => input === e.target || input.contains(e.target));
+        if (!searchResults.contains(e.target) && !clickedSearch) {
+            closeSearchResults();
         }
     });
 
-    // Prevent clicks inside search results from closing
     searchResults.addEventListener('click', (e) => {
         e.stopPropagation();
     });
-    });
+});
 </script>
 
 <script>

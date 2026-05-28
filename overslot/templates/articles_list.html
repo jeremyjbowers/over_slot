@@ -236,7 +236,7 @@
 
 @media screen and (max-width: 768px) {
     .main-layout {
-        padding: 3rem 1rem 0;
+        padding: 1.5rem 1rem 0;
         gap: 1.5rem;
     }
     {% if stock_watch_list_only %}
@@ -245,6 +245,10 @@
     }
     {% endif %}
     .article-list { grid-template-columns: 1fr; }
+
+    .content-area > header.mb-5 .title.is-2 {
+        font-size: 1.75rem;
+    }
 }
 </style>
 

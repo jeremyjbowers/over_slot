@@ -583,6 +583,37 @@
                 opacity: 1 !important;
                 font-weight: 700 !important;
             }
+
+            /* Shared mobile layout for core content pages */
+            @media screen and (max-width: 768px) {
+                main {
+                    padding-bottom: 2.5rem;
+                }
+
+                .hero {
+                    padding: 2rem 0;
+                    margin-bottom: 2rem;
+                }
+
+                .hero-with-image {
+                    min-height: 280px;
+                }
+
+                .hero-title {
+                    font-size: clamp(1.75rem, 7vw, 2.5rem);
+                }
+
+                .hero-subhead,
+                .hero-subtitle {
+                    font-size: var(--text-lg);
+                }
+
+                .hero .container,
+                .article-content {
+                    padding-left: 1rem;
+                    padding-right: 1rem;
+                }
+            }
         </style>
         {% block extra_css %}{% endblock %}
     </head>
