@@ -610,6 +610,39 @@ def _mock_draft_list_version_key(version_str):
         return Version("0")
 
 
+def _player_ranking_sort_key(pr):
+    """
+    Sort PlayerRanking rows for player profile pages.
+
+    Order:
+      1. Year descending (furthest-future season first).
+      2. Within a year, regular rankings before mock drafts.
+      3. Within a year's mock drafts, version descending (3.0, 2.0, 1.0).
+    """
+    ranking = getattr(pr, "ranking", None)
+    year_key = _mock_draft_list_year_key(getattr(ranking, "year", None))
+    is_mock = 1 if (ranking is not None and ranking.is_mock_draft) else 0
+    version_key = _mock_draft_list_version_key(getattr(ranking, "mock_draft_version", None))
+    # Negate year/version so a normal ascending sort yields newest-first ordering;
+    # is_mock stays positive so regular rankings (0) precede mock drafts (1).
+    return (-year_key, is_mock, _NegatedVersion(version_key))
+
+
+class _NegatedVersion:
+    """Wrapper that reverses Version comparison order (since Version cannot be negated)."""
+
+    __slots__ = ("_v",)
+
+    def __init__(self, version):
+        self._v = version
+
+    def __lt__(self, other):
+        return self._v > other._v
+
+    def __eq__(self, other):
+        return self._v == other._v
+
+
 def _mock_drafts_list_data():
     """Published mock drafts, newest year and newest version first. Cached."""
     qs = models.Ranking.objects.filter(is_mock_draft=True, publish=True).order_by("slug")
@@ -1157,8 +1190,15 @@ def players_detail(request, slug):
     context = {}
     context['player'] = get_object_or_404(models.Player, slug=slug, active=True)
     
-    # Only show active rankings from published rankings
-    context['rankings'] = models.PlayerRanking.objects.filter(player=context['player'], ranking__publish=True, active=True)
+    # Only show active rankings from published rankings.
+    # Ordered: newest year first, regular rankings before mock drafts, mock draft
+    # versions descending (e.g. 2026 ranking, then 2026 mock 3.0/2.0/1.0, then 2022 HS ranking).
+    context['rankings'] = sorted(
+        models.PlayerRanking.objects.filter(
+            player=context['player'], ranking__publish=True, active=True
+        ).select_related('ranking'),
+        key=_player_ranking_sort_key,
+    )
     
     # Build charts from PlayerStatSeason across all available stat years (most recent first)
     season_qs = models.PlayerStatSeason.objects.filter(player=context['player']).order_by('-year')

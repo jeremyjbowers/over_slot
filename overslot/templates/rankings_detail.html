@@ -638,6 +638,86 @@
     width: 100%;
 }
 
+.search-bar-container {
+    flex-basis: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-bar-container .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--dark-text-muted);
+    pointer-events: none;
+    font-size: 0.875rem;
+}
+
+.player-search-input {
+    width: 100%;
+    background: var(--dark-bg);
+    border: 1px solid var(--dark-border);
+    color: var(--dark-text);
+    padding: 0.5rem 2.5rem 0.5rem 2.25rem;
+    font-size: var(--text-sm);
+    font-family: var(--font-sans);
+    transition: all 0.2s ease;
+}
+
+.player-search-input::placeholder {
+    color: var(--dark-text-muted);
+}
+
+.player-search-input:focus {
+    border-color: var(--theme-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb), 0.1);
+}
+
+.player-search-input:hover {
+    border-color: var(--theme-primary);
+}
+
+.search-clear-btn {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--dark-text-muted);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    display: none;
+    font-size: 0.875rem;
+    transition: color 0.2s ease;
+}
+
+.search-clear-btn:hover {
+    color: var(--theme-primary);
+}
+
+.search-bar-container.has-value .search-clear-btn {
+    display: block;
+}
+
+.no-results-message {
+    display: none;
+    padding: 2rem;
+    text-align: center;
+    color: var(--dark-text-secondary);
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    margin-top: 1rem;
+    font-size: var(--text-base);
+}
+
+.no-results-message.show {
+    display: block;
+}
+
 .filters-container {
     flex: 1;
 }
@@ -1054,6 +1134,20 @@
         <div class="player-rankings-container">
             <div class="player-rankings-header">
                 <div class="controls-toolbar">
+                    <div class="search-bar-container" id="search-bar-container">
+                        <i class="fas fa-search search-icon" aria-hidden="true"></i>
+                        <input
+                            type="search"
+                            id="player-search"
+                            class="player-search-input"
+                            placeholder="Search by player name..."
+                            autocomplete="off"
+                            aria-label="Search players by name"
+                        />
+                        <button type="button" id="search-clear" class="search-clear-btn" aria-label="Clear search">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                     <div class="filters-container">
                         <div class="filters-grid">
                             <select id="position-filter" class="filter-select">
@@ -1104,6 +1198,10 @@
             {% for pr in ranking.get_playerrankings %}
                 {% include 'includes/player_ranking_card.html' with player_ranking=pr %}
             {% endfor %}
+
+            <div class="no-results-message" id="no-results-message">
+                No players match your search and filters.
+            </div>
         </div>
         {% endif %}
     </div>
@@ -1122,6 +1220,8 @@ function filterPlayers() {
     const schoolFilter = document.getElementById('school-filter')?.value || '';
     const commitmentFilter = document.getElementById('commitment-filter')?.value || '';
     const stateFilter = document.getElementById('state-filter')?.value || '';
+    const searchInput = document.getElementById('player-search');
+    const searchQuery = (searchInput?.value || '').trim().toLowerCase();
     
     const playerCards = document.querySelectorAll('.player-ranking-card');
     let visibleCount = 0;
@@ -1140,6 +1240,7 @@ function filterPlayers() {
     ];
     
     playerCards.forEach(card => {
+        const name = (card.dataset.name || '').toLowerCase();
         const position = card.dataset.position || '';
         const school = card.dataset.school || '';
         const commitment = card.dataset.commitment || '';
@@ -1156,8 +1257,9 @@ function filterPlayers() {
         const schoolMatch = !schoolFilter || school === schoolFilter;
         const commitmentMatch = !commitmentFilter || commitment === commitmentFilter;
         const stateMatch = !stateFilter || state === stateFilter;
+        const nameMatch = !searchQuery || name.includes(searchQuery);
         
-        const shouldShow = positionMatch && schoolMatch && commitmentMatch && stateMatch;
+        const shouldShow = positionMatch && schoolMatch && commitmentMatch && stateMatch && nameMatch;
         
         if (shouldShow) {
             card.style.display = '';
@@ -1166,9 +1268,16 @@ function filterPlayers() {
             card.style.display = 'none';
         }
     });
-    
-    // Update any visible count display if needed
-    console.log(`Showing ${visibleCount} of ${playerCards.length} players`);
+
+    // Show no-results message when nothing matches
+    const noResultsEl = document.getElementById('no-results-message');
+    if (noResultsEl) {
+        if (visibleCount === 0 && playerCards.length > 0) {
+            noResultsEl.classList.add('show');
+        } else {
+            noResultsEl.classList.remove('show');
+        }
+    }
 }
 
 function clearAllFilters() {
@@ -1179,6 +1288,11 @@ function clearAllFilters() {
             element.value = '';
         }
     });
+    const searchInput = document.getElementById('player-search');
+    if (searchInput) {
+        searchInput.value = '';
+        document.getElementById('search-bar-container')?.classList.remove('has-value');
+    }
     filterPlayers();
 }
 
@@ -1248,6 +1362,44 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearButton = document.getElementById('clear-filters');
     if (clearButton) {
         clearButton.addEventListener('click', clearAllFilters);
+    }
+
+    // Player name search (client-side, real-time)
+    const searchInput = document.getElementById('player-search');
+    const searchContainer = document.getElementById('search-bar-container');
+    const searchClearBtn = document.getElementById('search-clear');
+    if (searchInput) {
+        const updateSearchClearVisibility = () => {
+            if (searchContainer) {
+                if (searchInput.value.length > 0) {
+                    searchContainer.classList.add('has-value');
+                } else {
+                    searchContainer.classList.remove('has-value');
+                }
+            }
+        };
+        searchInput.addEventListener('input', () => {
+            updateSearchClearVisibility();
+            filterPlayers();
+        });
+        // Allow Escape to clear quickly
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && searchInput.value) {
+                searchInput.value = '';
+                updateSearchClearVisibility();
+                filterPlayers();
+            }
+        });
+    }
+    if (searchClearBtn) {
+        searchClearBtn.addEventListener('click', () => {
+            if (searchInput) {
+                searchInput.value = '';
+                searchContainer?.classList.remove('has-value');
+                filterPlayers();
+                searchInput.focus();
+            }
+        });
     }
 });
 </script>

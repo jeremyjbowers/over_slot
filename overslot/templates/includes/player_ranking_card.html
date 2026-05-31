@@ -1,6 +1,7 @@
 {% load overslot_tags %}
 
 <div class="player-ranking-card" 
+     data-name="{{ player_ranking.player.name|default:'' }}"
      data-position="{{ player_ranking.position|default:'' }}"
      data-school="{{ player_ranking.school|default:'' }}"
      data-commitment="{{ player_ranking.commitment|default:'' }}"

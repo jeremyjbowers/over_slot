@@ -554,6 +554,131 @@ class ModelTestCase(TestCase):
         self.assertEqual(self.ranking.get_initial_players().count(), 1)
 
 
+class PlayerRankingSortOrderTestCase(TestCase):
+    """Player profile page sorts rankings by year desc, then regular before mock drafts,
+    then mock-draft version desc."""
+
+    def setUp(self):
+        self.client = Client()
+        self.staff_user = User.objects.create_user(
+            username='staff_ordering@example.com',
+            email='staff_ordering@example.com',
+            password='staffpass123',
+            is_staff=True,
+        )
+
+        self.player = Player.objects.create(
+            name="Sort Test Player",
+            position="SS",
+            school="Test University",
+            slug="sort-test-player",
+        )
+
+        # 2026 college ranking (most recent regular ranking)
+        self.ranking_2026 = Ranking.objects.create(
+            year="2026",
+            ranking_type="College",
+            ranking_length="100",
+            draft_level="College",
+            headline="2026 Top 100",
+            slug="2026-top-100",
+            publish=True,
+        )
+        # 2026 mock drafts at v1.0, v2.0, v3.0
+        self.mock_2026_v1 = Ranking.objects.create(
+            year="2026",
+            is_mock_draft=True,
+            mock_draft_version="1.0",
+            is_draft=True,
+            headline="2026 Mock Draft 1.0",
+            slug="2026-mock-1",
+            publish=True,
+        )
+        self.mock_2026_v2 = Ranking.objects.create(
+            year="2026",
+            is_mock_draft=True,
+            mock_draft_version="2.0",
+            is_draft=True,
+            headline="2026 Mock Draft 2.0",
+            slug="2026-mock-2",
+            publish=True,
+        )
+        self.mock_2026_v3 = Ranking.objects.create(
+            year="2026",
+            is_mock_draft=True,
+            mock_draft_version="3.0",
+            is_draft=True,
+            headline="2026 Mock Draft 3.0",
+            slug="2026-mock-3",
+            publish=True,
+        )
+        # 2022 high school ranking (older)
+        self.ranking_2022_hs = Ranking.objects.create(
+            year="2022",
+            ranking_type="High School",
+            ranking_length="100",
+            draft_level="High School",
+            headline="2022 HS Top 100",
+            slug="2022-hs-top-100",
+            publish=True,
+        )
+
+        # Create the PlayerRanking rows in scrambled order to confirm sorting happens.
+        for ranking, rank in [
+            (self.mock_2026_v1, 5),
+            (self.ranking_2022_hs, 50),
+            (self.mock_2026_v3, 3),
+            (self.ranking_2026, 1),
+            (self.mock_2026_v2, 4),
+        ]:
+            PlayerRanking.objects.create(
+                player=self.player,
+                ranking=ranking,
+                rank=rank,
+                position="SS",
+            )
+
+    def test_player_rankings_ordered_by_year_then_type_then_version(self):
+        """Newest-year regular ranking first, then mock drafts v3->v1, then older HS ranking."""
+        self.client.login(username='staff_ordering@example.com', password='staffpass123')
+        response = self.client.get(
+            reverse('players_detail', kwargs={'slug': self.player.slug}),
+        )
+        self.assertEqual(response.status_code, 200)
+
+        rankings = list(response.context['rankings'])
+        ordered_slugs = [pr.ranking.slug for pr in rankings]
+        self.assertEqual(
+            ordered_slugs,
+            [
+                self.ranking_2026.slug,    # 2026 regular ranking first
+                self.mock_2026_v3.slug,    # then 2026 mocks newest version first
+                self.mock_2026_v2.slug,
+                self.mock_2026_v1.slug,
+                self.ranking_2022_hs.slug, # older year last
+            ],
+        )
+
+    def test_sort_key_helper_directly(self):
+        """The helper produces sort keys that yield the expected order without DB roundtrip."""
+        from overslot.views import _player_ranking_sort_key
+
+        rows = list(
+            PlayerRanking.objects.filter(player=self.player).select_related('ranking')
+        )
+        ordered = sorted(rows, key=_player_ranking_sort_key)
+        self.assertEqual(
+            [pr.ranking.slug for pr in ordered],
+            [
+                self.ranking_2026.slug,
+                self.mock_2026_v3.slug,
+                self.mock_2026_v2.slug,
+                self.mock_2026_v1.slug,
+                self.ranking_2022_hs.slug,
+            ],
+        )
+
+
 class URLPatternTestCase(TestCase):
     """Test URL patterns resolve correctly"""
     

@@ -130,9 +130,15 @@ def subscription_required(view_func):
                 )
                 context['recent_articles'] = Article.objects.filter(publish=True, active=True).order_by('-created')[:5]
             elif view_name == 'players_detail':
+                from overslot.views import _player_ranking_sort_key
                 player = get_object_or_404(Player, slug=kwargs.get('slug'))
                 context['player'] = player
-                context['rankings'] = PlayerRanking.objects.filter(player=player, ranking__publish=True, active=True)
+                context['rankings'] = sorted(
+                    PlayerRanking.objects.filter(
+                        player=player, ranking__publish=True, active=True
+                    ).select_related('ranking'),
+                    key=_player_ranking_sort_key,
+                )
                 context['articles'] = Article.objects.filter(players=player, publish=True, active=True)
             elif view_name == 'stock_watch_detail':
                 from overslot.models import StockWatchArticle
