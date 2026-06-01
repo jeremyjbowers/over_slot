@@ -10,7 +10,7 @@
 (function () {
   'use strict';
 
-  const MOCK_DRAFT_JS_VERSION = '2026-05-06.2';
+  const MOCK_DRAFT_JS_VERSION = '2026-06-01.1';
   if (typeof window !== 'undefined') {
     window.__MOCK_DRAFT_JS_VERSION = MOCK_DRAFT_JS_VERSION;
   }
@@ -39,12 +39,6 @@
   const MIN_SLOT_PCT_EARLY_BOARD = 0.75;
   /** After Round 2 ends: chance that 1–3 top remaining HS players “go to college” and leave the pool. */
   const HS_GTC_AFTER_R2_CHANCE = 0.08;
-
-  /** First pick only: P(lock onto Grady Emerson | he remains in the AI candidate pool). Editor override. */
-  const GRADY_EMERSON_FIRST_PICK_BY_TEAM = {
-    'Tampa Bay Rays': 0.7,
-    'Minnesota Twins': 0.7
-  };
 
   const TEAM_LOGO_BASE = 'https://www.mlbstatic.com/team-logos/team-cap-on-dark';
   const TEAM_LOGO_PLACEHOLDER = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-5 h-5 text-neutral-300"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
@@ -2245,6 +2239,69 @@
       .filter(Boolean);
   }
 
+  function findPlayerByNamePart(namePart, candidates) {
+    const key = (namePart || '').trim().toLowerCase();
+    if (!key) return null;
+    let player = candidates.find(p => p.name.toLowerCase().includes(key));
+    if (!player) {
+      player = state.players.find(
+        p => isPlayerSelectableInPool(p) && p.name.toLowerCase().includes(key)
+      );
+    }
+    return player || null;
+  }
+
+  /** Player-specific first-pick locks from CSV rules text (percentages are cumulative). */
+  function parsePlayerPctRules(rulesText) {
+    const raw = (rulesText || '').trim();
+    if (!raw) return [];
+    const rules = raw.toLowerCase();
+
+    if (/^take\b/.test(rules)) {
+      const body = rules.replace(/^take\s+/, '').replace(/\s+and\s+/g, ', ');
+      const entries = [];
+      for (const part of body.split(',').map(s => s.trim()).filter(Boolean)) {
+        const m = part.match(/^([a-z][a-z\s]+?) (\d+)% of the time\.?$/);
+        if (m) entries.push({ namePart: m[1].trim(), pct: parseInt(m[2], 10) / 100 });
+      }
+      if (entries.length) return entries;
+    }
+
+    const entries = [];
+    let willDraft = rules.match(/will draft ([a-z][a-z\s]*) with.*?(\d+)%/);
+    if (!willDraft) willDraft = rules.match(/will draft ([a-z][a-z\s]*?)\s+(\d+)%/);
+    if (willDraft) {
+      entries.push({ namePart: willDraft[1].trim(), pct: parseInt(willDraft[2], 10) / 100 });
+    }
+
+    for (const m of rules.matchAll(/(\d+)%\s*chance of taking ([a-z][a-z\s]+?)(?:\s+if|\s*\.|\s*$)/g)) {
+      entries.push({ namePart: m[2].trim(), pct: parseInt(m[1], 10) / 100 });
+    }
+
+    return entries;
+  }
+
+  function tryPlayerPctRuleLock(candidates, rulesText, soft) {
+    const entries = parsePlayerPctRules(rulesText);
+    if (!entries.length) return null;
+
+    const roll = Math.random();
+    let cumulative = 0;
+    for (const entry of entries) {
+      cumulative += entry.pct;
+      if (roll >= cumulative) continue;
+      const player = findPlayerByNamePart(entry.namePart, candidates);
+      if (!player) return null;
+      const r = soft([
+        `We've had our eye on ${player.name} for a while; he was our guy at 1.`,
+        `We were locked in on ${player.name} from the start.`,
+        `${player.name} was at the top of our board; we're thrilled he was there.`
+      ]);
+      return { candidates: [player], reason: r };
+    }
+    return null;
+  }
+
   const OVER_SLOT_PHRASES = [
     'We feel he\'s worth going over slot for.',
     'We think he\'s worth the over-slot investment.',
@@ -2429,41 +2486,9 @@
     const isPositionPlayer = p => !isPitcher(p);
 
     if (isFirstPick) {
-      // Specific player: "Will draft X with ... Y% ..." or "Will draft X Y% of the time"
-      let playerMatch = rules.match(/will draft ([a-z][a-z\s]*) with.*?(\d+)%/);
-      if (!playerMatch) {
-        playerMatch = rules.match(/will draft ([a-z][a-z\s]*?)\s+(\d+)%/);
-      }
-      if (playerMatch && pickRow && pickRow.pick === 1) {
-        const namePart = playerMatch[1].trim();
-        const pct = parseInt(playerMatch[2], 10) / 100;
-        let player = candidates.find(p => p.name.toLowerCase().includes(namePart));
-        if (!player) {
-          player = state.players.find(
-            p => isPlayerSelectableInPool(p) && p.name.toLowerCase().includes(namePart)
-          );
-        }
-        if (player && Math.random() < pct) {
-          const r = soft([
-            `We've had our eye on ${player.name} for a while; he was our guy at 1.`,
-            `We were locked in on ${player.name} from the start.`,
-            `${player.name} was at the top of our board; we're thrilled he was there.`
-          ]);
-          return { candidates: [player], reason: r };
-        }
-      }
-
-      const emersonBias = GRADY_EMERSON_FIRST_PICK_BY_TEAM[team];
-      if (emersonBias != null && Math.random() < emersonBias) {
-        const emerson = candidates.find(p => p.name === 'Grady Emerson');
-        if (emerson) {
-          const r = soft([
-            "We've had Grady Emerson at the top of our board; elated he lasted to us.",
-            "Emerson was our guy—we had strong conviction and didn't overthink it.",
-            'Grady Emerson checked every box for us; thrilled to add him to the system.'
-          ]);
-          return { candidates: [emerson], reason: r };
-        }
+      if (pickRow && pickRow.pick === 1) {
+        const playerLock = tryPlayerPctRuleLock(candidates, teamData.rules, soft);
+        if (playerLock) return playerLock;
       }
 
       // "Will always do a big discount pick with first pick"

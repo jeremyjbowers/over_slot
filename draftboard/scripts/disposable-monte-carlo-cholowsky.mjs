@@ -224,7 +224,7 @@ function main() {
     `White Sox take Roch Cholowsky at overall pick 1: ${soxCholowskyAt1} / ${ITERATIONS} (${(pHat * 100).toFixed(2)}%)`
   );
   console.log(
-    `Wilson 95% CI for P(Sox @1): [${(ci.low * 100).toFixed(2)}%, ${(ci.high * 100).toFixed(2)}%] (expect ~85%)`
+    `Wilson 95% CI for P(Sox @1): [${(ci.low * 100).toFixed(2)}%, ${(ci.high * 100).toFixed(2)}%] (expect ~60%)`
   );
   console.log(`Cholowsky draft position (overall slot among first 3 picks):`);
   console.log(slotCounts);
