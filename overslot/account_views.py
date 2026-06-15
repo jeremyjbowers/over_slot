@@ -60,7 +60,7 @@ def add_secondary_email(request):
         messages.error(request, "Invalid submission.")
         return redirect('account_dashboard')
 
-    if not validate_min_fill_time(request, '_ts', 2.0):
+    if not validate_min_fill_time(request, '_ts', 1.0):
         messages.error(request, "Please take a moment to complete the form.")
         return redirect('account_dashboard')
 

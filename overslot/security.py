@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core.cache import cache
 
 
-DEFAULT_MIN_FILL_SECONDS = 2.0
+DEFAULT_MIN_FILL_SECONDS = 1.0
 DEFAULT_RATE_LIMIT = 8
 DEFAULT_RATE_WINDOW_SECONDS = 300  # 5 minutes
 

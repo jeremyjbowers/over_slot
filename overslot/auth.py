@@ -311,7 +311,7 @@ def magic_link_view(request):
         if not validate_honeypot(request, 'website'):
             messages.error(request, "Invalid submission.")
             return redirect('account_login')
-        if not validate_min_fill_time(request, '_ts', 2.0):
+        if not validate_min_fill_time(request, '_ts', 1.0):
             messages.error(request, "Please take a moment to complete the form.")
             return redirect('account_login')
 
@@ -351,7 +351,7 @@ def magic_link_signup_view(request):
         if not validate_honeypot(request, 'website'):
             messages.error(request, "Invalid submission.")
             return redirect('account_signup')
-        if not validate_min_fill_time(request, '_ts', 3.0):
+        if not validate_min_fill_time(request, '_ts', 1.0):
             messages.error(request, "Please take a moment to complete the form.")
             return redirect('account_signup')
 
