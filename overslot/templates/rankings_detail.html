@@ -432,7 +432,7 @@
 
 .scouting-report-section {
     border-top: 1px solid var(--player-card-edge, rgba(255, 255, 255, 0.24));
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--dark-bg);
     padding: 1rem 1.25rem 1rem 4.25rem;
 }
 
@@ -615,26 +615,18 @@
 
     .player-expanded-panel .scouting-report-section {
         padding: 0.85rem 0.85rem 1rem;
-        background: #fafafa;
-        border-top: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .player-expanded-panel .scouting-report-header {
+        margin-bottom: 0.85rem;
     }
 
     .player-expanded-panel .scouting-report-header h4 {
         font-size: 1rem;
-        color: #18181b;
-    }
-
-    .player-expanded-panel .scouting-meta {
-        color: #52525b;
     }
 
     .player-expanded-panel .scouting-report-content {
         font-size: 0.92rem;
-        color: #27272a;
-    }
-
-    .player-expanded-panel .photo-credit {
-        color: #71717a;
     }
 
     .player-expanded-panel .carrying-tools {
@@ -643,12 +635,6 @@
 
     .player-expanded-panel .tool-item {
         font-size: 0.75rem;
-    }
-
-    .player-expanded-panel .tool-name {
-        background: #e4e4e7;
-        color: #18181b;
-        border-color: rgba(0, 0, 0, 0.08);
     }
 }
 
