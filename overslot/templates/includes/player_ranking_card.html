@@ -96,7 +96,10 @@
                 </div>
 
                 {% if player_ranking.commitment %}
-                <div class="player-commitment">{{ player_ranking.commitment }}</div>
+                <div class="player-commitment">
+                    <span class="player-commitment-label">Committed:</span>
+                    <span class="player-commitment-value">{{ player_ranking.commitment }}</span>
+                </div>
                 {% endif %}
 
                 {% if player_ranking.carrying_tools.all %}
@@ -144,7 +147,10 @@
                 <span class="card-tag">{{ player_ranking.position }}</span>
                 {% endif %}
                 {% if player_ranking.commitment %}
-                <span class="card-tag card-tag--commit">{{ player_ranking.commitment }}</span>
+                <span class="card-tag card-tag--commit">
+                    <span class="card-tag-label">Committed</span>
+                    {{ player_ranking.commitment }}
+                </span>
                 {% endif %}
                 {% if player_ranking.ranking.is_mock_draft and player_ranking.mock_team %}
                 <span class="card-tag card-tag--mock">{{ player_ranking.mock_team }}</span>

@@ -251,10 +251,30 @@
 }
 
 .player-commitment {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3rem;
     font-size: 0.7rem;
-    color: var(--theme-primary);
     font-weight: 600;
     line-height: 1.2;
+    min-width: 0;
+}
+
+.player-commitment-label {
+    color: var(--dark-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 0.62rem;
+    flex-shrink: 0;
+}
+
+.player-commitment-value {
+    color: var(--theme-primary);
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .player-mock-team {
@@ -375,6 +395,15 @@
     text-transform: none;
     letter-spacing: 0;
     font-weight: 600;
+    gap: 0.25rem;
+}
+
+.card-tag--commit .card-tag-label {
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--dark-text-muted);
 }
 
 .card-tag--mock {
@@ -579,7 +608,8 @@
     }
 
     .card-tag--commit {
-        display: none;
+        color: var(--theme-primary);
+        font-weight: 700;
     }
 
     .player-ranking-card--mock .player-mock-team {
