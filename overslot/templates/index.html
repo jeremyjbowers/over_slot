@@ -580,9 +580,125 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
         padding-top: 0;
     }
 
+    .lead-list {
+        gap: 0.45rem;
+    }
+
+    .lead-list h3 {
+        font-size: 1.05rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .lead-item {
+        grid-template-columns: 52px minmax(0, 1fr);
+        gap: 0.5rem;
+        padding: 0.45rem 0.5rem;
+    }
+
+    .lead-item img {
+        width: 52px;
+        height: 52px;
+    }
+
+    .lead-item a {
+        font-size: 0.88rem;
+        line-height: 1.25;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .lead-item .meta {
+        font-size: 0.72rem;
+        margin-top: 0.15rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .list-cta {
+        padding: 0.4rem 0.55rem;
+        font-size: 0.82rem;
+        text-align: center;
+    }
+
+    .lead-visual .ratio {
+        padding-top: 62%;
+    }
+
+    .lead-overlay {
+        padding: 0.65rem 0.75rem;
+    }
+
+    .lead-title {
+        font-size: 1rem;
+        line-height: 1.2;
+        margin-bottom: 0.15rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .lead-sub {
+        font-size: 0.78rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .ranking-grid {
+        gap: 0.65rem;
+    }
+
+    .ranking-content {
+        padding: 0.5rem 0.65rem;
+        gap: 0.3rem;
+    }
+
+    .ranking-title {
+        font-size: 1rem;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+    }
+
+    .ranking-media {
+        padding-top: 48%;
+    }
+
+    .players-list li {
+        margin: 0.06rem 0;
+        font-size: 0.8rem;
+        line-height: 1.25;
+    }
+
+    .players-list .num {
+        margin-right: 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .players-list .pos {
+        margin-right: 0.15rem;
+        font-size: 0.75rem;
+    }
+
+    .ranking-grid > .ranking-cta .ranking-cta-inner {
+        padding: 0.55rem 0.65rem;
+    }
+
+    .ranking-grid > .ranking-cta .cta-text {
+        font-size: 0.9rem;
+    }
+
     .mock-draft-home-banner {
         flex-direction: column;
         align-items: stretch;
+        padding: 0.85rem 1rem;
     }
 
     .mock-draft-home-banner-cta {
@@ -620,6 +736,31 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
             rgba(0, 0, 0, 0.85),
             rgba(0, 0, 0, 0.75)
         );
+    }
+}
+
+@media (max-width: 480px) {
+    .lead-item {
+        grid-template-columns: 44px minmax(0, 1fr);
+        gap: 0.4rem;
+        padding: 0.4rem;
+    }
+
+    .lead-item img {
+        width: 44px;
+        height: 44px;
+    }
+
+    .lead-item a {
+        font-size: 0.84rem;
+    }
+
+    .ranking-title {
+        font-size: 0.95rem;
+    }
+
+    .players-list li {
+        font-size: 0.76rem;
     }
 }
 

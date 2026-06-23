@@ -1,148 +1,207 @@
 {% load overslot_tags %}
 
-<div class="player-ranking-card" 
+<div class="player-ranking-card{% if player_ranking.ranking.is_mock_draft %} player-ranking-card--mock{% endif %}{% if not player_ranking.scouting_report %} player-ranking-card--no-report{% endif %}"
      data-name="{{ player_ranking.player.name|default:'' }}"
      data-position="{{ player_ranking.position|default:'' }}"
      data-school="{{ player_ranking.school|default:'' }}"
      data-commitment="{{ player_ranking.commitment|default:'' }}"
      data-state="{{ player_ranking.player.state|default:'' }}"
      id="{{ player_ranking.player.slug }}">
-    
-    <!-- Rank Badge -->
-    <div class="player-rank-badge">
+
+    <div class="player-rank-badge"{% if player_ranking.ranking.is_mock_draft %} aria-label="Pick {{ player_ranking.mock_pick_number|default:player_ranking.rank }}"{% endif %}>
         {% if player_ranking.ranking.is_mock_draft and player_ranking.mock_pick_number %}
-            {{ player_ranking.mock_pick_number }}
+            <span class="player-rank-value">{{ player_ranking.mock_pick_number }}</span>
         {% else %}
-            {{ player_ranking.rank }}
+            <span class="player-rank-value">{{ player_ranking.rank }}</span>
         {% endif %}
     </div>
-    
-    <!-- Player Info and Photo Container -->
-    <div class="player-card-content">
-        <!-- Player Details -->
-        <div class="player-details">
-            <h3 class="player-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                {% if player_ranking.position %}{{ player_ranking.position }} {% endif %}
-                <a href="/players/{{ player_ranking.player.slug }}/">{{ player_ranking.player.name }}</a>
-                {% if player_ranking.ranking.is_mock_draft %}
-                    {% if player_ranking.mock_team or player_ranking.mock_draft_board_team_logo_url %}
-                        <span class="team-inline" style="white-space: nowrap;">
-                            {% if player_ranking.mock_team %}
-                                <span>to {{ player_ranking.mock_team }}</span>
-                            {% endif %}
-                            {% if player_ranking.mock_draft_board_team_logo_url %}
-                                <img class="team-logo team-logo--mlb-cap-on-dark" src="{{ player_ranking.mock_draft_board_team_logo_url }}" alt="" width="24" height="24" decoding="async" loading="lazy"/>
-                            {% endif %}
-                        </span>
+
+    <div class="player-card-stack">
+        <div class="player-card-header">
+            <div class="player-header-text">
+                <h3 class="player-name">
+                    <a href="/players/{{ player_ranking.player.slug }}/">{{ player_ranking.player.name }}</a>
+                </h3>
+
+                <div class="player-pos-school">
+                    {% if player_ranking.position %}
+                    <span class="player-pos">{{ player_ranking.position }}</span>
+                    <span class="player-pos-school-rule" aria-hidden="true"></span>
                     {% endif %}
+                    <span class="player-school">
+                        {% if player_ranking.level == 'High School' %}
+                            {% if player_ranking.school %}{{ player_ranking.school }}{% if 'HS' not in player_ranking.school %} HS{% endif %}{% endif %}{% if player_ranking.player.hometown or player_ranking.player.state %}, {% if player_ranking.player.hometown %}{{ player_ranking.player.hometown }}{% endif %}{% if player_ranking.player.hometown and player_ranking.player.state %} {% endif %}{% if player_ranking.player.state %}{{ player_ranking.player.state }}{% endif %}{% endif %}
+                        {% else %}
+                            {% if player_ranking.school %}{{ player_ranking.school }}{% endif %}
+                        {% endif %}
+                    </span>
+                </div>
+
+                {% if player_ranking.ranking.is_mock_draft and player_ranking.mock_team %}
+                <div class="player-mock-team">
+                    {% if player_ranking.mock_draft_board_team_logo_url %}
+                        <img class="team-logo team-logo--mlb-cap-on-dark" src="{{ player_ranking.mock_draft_board_team_logo_url }}" alt="" width="16" height="16" decoding="async" loading="lazy"/>
+                    {% endif %}
+                    <span class="player-mock-team-label">to</span>
+                    <span class="player-mock-team-name">{{ player_ranking.mock_team }}</span>
+                </div>
                 {% endif %}
-            </h3>
-            
-            <div class="player-position-school">
-                {% if player_ranking.level == 'High School' %}
-                    {% if player_ranking.school %}{{ player_ranking.school }}{% if 'HS' not in player_ranking.school %} HS{% endif %}{% endif %}{% if player_ranking.player.hometown or player_ranking.player.state %}, {% if player_ranking.player.hometown %}{{ player_ranking.player.hometown }}{% endif %}{% if player_ranking.player.hometown and player_ranking.player.state %} {% endif %}{% if player_ranking.player.state %}{{ player_ranking.player.state }}{% endif %}{% endif %}
-                {% else %}
-                    {% if player_ranking.school %}{{ player_ranking.school }}{% endif %}
+
+                <div class="player-bio-info player-bio-info--primary">
+                    {% if player_ranking.player.birthdate %}
+                    <span class="bio-stat" title="Date of birth">
+                        <span class="bio-label">DOB:</span>
+                        <span class="bio-value">{{ player_ranking.player.birthdate|date:"m-d-Y" }}</span>
+                    </span>
+                    {% endif %}
+                    {% if player_ranking.player.height %}
+                    <span class="bio-stat" title="Height">
+                        <span class="bio-label">Height:</span>
+                        <span class="bio-value">{{ player_ranking.player.height }}</span>
+                    </span>
+                    {% endif %}
+                    {% if player_ranking.player.weight %}
+                    <span class="bio-stat" title="Weight">
+                        <span class="bio-label">Weight:</span>
+                        <span class="bio-value">{{ player_ranking.player.weight }}</span>
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="player-bio-info player-bio-info--secondary">
+                    {% if player_ranking.player.bats or player_ranking.player.throws %}
+                    <span class="bio-stat" title="Bats/Throws">
+                        <span class="bio-label">B/T</span>
+                        <span class="bio-value">{{ player_ranking.player.bats|default:"—" }}/{{ player_ranking.player.throws|default:"—" }}</span>
+                    </span>
+                    {% endif %}
+                    {% if player_ranking.age_at_draft %}
+                    <span class="bio-stat" title="Age at draft">
+                        <span class="bio-label">Age</span>
+                        <span class="bio-value">{{ player_ranking.age_at_draft }}</span>
+                    </span>
+                    {% endif %}
+                    {% if player_ranking.role %}
+                    <span class="bio-stat bio-stat--role" title="Projected role">
+                        <span class="bio-label">Role</span>
+                        <span class="bio-value">{{ player_ranking.role }}</span>
+                    </span>
+                    {% endif %}
+                    {% if player_ranking.risk %}
+                    <span class="bio-stat bio-stat--risk" title="Risk">
+                        <span class="bio-label">Risk</span>
+                        <span class="bio-value">{{ player_ranking.risk }}</span>
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if player_ranking.commitment %}
+                <div class="player-commitment">{{ player_ranking.commitment }}</div>
+                {% endif %}
+
+                {% if player_ranking.carrying_tools.all %}
+                <div class="player-tools-inline">
+                    {% for tool in player_ranking.carrying_tools.all %}
+                    <span class="tool-chip" title="{{ tool.tool }}">
+                        <span class="tool-chip-name">{{ tool.tool }}</span>
+                        <span class="tool-chip-grade">{{ tool.score }}</span>
+                    </span>
+                    {% endfor %}
+                </div>
                 {% endif %}
             </div>
 
-            <div class="player-bio-info">
-                <style>
-                    #player-bio-info-table {
-                        width: 100%;
-                        border-collapse: collapse;
-                    }
-                    #player-bio-info-table th, #player-bio-info-table td {
-                        padding: 0.25rem;
-                    }
-                    #player-bio-info-table th {
-                        font-weight: 600;
-                        color: #fff;
-                        border-bottom: 1px solid #ddd;
-                        text-align: center;
-                        font-size: 0.65rem;
-                        text-transform: uppercase;
-                    }
-                    #player-bio-info-table td {
-                        font-weight: 300;
-                        color: #fff;
-                        text-align: center;
-                        font-size: 0.85rem;
-                    }
-                </style>
-                <table id="player-bio-info-table">
-                    <tr>
-                        <th>Bats</th>
-                        <th>Throws</th>
-                        <th>Height</th>
-                        <th>Weight</th>
-                        {% if player_ranking.age_at_draft %}<th>Age at draft</th>{% endif %}
-                    </tr>
-                    <tr>
-                        <td>{{ player_ranking.player.bats }}</td>
-                        <td>{{ player_ranking.player.throws }}</td>
-                        <td>{{ player_ranking.player.height }}</td>
-                        <td>{{ player_ranking.player.weight }}</td>
-                        {% if player_ranking.age_at_draft %}<td>{{ player_ranking.age_at_draft }}</td>{% endif %}
-                    </tr>
-                </table>
+            <div class="player-photo-container player-photo-container--header">
+                {% if player_ranking.player.photo_url %}
+                    <img src="{{ player_ranking.player.photo_url }}"
+                         alt="{{ player_ranking.player.name }}"
+                         class="player-photo">
+                {% else %}
+                    <div class="player-photo-placeholder"></div>
+                {% endif %}
             </div>
         </div>
-        <!-- Preserve 3-column grid layout without chips -->
-        <div class="player-tags"></div>
-        
-        
-        <!-- Player Photo -->
-        <div class="player-photo-container">
-            {% if player_ranking.player.photo_url %}
-                <img src="{{ player_ranking.player.photo_url }}" 
-                     alt="{{ player_ranking.player.name }}" 
-                     class="player-photo">
-            {% else %}
-                <div class="player-photo-placeholder"></div>
+
+        <div class="player-card-footer">
+            <div class="player-card-tags">
+                {% if player_ranking.position %}
+                    {% with pos=player_ranking.position|upper %}
+                    {% if pos == "P" or pos == "RHP" or pos == "LHP" or pos == "SP" or pos == "RP" %}
+                    <span class="card-tag">Pitcher</span>
+                    {% else %}
+                    <span class="card-tag">Position Player</span>
+                    {% endif %}
+                    {% endwith %}
+                {% endif %}
+                {% if player_ranking.level == "College" %}
+                <span class="card-tag">4-Year College</span>
+                {% elif player_ranking.level == "High School" %}
+                <span class="card-tag">High School</span>
+                {% elif player_ranking.level == "International" %}
+                <span class="card-tag">International</span>
+                {% endif %}
+                {% if player_ranking.position %}
+                <span class="card-tag">{{ player_ranking.position }}</span>
+                {% endif %}
+                {% if player_ranking.commitment %}
+                <span class="card-tag card-tag--commit">{{ player_ranking.commitment }}</span>
+                {% endif %}
+                {% if player_ranking.ranking.is_mock_draft and player_ranking.mock_team %}
+                <span class="card-tag card-tag--mock">{{ player_ranking.mock_team }}</span>
+                {% endif %}
+            </div>
+
+            {% if player_ranking.scouting_report %}
+            <button class="expand-button" aria-expanded="false" aria-label="Toggle scouting report">
+                <span class="expand-icon">
+                    <i class="fas fa-chevron-down"></i>
+                </span>
+            </button>
             {% endif %}
         </div>
     </div>
-    
-    <!-- Expand Button -->
+
     {% if player_ranking.scouting_report %}
-    <button class="expand-button" aria-expanded="false">
-        <span class="expand-icon">
-            <i class="fas fa-chevron-down"></i>
-        </span>
-    </button>
-    {% endif %}
-    
-    <!-- Expandable Scouting Report -->
-    {% if player_ranking.scouting_report %}
-    <div class="scouting-report-section" style="display: none;">
-        <div class="scouting-report-header">
-            <h4>Scouting Report</h4>
-            {% if player_ranking.player.bats and player_ranking.player.throws %}
-            <div class="scouting-meta">Bats: {{ player_ranking.player.bats }}, Throws: {{ player_ranking.player.throws }}</div>
-            {% endif %}
-        </div>
-        
-        {% if player_ranking.carrying_tools.all %}
-        <div class="carrying-tools">
-            {% for tool in player_ranking.carrying_tools.all %}
-            <div class="tool-item">
-                <span class="tool-name">{{ tool.tool }}</span>
-                <span class="tool-score">{{ tool.score }}</span>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        
-        <div class="scouting-report-content">
-            {{ player_ranking.scouting_report|safe }}
-        </div>
-        
+    <div class="player-expanded-panel" style="display: none;">
         {% if player_ranking.player.photo_url %}
-        <div class="photo-credit">
-            Photo: USA Today Network
+        <div class="player-photo-container player-photo-container--expanded">
+            <img src="{{ player_ranking.player.photo_url }}"
+                 alt="{{ player_ranking.player.name }}"
+                 class="player-photo"
+                 loading="lazy"
+                 decoding="async">
         </div>
         {% endif %}
+
+        <div class="scouting-report-section">
+            <div class="scouting-report-header">
+                <h4>Scouting Report</h4>
+                {% if player_ranking.player.bats and player_ranking.player.throws %}
+                <div class="scouting-meta">Bats: {{ player_ranking.player.bats }}, Throws: {{ player_ranking.player.throws }}</div>
+                {% endif %}
+            </div>
+
+            {% if player_ranking.carrying_tools.all %}
+            <div class="carrying-tools">
+                {% for tool in player_ranking.carrying_tools.all %}
+                <div class="tool-item">
+                    <span class="tool-name">{{ tool.tool }}</span>
+                    <span class="tool-score">{{ tool.score }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="scouting-report-content">
+                {{ player_ranking.scouting_report|safe }}
+            </div>
+
+            {% if player_ranking.player.photo_url %}
+            <div class="photo-credit">
+                Photo: USA Today Network
+            </div>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
-</div> 
+</div>
