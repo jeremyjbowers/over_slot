@@ -14,6 +14,7 @@ from overslot.cache_utils import (
     bust_homepage,
     bust_articles_list,
     bust_rankings_list,
+    DEFAULT_TIMEOUT,
     KEY_HOMEPAGE,
     KEY_ARTICLES,
     KEY_STOCK_WATCH,
@@ -57,6 +58,16 @@ def _get_cache_backend_info():
     return 'Other'
 
 
+def _format_cache_ttl(seconds):
+    if seconds >= 3600 and seconds % 3600 == 0:
+        hours = seconds // 3600
+        return f'{hours} hr'
+    if seconds >= 60 and seconds % 60 == 0:
+        minutes = seconds // 60
+        return f'{minutes} min'
+    return f'{seconds} sec'
+
+
 def _logical_key(raw_key):
     """
     Extract logical key from raw stored key. Django stores keys as prefix:version:key.
@@ -77,6 +88,7 @@ def cache_dashboard(request):
 
     # Cache backend info
     context['cache_backend'] = _get_cache_backend_info()
+    context['cache_ttl'] = _format_cache_ttl(DEFAULT_TIMEOUT)
 
     # List keys (Valkey/LocMem; Database cache cannot list)
     raw_keys = _get_cache_keys()

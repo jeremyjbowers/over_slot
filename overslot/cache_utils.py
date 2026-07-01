@@ -4,14 +4,30 @@ Cache utilities for expensive querysets and computed data.
 Uses Django's cache framework (Valkey in production when VALKEY_URL is set).
 Only caches data that is identical for all users - never user-specific state.
 """
+import os
+
 from django.core.cache import cache
 
 # Default TTL for queryset/data caches (seconds)
 # With admin-triggered cache busting, TTL mainly handles edge cases.
-DEFAULT_TIMEOUT = 900   # 15 minutes
-HOMEPAGE_TIMEOUT = 900  # 15 minutes
-RANKING_TIMEOUT = 900   # 15 minutes
-ARTICLE_TIMEOUT = 900   # 15 minutes
+# Override via CACHE_TTL env var (integer seconds).
+_DEFAULT_CACHE_TTL = 900  # 15 minutes
+
+
+def _cache_ttl_from_env():
+    raw = os.environ.get('CACHE_TTL')
+    if not raw:
+        return _DEFAULT_CACHE_TTL
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return _DEFAULT_CACHE_TTL
+
+
+DEFAULT_TIMEOUT = _cache_ttl_from_env()
+HOMEPAGE_TIMEOUT = DEFAULT_TIMEOUT
+RANKING_TIMEOUT = DEFAULT_TIMEOUT
+ARTICLE_TIMEOUT = DEFAULT_TIMEOUT
 # Single cached HTML blob for GET /my-mock-draft/ only (anonymous nav chrome).
 # MUST NOT include share payload: /my-mock-draft/s/<payload>/ and /my-mock-draft/<uuid>/ are uncached.
 MOCK_DRAFT_SIM_PAGE_TIMEOUT = 3600  # 1 hour; bust when rankings/mock lists change
