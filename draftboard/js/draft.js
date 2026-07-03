@@ -3,9 +3,10 @@
  *
  * Version: bump MOCK_DRAFT_JS_VERSION when you ship JS changes (check in DevTools:
  *   window.__MOCK_DRAFT_JS_VERSION
- * Site (/my-mock-draft/): copy JS changes into overslot/templates/mock_draft_sim.html (script verbatim).
- * CSS: edit draftboard/css/draft.css and run build-data.js (template loads static CSS).
- * This repo copy is for draftboard/index.html local dev and build-data sync to static/.
+ * Site (/my-mock-draft/): edit this file (and draftboard/css/draft.css), then run
+ * node draftboard/build-data.js — it inlines JS + CSS + data directly into
+ * overslot/templates/mock_draft_sim.html. No static files, no collectstatic.
+ * This repo copy is also loaded directly by draftboard/index.html for local dev.
  */
 
 (function () {
@@ -2264,7 +2265,7 @@
     const rules = raw.toLowerCase();
 
     if (/^take\b/.test(rules)) {
-      const body = rules.replace(/^take\s+/, '').replace(/\s+and\s+/g, ', ');
+      const body = rules.replace(/^take\s+/, '').replace(/\s+(?:and|or)\s+/g, ', ');
       const entries = [];
       for (const part of body.split(',').map(s => s.trim()).filter(Boolean)) {
         const m = part.match(/^([a-z][a-z\s]+?) (\d+)% of the time\.?$/);

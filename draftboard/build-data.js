@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 /**
- * Build script: parses CSV data files and outputs js/data.js for client-side use.
+ * Build script: parses CSV data files and outputs js/data.js for local dev
+ * (draftboard/index.html), then inlines data + draft.js + draft.css directly
+ * into overslot/templates/mock_draft_sim.html between marker comments.
+ * No Django static files are involved.
  * Run: node build-data.js
  */
 
@@ -71,12 +74,11 @@ function parseDollar(str) {
 
 const dataDir = path.join(__dirname, 'data');
 const outDir = path.join(__dirname, 'js');
-const djangoStaticJsDir = path.join(__dirname, '..', 'overslot', 'static', 'mock_draft', 'js');
+const templatePath = path.join(__dirname, '..', 'overslot', 'templates', 'mock_draft_sim.html');
 // List ranks at/after this with no Player Cost / Note → senior-sign default (sync with draft.js LATE_BOARD_SENIOR_SIGN_RANK_MIN).
 const LATE_BOARD_SENIOR_SIGN_RANK_MIN = 300;
 const LATE_BOARD_SENIOR_SIGN_AMOUNT = 150000;
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
-if (!fs.existsSync(djangoStaticJsDir)) fs.mkdirSync(djangoStaticJsDir, { recursive: true });
 
 // Parse players
 const playersCsv = fs.readFileSync(path.join(dataDir, 'mock_draft_sim_players_cost.csv'), 'utf8');
@@ -167,14 +169,49 @@ const DRAFT_DATA = {
 `;
 
 fs.writeFileSync(path.join(outDir, 'data.js'), output);
-fs.writeFileSync(path.join(djangoStaticJsDir, 'data.js'), output);
-const djangoStaticCssDir = path.join(__dirname, '..', 'overslot', 'static', 'mock_draft', 'css');
-if (!fs.existsSync(djangoStaticCssDir)) fs.mkdirSync(djangoStaticCssDir, { recursive: true });
-fs.copyFileSync(path.join(__dirname, 'js', 'draft.js'), path.join(djangoStaticJsDir, 'draft.js'));
-fs.copyFileSync(path.join(__dirname, 'css', 'draft.css'), path.join(djangoStaticCssDir, 'draft.css'));
-console.log('Generated data.js → draftboard/js/ and overslot/static/mock_draft/js/');
-console.log('Synced draft.js + draft.css → overslot/static/mock_draft/');
-console.log('Site /my-mock-draft/: template loads {% static \'mock_draft/css/draft.css\' %} + {% static \'mock_draft/js/data.js\' %}; run collectstatic (or dev STATICFILES_DIRS) after this.');
+
+// --- Inline data + draft.js + draft.css into the Django template ---
+
+/** Content goes inside <script>/<style> + {% verbatim %}; these sequences would break out of them. */
+function assertSafeInline(content, label) {
+  for (const forbidden of ['</script', '</style', '{% endverbatim %}']) {
+    if (content.toLowerCase().includes(forbidden.toLowerCase())) {
+      throw new Error(`${label} contains "${forbidden}" and cannot be inlined into the template`);
+    }
+  }
+}
+
+/** Replace everything between the {# BEGIN name ... #} and {# END name #} marker lines. */
+function replaceBetweenMarkers(template, name, replacement) {
+  const beginMarker = `{# BEGIN ${name}`;
+  const endMarker = `{# END ${name} #}`;
+  const beginIdx = template.indexOf(beginMarker);
+  if (beginIdx === -1) throw new Error(`Marker "${beginMarker}" not found in ${templatePath}`);
+  const afterBeginLine = template.indexOf('\n', beginIdx);
+  const endIdx = template.indexOf(endMarker, afterBeginLine);
+  if (endIdx === -1) throw new Error(`Marker "${endMarker}" not found in ${templatePath}`);
+  return template.slice(0, afterBeginLine + 1) + replacement + template.slice(endIdx);
+}
+
+const draftJs = fs.readFileSync(path.join(__dirname, 'js', 'draft.js'), 'utf8');
+const draftCss = fs.readFileSync(path.join(__dirname, 'css', 'draft.css'), 'utf8');
+assertSafeInline(output, 'Generated data.js');
+assertSafeInline(draftJs, 'draftboard/js/draft.js');
+assertSafeInline(draftCss, 'draftboard/css/draft.css');
+
+const ensureTrailingNewline = s => (s.endsWith('\n') ? s : s + '\n');
+const cssBlock = `<style>\n{% verbatim %}\n${ensureTrailingNewline(draftCss)}{% endverbatim %}\n</style>\n`;
+const dataBlock = `<script>\n{% verbatim %}\n${ensureTrailingNewline(output)}{% endverbatim %}\n</script>\n`;
+const jsBlock = `<script>\n{% verbatim %}\n${ensureTrailingNewline(draftJs)}{% endverbatim %}\n</script>\n`;
+
+let template = fs.readFileSync(templatePath, 'utf8');
+template = replaceBetweenMarkers(template, 'mock-draft-css', cssBlock);
+template = replaceBetweenMarkers(template, 'mock-draft-data', dataBlock);
+template = replaceBetweenMarkers(template, 'mock-draft-js', jsBlock);
+fs.writeFileSync(templatePath, template);
+
+console.log('Generated data.js → draftboard/js/ (local dev via draftboard/index.html)');
+console.log('Inlined CSS + data + draft.js → overslot/templates/mock_draft_sim.html (no static files; no collectstatic needed)');
 console.log('  -', players.length, 'players');
 console.log('  -', teams.length, 'teams');
 console.log('  -', picks.length, 'picks');

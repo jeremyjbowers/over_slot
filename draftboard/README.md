@@ -4,7 +4,7 @@ A client-side MLB-style mock draft simulator. No server required for gameplay—
 
 ## Setup
 
-1. **Build data** (parses CSVs into `js/data.js`):
+1. **Build data** (parses CSVs into `js/data.js` for local dev, and inlines the data, `js/draft.js`, and `css/draft.css` directly into `overslot/templates/mock_draft_sim.html` between `{# BEGIN mock-draft-* #}` markers — no Django static files or collectstatic involved):
    ```bash
    node build-data.js
    ```

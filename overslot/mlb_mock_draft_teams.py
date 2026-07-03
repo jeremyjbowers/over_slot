@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-# Same base URL as overslot/static/mock_draft/js/draft.js teamLogoHtml().
+# Same base URL as draftboard/js/draft.js teamLogoHtml().
 MLB_TEAM_CAP_ON_DARK_BASE = "https://www.mlbstatic.com/team-logos/team-cap-on-dark"
 
 _MLB_TEAM_NAME_TO_ID: dict[str, int] = {
