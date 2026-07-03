@@ -1622,6 +1622,11 @@ window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__ = "{{ mock_draft_share_payload_b64 }}";
     return wrap;
   }
 
+  function scrollEndgameToTop() {
+    if ($board) $board.scrollTop = 0;
+    if ($draft) $draft.scrollTop = 0;
+  }
+
   function setupUIForRestoredEndgame() {
     $setup?.classList.add('hidden');
     $draft?.classList.remove('hidden');
@@ -1664,7 +1669,7 @@ window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__ = "{{ mock_draft_share_payload_b64 }}";
     state.endgameBrowseIndex = 0;
     renderDraftCompleteBragSheets();
     requestAnimationFrame(() => {
-      $draftComplete?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollEndgameToTop();
     });
   }
 
@@ -3356,7 +3361,7 @@ window.__MOCK_DRAFT_SHARE_PAYLOAD_B64__ = "{{ mock_draft_share_payload_b64 }}";
       if ($draftComplete) {
         $draftComplete.classList.remove('hidden');
         requestAnimationFrame(() => {
-          $draftComplete.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          scrollEndgameToTop();
         });
       }
       renderRoundBreadcrumbs();

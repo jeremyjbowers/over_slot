@@ -562,7 +562,7 @@ body {
 }
 
 /*
- * Endgame inner uses overflow-x-hidden in markup; alone that makes overflow-y compute to auto
+ * Endgame inner: overflow-x-hidden alone makes overflow-y compute to auto
  * (CSS overflow pairing), trapping the browse table in a clipped nested scroll (~few rows visible).
  * Keep vertical overflow visible so #draft scrolls the full pick list.
  */
@@ -571,24 +571,37 @@ body {
   overflow-y: visible;
 }
 
-/* Finished draft: stack endgame + board; #draft is the scroll container for the full pick list. */
+/*
+ * Finished draft: one vertical scroll on #draft — endgame summary first, full board below.
+ * Override Tailwind flex-1 on #draft-body (otherwise the board fills the viewport bottom
+ * and appears detached from the endgame panel with only the last picks visible).
+ */
 #draft.draft-finished {
   overflow-y: auto;
   overflow-x: hidden;
+  justify-content: flex-start;
 }
 #draft.draft-finished #draft-complete {
-  flex: 0 0 auto;
+  flex: 0 0 auto !important;
   overflow: visible;
 }
 #draft.draft-finished #draft-body {
-  flex: 0 0 auto;
-  min-height: min(32vh, 17rem);
-  max-height: min(42vh, 22rem);
-  overflow: hidden;
+  flex: 0 0 auto !important;
+  flex-grow: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+#draft.draft-finished #draft-body > div:first-of-type {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
 }
 #draft.draft-finished #board {
-  max-height: min(38vh, 20rem);
-  overflow-y: auto;
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: visible !important;
 }
 
 /* Shared path / query / hash: hide setup before draft.js (html.endgame-pending) */

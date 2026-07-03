@@ -1344,6 +1344,11 @@
     return wrap;
   }
 
+  function scrollEndgameToTop() {
+    if ($board) $board.scrollTop = 0;
+    if ($draft) $draft.scrollTop = 0;
+  }
+
   function setupUIForRestoredEndgame() {
     $setup?.classList.add('hidden');
     $draft?.classList.remove('hidden');
@@ -1386,7 +1391,7 @@
     state.endgameBrowseIndex = 0;
     renderDraftCompleteBragSheets();
     requestAnimationFrame(() => {
-      $draftComplete?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollEndgameToTop();
     });
   }
 
@@ -3078,7 +3083,7 @@
       if ($draftComplete) {
         $draftComplete.classList.remove('hidden');
         requestAnimationFrame(() => {
-          $draftComplete.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          scrollEndgameToTop();
         });
       }
       renderRoundBreadcrumbs();
