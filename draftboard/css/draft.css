@@ -562,13 +562,14 @@ body {
 }
 
 /*
- * Endgame inner: overflow-x-hidden alone makes overflow-y compute to auto
- * (CSS overflow pairing), trapping the browse table in a clipped nested scroll (~few rows visible).
- * Keep vertical overflow visible so #draft scrolls the full pick list.
+ * Endgame inner must NOT be a scroll container: overflow-x hidden (even with
+ * overflow-y visible) computes overflow-y to auto (CSS overflow pairing), and a
+ * scroll container with overscroll-behavior-y: contain swallows wheel/touch
+ * events instead of chaining them to the #draft scroller — page won't scroll.
+ * Both axes visible; #draft (overflow-x: hidden) clips any horizontal bleed.
  */
 #draft-complete-inner {
-  overflow-x: hidden;
-  overflow-y: visible;
+  overflow: visible;
 }
 
 /*
@@ -597,11 +598,13 @@ body {
   min-height: 0 !important;
   overflow: visible !important;
 }
+/* overflow on BOTH axes: overflow-x hidden alone would recompute overflow-y to
+   auto, making #board a scroll container that traps wheel events (see above). */
 #draft.draft-finished #board {
   flex: 0 0 auto !important;
   min-height: 0 !important;
   max-height: none !important;
-  overflow-y: visible !important;
+  overflow: visible !important;
 }
 
 /* Shared path / query / hash: hide setup before draft.js (html.endgame-pending) */
