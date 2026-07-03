@@ -446,6 +446,7 @@ body {
 .endgame-browse-table-wrap {
   max-width: 100%;
   overflow-x: auto;
+  overflow-y: visible;
   border: 1px solid #333;
   border-radius: 2px;
   background: rgba(0, 0, 0, 0.25);
@@ -560,10 +561,34 @@ body {
   }
 }
 
-/* Finished draft: board column uses full width; keep board readable */
+/*
+ * Endgame inner uses overflow-x-hidden in markup; alone that makes overflow-y compute to auto
+ * (CSS overflow pairing), trapping the browse table in a clipped nested scroll (~few rows visible).
+ * Keep vertical overflow visible so #draft scrolls the full pick list.
+ */
+#draft-complete-inner {
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+/* Finished draft: stack endgame + board; #draft is the scroll container for the full pick list. */
+#draft.draft-finished {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+#draft.draft-finished #draft-complete {
+  flex: 0 0 auto;
+  overflow: visible;
+}
 #draft.draft-finished #draft-body {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: min(32vh, 17rem);
+  max-height: min(42vh, 22rem);
+  overflow: hidden;
+}
+#draft.draft-finished #board {
+  max-height: min(38vh, 20rem);
+  overflow-y: auto;
 }
 
 /* Shared path / query / hash: hide setup before draft.js (html.endgame-pending) */
