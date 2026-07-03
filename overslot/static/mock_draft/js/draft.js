@@ -3,7 +3,8 @@
  *
  * Version: bump MOCK_DRAFT_JS_VERSION when you ship JS changes (check in DevTools:
  *   window.__MOCK_DRAFT_JS_VERSION
- * Site (/my-mock-draft/): copy changes into overslot/templates/mock_draft_sim.html (script verbatim).
+ * Site (/my-mock-draft/): copy JS changes into overslot/templates/mock_draft_sim.html (script verbatim).
+ * CSS: edit draftboard/css/draft.css and run build-data.js (template loads static CSS).
  * This repo copy is for draftboard/index.html local dev and build-data sync to static/.
  */
 
