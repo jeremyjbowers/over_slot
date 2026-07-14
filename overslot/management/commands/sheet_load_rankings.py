@@ -108,7 +108,7 @@ class Command(BaseCommand):
 
             return None
 
-        default_years = ["2026", "2027", "2028"]
+        default_years = ["2027", "2028", "2029"]
         default_levels = ["Overall", "High School", "College"]
 
         tab = options.get('tab')
@@ -129,10 +129,16 @@ class Command(BaseCommand):
                     sheet = utils.get_sheet("15kLgnYACmlcrYV3QI5TECb2Vzkz-9jkrc8kc_IG6rkE", f"{year} {level}!A:Z", value_cutoff=None)
                     if debug:
                         self.stdout.write(f"Fetched sheet with {len(sheet)} rows for {year} {level}")
+
+                    player_rows = [row for row in sheet if str(row.get('name', '')).strip()]
+                    if not player_rows:
+                        self.stdout.write(f"Skipping {year} {level}: no player rankings in sheet yet")
+                        continue
+
                     r, r_created = models.Ranking.objects.get_or_create(year=year, ranking_type=None, is_mock_draft=False, is_draft=True, is_final=True, draft_level=level)
                     if debug:
                         self.stdout.write(f"Ranking {'created' if r_created else 'loaded'}: id={r.pk} year={year} level={level}")
-                    r.ranking_length = len(sheet)
+                    r.ranking_length = len(player_rows)
                     r.save()
 
                     # Deactivate all existing player rankings for this ranking, blank their rank
@@ -170,12 +176,12 @@ class Command(BaseCommand):
                             self.stdout.write(self.style.WARNING(f"Deleted {deleted_count} duplicate inactive PlayerRanking records for ranking id={r.pk}"))
 
                     processed_rows = 0
-                    for idx, row in enumerate(sheet, start=1):
+                    for idx, row in enumerate(player_rows, start=1):
                         processed_rows += 1
                         player_name = row.get('name', '')
                         player_position = row.get('position', '')
                         if debug:
-                            self.stdout.write(f"Row {idx}/{len(sheet)}: name={player_name} position={player_position}")
+                            self.stdout.write(f"Row {idx}/{len(player_rows)}: name={player_name} position={player_position}")
                         
                         # player object - handle duplicate case
                         try:
@@ -185,7 +191,7 @@ class Command(BaseCommand):
                         except MultipleObjectsReturned as e:
                             # Multiple players found with same name/position
                             self.stderr.write(self.style.ERROR(f"\n{'='*80}"))
-                            self.stderr.write(self.style.ERROR(f"DUPLICATE PLAYER ERROR at Row {idx}/{len(sheet)}"))
+                            self.stderr.write(self.style.ERROR(f"DUPLICATE PLAYER ERROR at Row {idx}/{len(player_rows)}"))
                             self.stderr.write(self.style.ERROR(f"  Name: '{player_name}'"))
                             self.stderr.write(self.style.ERROR(f"  Position: '{player_position}'"))
                             matching_players = models.Player.objects.filter(name=player_name, position=player_position)
