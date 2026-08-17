@@ -190,7 +190,9 @@ class Command(BaseCommand):
                         row['cutter_horiz_break'] = horiz_break
 
                     if row.get('Name'):
-                        obj = utils.fuzzy_find_player(row['Name'], debug=debug, stdout=self.stdout)
+                        obj = utils.resolve_college_stat_player(
+                            row['Name'], year, debug=debug, stdout=self.stdout
+                        )
                     else:
                         obj = None
 

@@ -407,6 +407,113 @@ def fuzzy_find_player(name, debug=False, stdout=None):
     return None
 
 
+def _parse_year(value):
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def college_stat_eligibility_for_players(player_ids=None):
+    """
+    Map player_id -> (max_hs_draft_year, has_college_ranking).
+
+    Includes inactive PlayerRanking rows: a 2027 HS prospect whose board row
+    was later deactivated is still a high-schooler, not the college player
+    who shares their name.
+    """
+    from overslot import models
+
+    qs = models.PlayerRanking.objects.select_related("ranking")
+    if player_ids is not None:
+        qs = qs.filter(player_id__in=player_ids)
+
+    eligibility = {}
+    for pr in qs.iterator():
+        if not pr.player_id:
+            continue
+        max_hs, has_college = eligibility.get(pr.player_id, (None, False))
+        if pr.level == "College":
+            has_college = True
+        elif pr.level == "High School" and pr.ranking:
+            year = _parse_year(pr.ranking.year)
+            if year is not None and (max_hs is None or year > max_hs):
+                max_hs = year
+        eligibility[pr.player_id] = (max_hs, has_college)
+    return eligibility
+
+
+def player_accepts_college_season(player, season_year, eligibility=None):
+    """
+    Whether college stats for `season_year` can belong to this Player.
+
+    College Trackman/643 loaders match by name. If the only OverSlot Player
+    with that name is a high-school prospect, stats for an unrelated college
+    player get attached to the HS page.
+
+    A player ranked High School for draft class Y is in high school through
+    the spring of year Y, so they cannot have NCAA stats for season S where
+    S <= Y — unless they also have a College ranking (enrolled early / JUCO).
+    """
+    if player is None:
+        return False
+    if eligibility is None:
+        eligibility = college_stat_eligibility_for_players([player.pk])
+    max_hs, has_college = eligibility.get(player.pk, (None, False))
+    if has_college or max_hs is None:
+        return True
+    season = _parse_year(season_year)
+    if season is None:
+        return True
+    return season > max_hs
+
+
+def resolve_college_stat_player(name, season_year, debug=False, stdout=None):
+    """Name-match a player, then reject HS-class collisions for this college season."""
+    obj = fuzzy_find_player(name, debug=debug, stdout=stdout)
+    if obj and not player_accepts_college_season(obj, season_year):
+        if debug and stdout:
+            stdout.write(
+                f"[match] Skip college season {season_year} for '{name}' -> "
+                f"'{obj.name}' (pk={obj.pk}): HS draft class is not yet in college"
+            )
+        return None
+    return obj
+
+
+def find_mismatched_college_stats():
+    """
+    College Trackman and 643 rows attached to HS-only players whose draft
+    class year is >= the stat season (name-collision junk).
+    """
+    from overslot import models
+
+    eligibility = college_stat_eligibility_for_players()
+    trackman = [
+        s
+        for s in models.PlayerStatSeason.objects.filter(level="College").select_related("player")
+        if not player_accepts_college_season(s.player, s.year, eligibility)
+    ]
+    stats_643 = [
+        s
+        for s in models.Player643StatSeason.objects.select_related("player")
+        if not player_accepts_college_season(s.player, s.year, eligibility)
+    ]
+    return trackman, stats_643
+
+
+def filter_plausible_college_seasons(seasons):
+    """Drop name-collision college seasons from a Trackman or 643 queryset/list."""
+    seasons = list(seasons)
+    if not seasons:
+        return seasons
+    eligibility = college_stat_eligibility_for_players({s.player_id for s in seasons})
+    return [
+        s for s in seasons
+        if player_accepts_college_season(s.player, s.year, eligibility)
+    ]
+
+
 def get_primary_team(team):
     """
     Check if this team has been merged into another team.

@@ -589,6 +589,13 @@ class Command(BaseCommand):
 
                         if row.get('Name'):
                             obj = self._fuzzy_find_player(row['Name'], debug=debug)
+                            if obj and not utils.player_accepts_college_season(obj, year):
+                                if debug:
+                                    self.stdout.write(
+                                        f"[match] Skip college season {year} for '{row['Name']}' -> "
+                                        f"'{obj.name}' (HS draft class is not yet in college)"
+                                    )
+                                obj = None
                         else:
                             obj = None
 
@@ -750,6 +757,13 @@ class Command(BaseCommand):
 
                         if row.get('Name'):
                             obj = self._fuzzy_find_player(row['Name'], debug=debug)
+                            if obj and not utils.player_accepts_college_season(obj, year):
+                                if debug:
+                                    self.stdout.write(
+                                        f"[match] Skip college season {year} for '{row['Name']}' -> "
+                                        f"'{obj.name}' (HS draft class is not yet in college)"
+                                    )
+                                obj = None
                         else:
                             obj = None
 

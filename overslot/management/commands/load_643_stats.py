@@ -5,7 +5,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 
 from overslot import models
-from overslot.utils import fuzzy_find_player
+from overslot.utils import fuzzy_find_player, player_accepts_college_season
 
 
 # API Configuration
@@ -396,9 +396,21 @@ class Command(BaseCommand):
         return stats_list
 
     def _find_player_simple(self, player_mapping, verbosity=1):
-        """Find a Player object from the player mapping. Simple matching - uses fuzzy_find_player
-        which already handles merge decisions. Does not create new players.
+        """Find a Player object from the player mapping. Prefers UUID lookup when
+        overslot_player_id is one of ours, then falls back to fuzzy_find_player.
+        Does not create new players.
         """
+        pid = player_mapping.get('overslot_player_id')
+        if pid:
+            try:
+                import uuid as uuid_mod
+                uuid_mod.UUID(str(pid))
+                player = models.Player.objects.filter(uuid=pid, active=True).first()
+                if player:
+                    return player
+            except (ValueError, TypeError, AttributeError):
+                pass
+
         first_name = player_mapping.get('first_name', '').strip()
         last_name = player_mapping.get('last_name', '').strip()
         full_name = f"{first_name} {last_name}".strip()
@@ -458,6 +470,8 @@ class Command(BaseCommand):
         
         # Create/update records for each season
         for (year, team_name), stats in stats_by_season.items():
+            if not player_accepts_college_season(player, year):
+                continue
             stat_season, created = self._create_or_update_stat_season(
                 player=player,
                 year=year,

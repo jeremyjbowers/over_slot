@@ -418,14 +418,19 @@ def _get_player_statline(player):
     Returns dict with type ('hitting' or 'pitching'), year, level, team_name, and stat-specific fields.
     Checks: 643 hitting, 643 pitching, PlayerStatSeason (hs_statline).
     """
+    eligibility = utils.college_stat_eligibility_for_players([player.pk])
+
+    def _643_ok(season):
+        return utils.player_accepts_college_season(player, season.year, eligibility)
+
     # Try 643 hitting stats first
     stat_643_hit = (
         models.Player643StatSeason.objects.filter(player=player)
         .exclude(hit_plate_appearances__isnull=True)
         .exclude(hit_plate_appearances=0)
         .order_by('-year')
-        .first()
     )
+    stat_643_hit = next((s for s in stat_643_hit if _643_ok(s)), None)
     if stat_643_hit and (stat_643_hit.hit_ba is not None or stat_643_hit.hit_obp is not None or stat_643_hit.hit_slg is not None):
         return {
             'type': 'hitting',
@@ -445,8 +450,8 @@ def _get_player_statline(player):
         .exclude(pitch_innings_pitched__isnull=True)
         .filter(pitch_innings_pitched__gt=0)
         .order_by('-year')
-        .first()
     )
+    stat_643_pitch = next((s for s in stat_643_pitch if _643_ok(s)), None)
     if stat_643_pitch:
         return {
             'type': 'pitching',
@@ -467,7 +472,13 @@ def _get_player_statline(player):
     stat_season = (
         models.PlayerStatSeason.objects.filter(player=player)
         .order_by('-year')
-        .first()
+    )
+    stat_season = next(
+        (
+            s for s in stat_season
+            if s.level != "College" or utils.player_accepts_college_season(player, s.year, eligibility)
+        ),
+        None,
     )
     if stat_season:
         if stat_season.level == "High School" and any(
@@ -1202,6 +1213,11 @@ def players_detail(request, slug):
     
     # Build charts from PlayerStatSeason across all available stat years (most recent first)
     season_qs = models.PlayerStatSeason.objects.filter(player=context['player']).order_by('-year')
+    eligibility = utils.college_stat_eligibility_for_players([context['player'].pk])
+    season_qs = [
+        s for s in season_qs
+        if s.level != "College" or utils.player_accepts_college_season(context['player'], s.year, eligibility)
+    ]
     season_charts = []
     for s in season_qs:
         # Hitter payloads
@@ -1385,10 +1401,15 @@ def players_detail(request, slug):
         stock_watch_article__active=True
     ).select_related('stock_watch_article', 'stock_watch_article__author').order_by('-stock_watch_article__date')
 
-    # Get 643 stats for this player
+    # Get 643 stats for this player (drop name-collision college seasons on HS prospects)
     stats_643_qs = models.Player643StatSeason.objects.filter(
         player=context['player']
     ).order_by('-year', 'team_name')
+    stats_643_ids = [
+        s.id for s in stats_643_qs
+        if utils.player_accepts_college_season(context['player'], s.year, eligibility)
+    ]
+    stats_643_qs = stats_643_qs.filter(id__in=stats_643_ids)
     
     # Check if we have any stats with actual data (hitting or pitching)
     # Only count as having hitting stats if player has at least 1 plate appearance
@@ -1805,6 +1826,8 @@ def college_hitters_year(request, year: int):
     if not seasons.exists():
         return get_object_or_404(models.PlayerStatSeason, level="College", year=year_str)  # raises 404
 
+    seasons = utils.filter_plausible_college_seasons(seasons)
+
     # Hard-coded year navigation lists (stable; data changes infrequently)
     college_years = [2026, 2025, 2024]
     hs_years = [2025, 2024, 2023, 2022]
@@ -2005,6 +2028,8 @@ def stats_hit_year(request, year: int):
     if not seasons.exists():
         return get_object_or_404(models.Player643StatSeason, year=year_str, hit_plate_appearances__gt=0)
 
+    seasons = utils.filter_plausible_college_seasons(seasons)
+
     # Get available years from the database
     available_years = (
         models.Player643StatSeason.objects.filter(
@@ -2102,6 +2127,8 @@ def stats_pitch_year(request, year: int):
     # 404 if no data for the requested year
     if not seasons.exists():
         return get_object_or_404(models.Player643StatSeason, year=year_str, pitch_innings_pitched__gt=0)
+
+    seasons = utils.filter_plausible_college_seasons(seasons)
 
     # Get available years from the database
     available_years = (

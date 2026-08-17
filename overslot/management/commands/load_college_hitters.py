@@ -311,7 +311,9 @@ class Command(BaseCommand):
                 row['approach_score'] = row['approach_percentile']
 
                 if row.get('Name'):
-                    obj = utils.fuzzy_find_player(row['Name'], debug=debug, stdout=self.stdout)
+                    obj = utils.resolve_college_stat_player(
+                        row['Name'], year, debug=debug, stdout=self.stdout
+                    )
                 else:
                     obj = None
 
