@@ -1094,14 +1094,14 @@ body {
                     <div class="chart-tabs-wrapper">
                         <div class="tabs is-toggle is-small">
                             <ul class="pitcher-chart-tabs" data-year="{{ year }}">
-                                {% if sc.pitcher_movement_json and sc.level == "College" %}
+                                {% if sc.pitcher_movement_json %}
                                 <li class="is-active">
                                     <a href="#" data-target="pitcher-location-{{ year }}">
                                         <span>{{ year }} Pitch Location</span>
                                     </a>
                                 </li>
                                 {% endif %}
-                                <li {% if not sc.pitcher_movement_json or sc.level != "College" %}class="is-active"{% endif %}>
+                                <li {% if not sc.pitcher_movement_json %}class="is-active"{% endif %}>
                                     <a href="#" data-target="pitcher-quality-{{ year }}">
                                         <span>{{ year }} Pitch Quality</span>
                                     </a>
@@ -1110,7 +1110,7 @@ body {
                         </div>
                     </div>
                     <!-- Location panel (default if available) -->
-                    {% if sc.pitcher_movement_json and sc.level == "College" %}
+                    {% if sc.pitcher_movement_json %}
                     <div id="pitcher-location-{{ year }}" class="pitcher-chart-panel">
                         <div class="info-section">
                             <div class="info-section-header">
@@ -1119,7 +1119,11 @@ body {
                                 </h3>
                             </div>
                             <div class="info-section-content">
+                                {% if sc.level == "High School" %}
+                                <span class="info-section-subtitle">Pitch movement compared to other high school pitchers. Stuff+ (MLB average = 100) is shown in the legend.</span>
+                                {% else %}
                                 <span class="info-section-subtitle">Pitch movement visualization showing this pitcher's movement profile compared to all pitchers.</span>
+                                {% endif %}
                             </div>
                             {% for sc in seasons %}
                             {% if sc.pitcher_movement_json %}
@@ -1130,7 +1134,7 @@ body {
                     </div>
                     {% endif %}
                     <!-- Quality panel -->
-                    <div id="pitcher-quality-{{ year }}" class="pitcher-chart-panel" {% if sc.pitcher_movement_json and sc.level == "College" %}style="display:none"{% endif %}>
+                    <div id="pitcher-quality-{{ year }}" class="pitcher-chart-panel" {% if sc.pitcher_movement_json %}style="display:none"{% endif %}>
                         <div class="info-section">
                             <div class="info-section-header">
                                 <h3 class="info-section-title">
@@ -1138,7 +1142,7 @@ body {
                                 </h3>
                             </div>
                             <div class="info-section-content">
-                                <span class="info-section-subtitle">Percentile ranks based on modeled pitch performance.</span>
+                                <span class="info-section-subtitle">Percentile ranks based on modeled pitch performance. Stuff+ grades (MLB average = 100) appear at right when available.</span>
                             </div>
                             {% for sc in seasons %}
                             <div id="pitcher-lollipop-chart-{{ sc.chart_index }}"></div>
@@ -1978,34 +1982,39 @@ const pitcherLollipopData = payload;
 // Create mapping of data keys to display names
 const pitchDisplayNames = {
     'fourseam_percentile': 'Four-seam',
-    'sinker_percentile': 'Sinker', 
+    'sinker_percentile': 'Sinker',
+    'cutter_percentile': 'Cutter',
     'slider_percentile': 'Slider',
     'sweeper_percentile': 'Sweeper',
     'curveball_percentile': 'Curveball',
-    'changeup_percentile': 'Offspeed',
-    'cutter_percentile': 'Cutter'
+    'changeup_percentile': pitcherLollipopData.level === 'High School' ? 'Changeup' : 'Offspeed',
+    'splitter_percentile': 'Splitter'
 };
 
 // Build data array only for pitches that have data
 const pitcherData = [];
-for (const [key, value] of Object.entries(pitcherLollipopData)) {
-    if (key.endsWith('_percentile') && value !== null && value !== undefined) {
-        const base = key.replace('_percentile', '');
-        const scoreKey = base + '_score';
-        pitcherData.push({
-            axis: pitchDisplayNames[key],
-            value: value,
-            score: pitcherLollipopData[scoreKey]
-        });
-    }
+const pitchKeyOrder = ['fourseam', 'sinker', 'cutter', 'slider', 'sweeper', 'curveball', 'changeup', 'splitter'];
+for (const base of pitchKeyOrder) {
+    const percentileKey = base + '_percentile';
+    const value = pitcherLollipopData[percentileKey];
+    if (value === null || value === undefined) continue;
+    pitcherData.push({
+        axis: pitchDisplayNames[percentileKey],
+        value: value,
+        score: pitcherLollipopData[base + '_score'],
+        stuffPlus: pitcherLollipopData[base + '_stuff_plus']
+    });
 }
+
+if (pitcherData.length === 0) return;
 
 const pitcherContainer = d3.select("#lollipop-chart-container");
 const pitcherContainerWidth = pitcherContainer.node().getBoundingClientRect().width;
 
-const pitcherMargin = {top: 20, right: 80, bottom: 20, left: 120};
+const hasStuffPlus = pitcherData.some(d => d.stuffPlus != null);
+const pitcherMargin = {top: hasStuffPlus ? 28 : 20, right: hasStuffPlus ? 90 : 80, bottom: 20, left: 120};
 const pitcherChartWidth = pitcherContainerWidth;
-const pitcherChartHeight = 220; // Fixed height like hitter chart
+const pitcherChartHeight = Math.max(220, 36 + pitcherData.length * 32);
 const pitcherWidth = pitcherChartWidth - pitcherMargin.left - pitcherMargin.right;
 const pitcherHeight = pitcherChartHeight - pitcherMargin.top - pitcherMargin.bottom;
 
@@ -2158,10 +2167,34 @@ pitcherSvg.selectAll(".end-text")
     .style("font-size", "12px")
     .style("font-weight", "700");
 
-// Omit raw score labels on the right for pitcher charts (keep for hitter charts only)
+if (hasStuffPlus) {
+    pitcherSvg.append("text")
+        .attr("x", pitcherWidth + 18)
+        .attr("y", -6)
+        .text("Stuff+")
+        .style("fill", "#94A3B8")
+        .style("font-size", "10px")
+        .style("font-weight", "600");
+    pitcherSvg.selectAll(".stuff-plus-label")
+      .data(pitcherData)
+      .enter()
+      .append("text")
+        .attr("y", d => pitcherY(d.axis) + pitcherY.bandwidth()/2)
+        .attr("x", pitcherWidth + 18)
+        .text(d => {
+          if (d.stuffPlus == null) return "";
+          const val = Number(d.stuffPlus);
+          if (isNaN(val)) return "";
+          return Math.round(val);
+        })
+        .attr("alignment-baseline", "middle")
+        .style("fill", "#E2E8F0")
+        .style("font-size", "12px")
+        .style("font-weight", "600");
+}
 }
 
-function renderPitchMovementChart(selector, movementData, year, handedness) {
+function renderPitchMovementChart(selector, movementData, year, handedness, level) {
     // Pitch type to color mapping
     const pitchColors = {
         'fourseam': '#FF6B6B',      // Red
@@ -2170,11 +2203,21 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
         'sweeper': '#96CEB4',       // Green
         'curveball': '#FFEAA7',     // Yellow
         'changeup': '#DDA0DD',       // Plum
-        'cutter': '#FFA500'          // Orange
+        'cutter': '#FFA500',         // Orange
+        'splitter': '#E17055'        // Coral
     };
     
-    // Pitch type to filename mapping (for JSON URLs)
-    const pitchTypeToFilename = {
+    const isHighSchool = level === 'High School';
+    const pitchTypeToFilename = isHighSchool ? {
+        'fourseam': 'fourseam',
+        'sinker': 'sinkers',
+        'slider': 'sliders',
+        'sweeper': 'sweepers',
+        'curveball': 'curveballs',
+        'changeup': 'changeups',
+        'cutter': 'cutters',
+        'splitter': 'splitters'
+    } : {
         'fourseam': 'fourseam',
         'sinker': 'sinkers',
         'slider': 'sliders',
@@ -2198,7 +2241,7 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
     let containerWidth = containerNode.getBoundingClientRect().width;
     
     // Store original data for re-rendering on resize
-    const chartData = { selector, movementData, year, handedness };
+    const chartData = { selector, movementData, year, handedness, level };
     
     function renderChart() {
         // Re-check width if needed
@@ -2242,11 +2285,21 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
         
+        const pitchLegendLabel = (pitchType) => {
+            const displayName = pitchType.charAt(0).toUpperCase() + pitchType.slice(1);
+            const point = movementData[pitchType];
+            const stuff = point && point.stuff_plus;
+            if (stuff == null || isNaN(Number(stuff))) return displayName;
+            return `${displayName} ${Math.round(Number(stuff))}`;
+        };
+        
         // Load all pitch type data and render (filtered by handedness)
         const handednessPrefix = `${handedness}_`;
+        const hsPrefix = isHighSchool ? 'hs_' : '';
         const promises = pitchTypes.map(pitchType => {
             const filename = pitchTypeToFilename[pitchType];
-            const url = `{{ pitch_shapes_base_url }}${year}_${handednessPrefix}${filename}.json`;
+            if (!filename) return Promise.resolve({ pitchType, data: null });
+            const url = `{{ pitch_shapes_base_url }}${year}_${hsPrefix}${handednessPrefix}${filename}.json`;
             return d3.json(url).then(data => ({ pitchType, data })).catch(() => ({ pitchType, data: null }));
         });
         
@@ -2446,7 +2499,7 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
                 legendY = height + 20;
                 
                 const legendItems = pitchTypes.map((pitchType, i) => ({
-                    pitchType: pitchType.charAt(0).toUpperCase() + pitchType.slice(1),
+                    pitchType: pitchLegendLabel(pitchType),
                     color: pitchColors[pitchType] || '#FFFFFF',
                     y: 0,
                     x: (i - (pitchTypes.length - 1) / 2) * itemSpacing
@@ -2485,8 +2538,7 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
                 
                 let maxTextWidth = 0;
                 pitchTypes.forEach(pitchType => {
-                    const displayName = pitchType.charAt(0).toUpperCase() + pitchType.slice(1);
-                    tempText.text(displayName);
+                    tempText.text(pitchLegendLabel(pitchType));
                     const textWidth = tempText.node().getBBox().width;
                     if (textWidth > maxTextWidth) maxTextWidth = textWidth;
                 });
@@ -2504,7 +2556,7 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
                     .attr("transform", `translate(${legendX}, ${legendY})`);
                 
                 const legendItems = pitchTypes.map((pitchType, i) => ({
-                    pitchType: pitchType.charAt(0).toUpperCase() + pitchType.slice(1),
+                    pitchType: pitchLegendLabel(pitchType),
                     color: pitchColors[pitchType] || '#FFFFFF',
                     y: i * legendSpacing,
                     textX: maxTextWidth, // Text starts at max width (right-aligned)
@@ -2572,8 +2624,8 @@ function renderPitchMovementChart(selector, movementData, year, handedness) {
 renderHitterChart("#lollipop-chart-{{ sc.chart_index }}", JSON.parse('{{ sc.hitter_json|escapejs }}'));
 {% elif sc.pitcher_json %}
 renderPitcherChart("#pitcher-lollipop-chart-{{ sc.chart_index }}", JSON.parse('{{ sc.pitcher_json|escapejs }}'));
-{% if sc.pitcher_movement_json and sc.level == "College" %}
-renderPitchMovementChart("#pitch-movement-chart-{{ sc.chart_index }}", JSON.parse('{{ sc.pitcher_movement_json|escapejs }}'), '{{ sc.year }}', '{{ sc.pitcher_handedness|default:"" }}');
+{% if sc.pitcher_movement_json %}
+renderPitchMovementChart("#pitch-movement-chart-{{ sc.chart_index }}", JSON.parse('{{ sc.pitcher_movement_json|escapejs }}'), '{{ sc.year }}', '{{ sc.pitcher_handedness|default:"" }}', '{{ sc.level|escapejs }}');
 {% endif %}
 {% endif %}
 {% endfor %}

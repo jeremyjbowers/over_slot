@@ -5,7 +5,7 @@ from overslot import models, utils
 
 
 class Command(BaseCommand):
-    help = 'Load College Pitchers Trackman data from Google Sheets'
+    help = 'Load College and High School Pitchers Trackman data from Google Sheets'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -17,16 +17,27 @@ class Command(BaseCommand):
             '--tab',
             type=str,
             default=None,
-            help='Load a specific tab name (e.g., "2026 Fourseam" or "2024 Changeups/Splitters"). If not specified, loads all tabs.'
+            help=(
+                'Load a specific tab name (e.g., "2026 Fourseam", "2024 Changeups/Splitters", '
+                '"HS Fourseam 2026"). If not specified, loads all college and HS pitcher tabs.'
+            )
         )
 
     def handle(self, *args, **options):
         """
-        Load college pitchers data from sheets named like "{YEAR} {PITCH_TYPE}"
-        Pitch types: Fourseam, Sinkers, Sliders, Sweepers, Curveballs, Changeups/Splitters
+        Load college pitchers from tabs named like "{YEAR} {PITCH_TYPE}" and
+        high school pitchers from tabs named like "HS {PITCH_TYPE} {YEAR}".
+        Pitch types: Fourseam, Sinkers, Sliders, Sweepers, Curveballs, Changeups/Splitters, Cutters
+        HS also has separate Changeup and Splitter tabs, plus a Stuff+ column.
         """
         debug = options.get('debug', False)
         specific_tab = options.get('tab')
+
+        hs_parsed = utils.parse_hs_pitcher_tab(specific_tab) if specific_tab else None
+        if hs_parsed:
+            year, pitch_key, tab_type = hs_parsed
+            self._load_hs_tab(specific_tab, year, pitch_key, tab_type, debug=debug)
+            return
         
         # If a specific tab is requested, load only that tab
         if specific_tab:
@@ -244,6 +255,10 @@ class Command(BaseCommand):
                             season.cutter_vert_break = row.get('cutter_vert_break')
                             season.cutter_horiz_break = row.get('cutter_horiz_break')
 
+                        pitch_key = utils.COLLEGE_PITCHER_TAB_TYPE_TO_KEY.get(tab_type)
+                        if pitch_key:
+                            setattr(season, f"{pitch_key}_stuff_plus", utils.parse_stuff_plus(row))
+
                         season.confidence = 10
                         season.save()
                         if debug:
@@ -253,3 +268,157 @@ class Command(BaseCommand):
                             self.stdout.write(f"[pitchers:{tab_type}] No Player match for '{row.get('Name')}' — skipping updates")
                 
                 print(f"Completed processing {total_rows} players for {tab}")
+
+        if not specific_tab:
+            self._load_all_hs(debug=debug)
+
+    def _load_all_hs(self, debug=False):
+        try:
+            titles = utils.list_spreadsheet_sheet_titles(utils.TRACKMAN_SHEET_ID)
+        except Exception as exc:
+            self.stdout.write(self.style.WARNING(f"Could not list HS pitcher tabs: {exc}"))
+            return
+
+        tabs = utils.discover_hs_pitcher_tabs(titles)
+        if not tabs:
+            self.stdout.write(self.style.WARNING("No HS pitcher tabs found."))
+            return
+
+        for tab, year, pitch_key, tab_type in tabs:
+            self._load_hs_tab(tab, year, pitch_key, tab_type, debug=debug)
+
+    def _load_hs_tab(self, tab, year, pitch_key, tab_type, debug=False):
+        self.stdout.write(f"[load] Reading tab: {tab}")
+        try:
+            sheet = utils.get_sheet(
+                utils.TRACKMAN_SHEET_ID,
+                utils.sheet_tab_a1_range(tab, "A:Z"),
+                value_cutoff=None,
+            )
+        except HttpError as e:
+            if e.resp.status == 400:
+                self.stdout.write(self.style.WARNING(f"[load] Tab '{tab}' not found (400 error)"))
+                return
+            raise
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f"[load] Error reading tab '{tab}': {e}"))
+            return
+
+        if not sheet:
+            self.stdout.write(f"No sheet found for {tab}")
+            return
+
+        min_pitches = 5
+        total_sheet_rows = len(sheet)
+        rows = []
+        for row in sheet:
+            row = utils.fix_blanks(row)
+            try:
+                pitches = int(float(str(row.get("Pitches") or 0).replace(",", "")))
+            except (TypeError, ValueError):
+                pitches = 0
+            if pitches >= min_pitches:
+                rows.append(row)
+
+        if debug:
+            self.stdout.write(
+                f"[load] Tab '{tab}': loaded {total_sheet_rows} rows; "
+                f"min_pitches={min_pitches}; processing {len(rows)} rows"
+            )
+
+        # HS tabs use Whiff% on every pitch type, including curveballs.
+        pitch_weights = [
+            ("Strike%", 0.15, False),
+            ("Chase%", 0.35, False),
+            ("Whiff%", 0.50, False),
+        ]
+        all_metrics = {metric: invert for metric, _, invert in pitch_weights}
+
+        metric_distributions = {}
+        for metric, should_invert in all_metrics.items():
+            distribution = utils.calculate_percentile_distribution(rows, metric)
+            metric_distributions[metric] = {
+                "distribution": distribution,
+                "invert": should_invert,
+            }
+
+        total_rows = len(rows)
+        matched = 0
+        for original_index, row in enumerate(rows):
+            row_percentiles = {}
+            for metric in all_metrics:
+                raw_value = utils.parse_value(row.get(metric))
+                distribution = metric_distributions[metric]["distribution"]
+                should_invert = metric_distributions[metric]["invert"]
+                row_percentiles[metric] = utils.get_percentile_rank(
+                    raw_value, distribution, invert=should_invert
+                )
+
+            pitch_percentile = utils.calculate_weighted_percentile_score(
+                row_percentiles, pitch_weights
+            )
+            vert_break = utils.parse_value(row.get("Induced Vertical Break"))
+            horiz_break = utils.parse_value(row.get("Horizontal Break"))
+            stuff_plus = utils.parse_stuff_plus(row)
+
+            if (original_index + 1) % 10 == 0 or original_index == total_rows - 1:
+                progress = ((original_index + 1) / total_rows) * 100 if total_rows else 100
+                print(
+                    f"Processing {tab_type.lower()}: {progress:.1f}% complete "
+                    f"({original_index + 1}/{total_rows})"
+                )
+
+            raw_name = row.get("Name") or row.get("Player") or row.get("Player Name") or ""
+            match_name = utils.normalize_sheet_player_name(raw_name)
+            if debug and raw_name:
+                self.stdout.write(f"[hs_pitchers:{tab_type}] Matching '{raw_name}' -> '{match_name}'")
+
+            obj = utils.fuzzy_find_player(match_name, debug=debug, stdout=self.stdout) if match_name else None
+            if not obj:
+                if debug and raw_name:
+                    self.stdout.write(
+                        f"[hs_pitchers:{tab_type}] No Player match for '{raw_name}' — skipping updates"
+                    )
+                continue
+
+            matched += 1
+            season, _created = models.PlayerStatSeason.objects.get_or_create(
+                player=obj, year=str(year), level="High School"
+            )
+            if not season.draft_year:
+                latest_hs = (
+                    models.PlayerRanking.objects.filter(player=obj, level="High School")
+                    .select_related("ranking")
+                    .order_by("-ranking__year")
+                    .first()
+                )
+                if latest_hs and latest_hs.ranking and latest_hs.ranking.year:
+                    season.draft_year = str(latest_hs.ranking.year)
+                else:
+                    season.draft_year = str(year)
+            if not season.school:
+                season.school = row.get("School") or obj.school
+
+            utils.set_pitch_type_fields(
+                season,
+                pitch_key,
+                percentile=pitch_percentile,
+                vert_break=vert_break,
+                horiz_break=horiz_break,
+                stuff_plus=stuff_plus,
+            )
+            season.confidence = 10
+            season.save()
+
+            handedness = str(row.get("Handedness") or "").strip().upper()
+            if handedness in ("L", "R") and not obj.throws:
+                obj.throws = handedness
+                obj.save(update_fields=["throws"])
+
+            if debug:
+                self.stdout.write(
+                    f"[hs_pitchers:{tab_type}] Saved PlayerStatSeason {season.year} "
+                    f"High School for '{obj.name}'"
+                )
+
+        print(f"Completed processing {total_rows} players for {tab} ({matched} matched)")

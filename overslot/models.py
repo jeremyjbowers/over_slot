@@ -718,6 +718,7 @@ class PlayerStatSeason(BaseModel):
     curveball_percentile = models.FloatField(blank=True, null=True)
     changeup_percentile = models.FloatField(blank=True, null=True)
     cutter_percentile = models.FloatField(blank=True, null=True)
+    splitter_percentile = models.FloatField(blank=True, null=True)
     fourseam_score = models.FloatField(blank=True, null=True)
     sinker_score = models.FloatField(blank=True, null=True)
     slider_score = models.FloatField(blank=True, null=True)
@@ -725,6 +726,7 @@ class PlayerStatSeason(BaseModel):
     curveball_score = models.FloatField(blank=True, null=True)
     changeup_score = models.FloatField(blank=True, null=True)
     cutter_score = models.FloatField(blank=True, null=True)
+    splitter_score = models.FloatField(blank=True, null=True)
 
     # Pitcher pitch-type break data (x,y coordinates)
     fourseam_vert_break = models.FloatField(blank=True, null=True, help_text="Induced Vertical Break for fourseam")
@@ -741,6 +743,18 @@ class PlayerStatSeason(BaseModel):
     changeup_horiz_break = models.FloatField(blank=True, null=True, help_text="Horizontal Break for changeup/splitter")
     cutter_vert_break = models.FloatField(blank=True, null=True, help_text="Induced Vertical Break for cutter")
     cutter_horiz_break = models.FloatField(blank=True, null=True, help_text="Horizontal Break for cutter")
+    splitter_vert_break = models.FloatField(blank=True, null=True, help_text="Induced Vertical Break for splitter")
+    splitter_horiz_break = models.FloatField(blank=True, null=True, help_text="Horizontal Break for splitter")
+
+    # Stuff+ vs MLB-style baseline (100 = average MLB pitch)
+    fourseam_stuff_plus = models.FloatField(blank=True, null=True, help_text="Stuff+ vs MLB baseline (100 = average)")
+    sinker_stuff_plus = models.FloatField(blank=True, null=True, help_text="Stuff+ vs MLB baseline (100 = average)")
+    cutter_stuff_plus = models.FloatField(blank=True, null=True, help_text="Stuff+ vs MLB baseline (100 = average)")
+    slider_stuff_plus = models.FloatField(blank=True, null=True, help_text="Stuff+ vs MLB baseline (100 = average)")
+    sweeper_stuff_plus = models.FloatField(blank=True, null=True, help_text="Stuff+ vs MLB baseline (100 = average)")
+    curveball_stuff_plus = models.FloatField(blank=True, null=True, help_text="Stuff+ vs MLB baseline (100 = average)")
+    changeup_stuff_plus = models.FloatField(blank=True, null=True, help_text="Stuff+ vs MLB baseline (100 = average)")
+    splitter_stuff_plus = models.FloatField(blank=True, null=True, help_text="Stuff+ vs MLB baseline (100 = average)")
 
     # High school statline actuals
     hs_pa = models.FloatField(blank=True, null=True)

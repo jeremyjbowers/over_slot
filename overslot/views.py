@@ -1283,66 +1283,31 @@ def players_detail(request, slug):
             if hitter_items:
                 hitter_payload = json.dumps({'items': hitter_items, 'confidence': s.confidence})
         
-        # Pitcher payload (percentiles already 0-1)
+        # Pitcher payload (percentiles already 0-1). Include a pitch if it has
+        # a quality percentile, movement, or a Stuff+ grade.
         pitcher_data = {}
         pitcher_movement_data = {}
-        if s.fourseam_percentile is not None:
-            pitcher_data['fourseam_percentile'] = s.fourseam_percentile
-            pitcher_data['fourseam_score'] = s.fourseam_score
-            if s.fourseam_vert_break is not None and s.fourseam_horiz_break is not None:
-                pitcher_movement_data['fourseam'] = {
-                    'vert_break': s.fourseam_vert_break,
-                    'horiz_break': s.fourseam_horiz_break
+        for pitch_key in utils.PITCHER_PITCH_KEYS:
+            percentile = getattr(s, f"{pitch_key}_percentile", None)
+            score = getattr(s, f"{pitch_key}_score", None)
+            stuff_plus = getattr(s, f"{pitch_key}_stuff_plus", None)
+            vert_break = getattr(s, f"{pitch_key}_vert_break", None)
+            horiz_break = getattr(s, f"{pitch_key}_horiz_break", None)
+            has_movement = vert_break is not None and horiz_break is not None
+            if percentile is not None:
+                pitcher_data[f"{pitch_key}_percentile"] = percentile
+                pitcher_data[f"{pitch_key}_score"] = score
+            if stuff_plus is not None:
+                pitcher_data[f"{pitch_key}_stuff_plus"] = stuff_plus
+            if has_movement:
+                point = {
+                    'vert_break': vert_break,
+                    'horiz_break': horiz_break,
                 }
-        if s.sinker_percentile is not None:
-            pitcher_data['sinker_percentile'] = s.sinker_percentile
-            pitcher_data['sinker_score'] = s.sinker_score
-            if s.sinker_vert_break is not None and s.sinker_horiz_break is not None:
-                pitcher_movement_data['sinker'] = {
-                    'vert_break': s.sinker_vert_break,
-                    'horiz_break': s.sinker_horiz_break
-                }
-        if s.slider_percentile is not None:
-            pitcher_data['slider_percentile'] = s.slider_percentile
-            pitcher_data['slider_score'] = s.slider_score
-            if s.slider_vert_break is not None and s.slider_horiz_break is not None:
-                pitcher_movement_data['slider'] = {
-                    'vert_break': s.slider_vert_break,
-                    'horiz_break': s.slider_horiz_break
-                }
-        if s.sweeper_percentile is not None:
-            pitcher_data['sweeper_percentile'] = s.sweeper_percentile
-            pitcher_data['sweeper_score'] = s.sweeper_score
-            if s.sweeper_vert_break is not None and s.sweeper_horiz_break is not None:
-                pitcher_movement_data['sweeper'] = {
-                    'vert_break': s.sweeper_vert_break,
-                    'horiz_break': s.sweeper_horiz_break
-                }
-        if s.curveball_percentile is not None:
-            pitcher_data['curveball_percentile'] = s.curveball_percentile
-            pitcher_data['curveball_score'] = s.curveball_score
-            if s.curveball_vert_break is not None and s.curveball_horiz_break is not None:
-                pitcher_movement_data['curveball'] = {
-                    'vert_break': s.curveball_vert_break,
-                    'horiz_break': s.curveball_horiz_break
-                }
-        if s.changeup_percentile is not None:
-            pitcher_data['changeup_percentile'] = s.changeup_percentile
-            pitcher_data['changeup_score'] = s.changeup_score
-            if s.changeup_vert_break is not None and s.changeup_horiz_break is not None:
-                pitcher_movement_data['changeup'] = {
-                    'vert_break': s.changeup_vert_break,
-                    'horiz_break': s.changeup_horiz_break
-                }
-        if s.cutter_percentile is not None:
-            pitcher_data['cutter_percentile'] = s.cutter_percentile
-            pitcher_data['cutter_score'] = s.cutter_score
-            if s.cutter_vert_break is not None and s.cutter_horiz_break is not None:
-                pitcher_movement_data['cutter'] = {
-                    'vert_break': s.cutter_vert_break,
-                    'horiz_break': s.cutter_horiz_break
-                }
-        pitcher_payload = json.dumps({**pitcher_data, 'confidence': s.confidence}) if pitcher_data else None
+                if stuff_plus is not None:
+                    point['stuff_plus'] = stuff_plus
+                pitcher_movement_data[pitch_key] = point
+        pitcher_payload = json.dumps({**pitcher_data, 'confidence': s.confidence, 'level': s.level}) if (pitcher_data or pitcher_movement_data) else None
         pitcher_movement_payload = json.dumps(pitcher_movement_data) if pitcher_movement_data else None
         
         if hitter_payload or pitcher_payload:

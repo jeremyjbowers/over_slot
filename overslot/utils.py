@@ -2,6 +2,7 @@ from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
 import os
+import re
 
 import gspread
 import json
@@ -97,6 +98,137 @@ def sheet_tab_a1_range(tab_title, cell_range="A:Z"):
     """
     escaped = str(tab_title).replace("'", "''")
     return f"'{escaped}'!{cell_range}"
+
+
+TRACKMAN_SHEET_ID = "1KJwXOxOKZvk50bP186klB_YXUdWVylJwEHvHUBorULA"
+
+# Canonical pitch keys used on PlayerStatSeason and in profile charts.
+PITCHER_PITCH_KEYS = (
+    "fourseam",
+    "sinker",
+    "cutter",
+    "slider",
+    "sweeper",
+    "curveball",
+    "changeup",
+    "splitter",
+)
+
+# HS Trackman tabs: "HS Fourseam 2026", "HS Sinker 2026", … (singular type, year last).
+HS_PITCHER_TAB_RE = re.compile(r"^HS\s+(.+?)\s+(\d{4})$", re.IGNORECASE)
+HS_PITCHER_TAB_TYPE_TO_KEY = {
+    "Fourseam": "fourseam",
+    "Sinker": "sinker",
+    "Sinkers": "sinker",
+    "Cutter": "cutter",
+    "Cutters": "cutter",
+    "Slider": "slider",
+    "Sliders": "slider",
+    "Sweeper": "sweeper",
+    "Sweepers": "sweeper",
+    "Curveball": "curveball",
+    "Curveballs": "curveball",
+    "Changeup": "changeup",
+    "Changeups": "changeup",
+    "Splitter": "splitter",
+    "Splitters": "splitter",
+}
+
+# College Trackman tabs: "2026 Fourseam", "2026 Sinkers", "2026 Changeups/Splitters".
+COLLEGE_PITCHER_TAB_TYPE_TO_KEY = {
+    "Fourseam": "fourseam",
+    "Sinkers": "sinker",
+    "Sliders": "slider",
+    "Sweepers": "sweeper",
+    "Curveballs": "curveball",
+    "Changeups/Splitters": "changeup",
+    "Cutters": "cutter",
+}
+
+# Background-cloud JSON filenames (without year / handedness / hs prefix).
+COLLEGE_PITCH_SHAPE_FILENAMES = {
+    "fourseam": "fourseam",
+    "sinker": "sinkers",
+    "slider": "sliders",
+    "sweeper": "sweepers",
+    "curveball": "curveballs",
+    "changeup": "changeup_splitters",
+    "cutter": "cutters",
+}
+HS_PITCH_SHAPE_FILENAMES = {
+    "fourseam": "fourseam",
+    "sinker": "sinkers",
+    "cutter": "cutters",
+    "slider": "sliders",
+    "sweeper": "sweepers",
+    "curveball": "curveballs",
+    "changeup": "changeups",
+    "splitter": "splitters",
+}
+
+
+def normalize_sheet_player_name(name):
+    """
+    Convert Trackman-style 'Last, First' names to 'First Last' for player matching.
+
+    Also strips quoted nicknames so 'Jones Jr., Harry "Chubb"' becomes 'Harry Jones Jr.'.
+    """
+    if not name:
+        return ""
+    name = str(name).strip()
+    if "," in name:
+        last, first = name.split(",", 1)
+        name = f"{first.strip()} {last.strip()}".strip()
+    name = re.sub(r"\s*[\"“”'][^\"“”']+[\"“”']", "", name)
+    return re.sub(r"\s+", " ", name).strip()
+
+
+def parse_stuff_plus(row):
+    """Parse a Stuff+ grade from a Trackman sheet row."""
+    if not row:
+        return None
+    return parse_value(row.get("Stuff+") or row.get("Stuff Plus") or row.get("Stuff"))
+
+
+def parse_hs_pitcher_tab(title):
+    """
+    Parse an HS pitcher tab title like 'HS Fourseam 2026'.
+
+    Returns (year, pitch_key, tab_type) or None if the title is not an HS pitch tab.
+    """
+    if not title:
+        return None
+    match = HS_PITCHER_TAB_RE.match(str(title).strip())
+    if not match:
+        return None
+    tab_type = match.group(1).strip()
+    year = match.group(2)
+    pitch_key = HS_PITCHER_TAB_TYPE_TO_KEY.get(tab_type)
+    if not pitch_key:
+        return None
+    return year, pitch_key, tab_type
+
+
+def discover_hs_pitcher_tabs(titles):
+    """Return [(tab_title, year, pitch_key, tab_type), ...] for HS pitcher tabs."""
+    found = []
+    for title in titles or []:
+        parsed = parse_hs_pitcher_tab(title)
+        if parsed:
+            year, pitch_key, tab_type = parsed
+            found.append((title, year, pitch_key, tab_type))
+    return found
+
+
+def set_pitch_type_fields(season, pitch_key, *, percentile=None, vert_break=None, horiz_break=None, stuff_plus=None):
+    """Write one pitch type's Trackman fields onto a PlayerStatSeason."""
+    if pitch_key not in PITCHER_PITCH_KEYS:
+        raise ValueError(f"Unknown pitch key: {pitch_key}")
+    setattr(season, f"{pitch_key}_percentile", percentile)
+    setattr(season, f"{pitch_key}_score", percentile)
+    setattr(season, f"{pitch_key}_vert_break", vert_break)
+    setattr(season, f"{pitch_key}_horiz_break", horiz_break)
+    setattr(season, f"{pitch_key}_stuff_plus", stuff_plus)
 
 
 def list_spreadsheet_sheet_titles(sheet_id):
