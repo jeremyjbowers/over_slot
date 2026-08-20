@@ -1090,14 +1090,14 @@ body {
                 {% for year, seasons in pitcher_seasons_by_year.items %}
                 <div id="pitcher-year-{{ year }}" class="pitcher-year-panel" style="{% if not forloop.first %}display:none{% endif %}">
                     {% with sc=seasons|first %}
-                    <!-- Sub-tabs for Location and Quality -->
+                    <!-- Sub-tabs for Design and Quality -->
                     <div class="chart-tabs-wrapper">
                         <div class="tabs is-toggle is-small">
                             <ul class="pitcher-chart-tabs" data-year="{{ year }}">
                                 {% if sc.pitcher_movement_json %}
                                 <li class="is-active">
-                                    <a href="#" data-target="pitcher-location-{{ year }}">
-                                        <span>{{ year }} Pitch Location</span>
+                                    <a href="#" data-target="pitcher-design-{{ year }}">
+                                        <span>{{ year }} Pitch Design</span>
                                     </a>
                                 </li>
                                 {% endif %}
@@ -1109,18 +1109,18 @@ body {
                             </ul>
                         </div>
                     </div>
-                    <!-- Location panel (default if available) -->
+                    <!-- Design panel (default if available) -->
                     {% if sc.pitcher_movement_json %}
-                    <div id="pitcher-location-{{ year }}" class="pitcher-chart-panel">
+                    <div id="pitcher-design-{{ year }}" class="pitcher-chart-panel">
                         <div class="info-section">
                             <div class="info-section-header">
                                 <h3 class="info-section-title">
-                                    {{ year }} Pitch Location ({{ sc.level }})
+                                    {{ year }} Pitch Design ({{ sc.level }})
                                 </h3>
                             </div>
                             <div class="info-section-content">
                                 {% if sc.level == "High School" %}
-                                <span class="info-section-subtitle">Pitch movement compared to other high school pitchers. Stuff+ (MLB average = 100) is shown in the legend.</span>
+                                <span class="info-section-subtitle">Pitch movement compared to other high school pitchers.</span>
                                 {% else %}
                                 <span class="info-section-subtitle">Pitch movement visualization showing this pitcher's movement profile compared to all pitchers.</span>
                                 {% endif %}
@@ -1726,7 +1726,7 @@ function toggleReport(button) {
         });
     }
     
-    // Pitcher chart sub-tabs (Location/Quality)
+    // Pitcher chart sub-tabs (Design/Quality)
     const pitcherChartTabs = document.querySelectorAll('.pitcher-chart-tabs li a');
     if (pitcherChartTabs.length) {
         pitcherChartTabs.forEach(a => {
@@ -2285,22 +2285,37 @@ function renderPitchMovementChart(selector, movementData, year, handedness, leve
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
         
-        const pitchLegendLabel = (pitchType) => {
-            const displayName = pitchType.charAt(0).toUpperCase() + pitchType.slice(1);
-            const point = movementData[pitchType];
-            const stuff = point && point.stuff_plus;
-            if (stuff == null || isNaN(Number(stuff))) return displayName;
-            return `${displayName} ${Math.round(Number(stuff))}`;
-        };
+        const pitchLegendLabel = (pitchType) => pitchType.charAt(0).toUpperCase() + pitchType.slice(1);
         
-        // Load all pitch type data and render (filtered by handedness)
+        // Load rest-of-sample clouds (filtered by handedness).
+        // HS files live at {year}_hs_{hand}_{pitch}.json; fall back to the college
+        // universe so the cloud still renders if the HS file is not on the CDN yet.
         const handednessPrefix = `${handedness}_`;
-        const hsPrefix = isHighSchool ? 'hs_' : '';
+        const collegeFallback = {
+            'fourseam': 'fourseam',
+            'sinker': 'sinkers',
+            'slider': 'sliders',
+            'sweeper': 'sweepers',
+            'curveball': 'curveballs',
+            'changeup': 'changeup_splitters',
+            'cutter': 'cutters',
+            'splitter': 'changeup_splitters'
+        };
         const promises = pitchTypes.map(pitchType => {
             const filename = pitchTypeToFilename[pitchType];
-            if (!filename) return Promise.resolve({ pitchType, data: null });
-            const url = `{{ pitch_shapes_base_url }}${year}_${hsPrefix}${handednessPrefix}${filename}.json`;
-            return d3.json(url).then(data => ({ pitchType, data })).catch(() => ({ pitchType, data: null }));
+            const fallbackName = collegeFallback[pitchType];
+            const urls = [];
+            if (isHighSchool && filename) {
+                urls.push(`{{ pitch_shapes_base_url }}${year}_hs_${handednessPrefix}${filename}.json`);
+            }
+            if (fallbackName) {
+                urls.push(`{{ pitch_shapes_base_url }}${year}_${handednessPrefix}${fallbackName}.json`);
+            }
+            const tryUrl = (i) => {
+                if (i >= urls.length) return Promise.resolve({ pitchType, data: null });
+                return d3.json(urls[i]).then(data => ({ pitchType, data })).catch(() => tryUrl(i + 1));
+            };
+            return tryUrl(0);
         });
         
         Promise.all(promises).then(results => {

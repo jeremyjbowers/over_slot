@@ -1300,13 +1300,10 @@ def players_detail(request, slug):
             if stuff_plus is not None:
                 pitcher_data[f"{pitch_key}_stuff_plus"] = stuff_plus
             if has_movement:
-                point = {
+                pitcher_movement_data[pitch_key] = {
                     'vert_break': vert_break,
                     'horiz_break': horiz_break,
                 }
-                if stuff_plus is not None:
-                    point['stuff_plus'] = stuff_plus
-                pitcher_movement_data[pitch_key] = point
         pitcher_payload = json.dumps({**pitcher_data, 'confidence': s.confidence, 'level': s.level}) if (pitcher_data or pitcher_movement_data) else None
         pitcher_movement_payload = json.dumps(pitcher_movement_data) if pitcher_movement_data else None
         
