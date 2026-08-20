@@ -28,7 +28,8 @@ class Command(BaseCommand):
         Load college pitchers from tabs named like "{YEAR} {PITCH_TYPE}" and
         high school pitchers from tabs named like "HS {PITCH_TYPE} {YEAR}".
         Pitch types: Fourseam, Sinkers, Sliders, Sweepers, Curveballs, Changeups/Splitters, Cutters
-        HS also has separate Changeup and Splitter tabs, plus a Stuff+ column.
+        HS Pitch Quality bars use each pitch's Stuff+ percentile vs that HS tab
+        (raw Stuff+ is stored on the season and shown as the right-side grade).
         """
         debug = options.get('debug', False)
         specific_tab = options.get('tab')
@@ -326,40 +327,19 @@ class Command(BaseCommand):
                 f"min_pitches={min_pitches}; processing {len(rows)} rows"
             )
 
-        # HS tabs use Whiff% on every pitch type, including curveballs.
-        pitch_weights = [
-            ("Strike%", 0.15, False),
-            ("Chase%", 0.35, False),
-            ("Whiff%", 0.50, False),
-        ]
-        all_metrics = {metric: invert for metric, _, invert in pitch_weights}
-
-        metric_distributions = {}
-        for metric, should_invert in all_metrics.items():
-            distribution = utils.calculate_percentile_distribution(rows, metric)
-            metric_distributions[metric] = {
-                "distribution": distribution,
-                "invert": should_invert,
-            }
+        # HS Pitch Quality bars are Stuff+ percentile vs this tab, not
+        # Strike/Chase/Whiff results. Raw Stuff+ is stored separately.
+        stuff_distribution = utils.calculate_percentile_distribution(rows, "Stuff+")
 
         total_rows = len(rows)
         matched = 0
         for original_index, row in enumerate(rows):
-            row_percentiles = {}
-            for metric in all_metrics:
-                raw_value = utils.parse_value(row.get(metric))
-                distribution = metric_distributions[metric]["distribution"]
-                should_invert = metric_distributions[metric]["invert"]
-                row_percentiles[metric] = utils.get_percentile_rank(
-                    raw_value, distribution, invert=should_invert
-                )
-
-            pitch_percentile = utils.calculate_weighted_percentile_score(
-                row_percentiles, pitch_weights
+            stuff_plus = utils.parse_stuff_plus(row)
+            pitch_percentile = utils.get_percentile_rank(
+                stuff_plus, stuff_distribution, invert=False
             )
             vert_break = utils.parse_value(row.get("Induced Vertical Break"))
             horiz_break = utils.parse_value(row.get("Horizontal Break"))
-            stuff_plus = utils.parse_stuff_plus(row)
 
             if (original_index + 1) % 10 == 0 or original_index == total_rows - 1:
                 progress = ((original_index + 1) / total_rows) * 100 if total_rows else 100

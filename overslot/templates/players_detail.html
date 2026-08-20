@@ -1103,7 +1103,11 @@ body {
                                 {% endif %}
                                 <li {% if not sc.pitcher_movement_json %}class="is-active"{% endif %}>
                                     <a href="#" data-target="pitcher-quality-{{ year }}">
+                                        {% if sc.level == "High School" %}
+                                        <span>{{ year }} Stuff+</span>
+                                        {% else %}
                                         <span>{{ year }} Pitch Quality</span>
+                                        {% endif %}
                                     </a>
                                 </li>
                             </ul>
@@ -1138,11 +1142,19 @@ body {
                         <div class="info-section">
                             <div class="info-section-header">
                                 <h3 class="info-section-title">
+                                    {% if sc.level == "High School" %}
+                                    {{ year }} Stuff+ ({{ sc.level }})
+                                    {% else %}
                                     {{ year }} Pitch Quality ({{ sc.level }})
+                                    {% endif %}
                                 </h3>
                             </div>
                             <div class="info-section-content">
+                                {% if sc.level == "High School" %}
+                                <span class="info-section-subtitle">Bars are each pitch's Stuff+ percentile vs this high school class. 100 is an average MLB pitch; the number at right is the raw Stuff+ grade.</span>
+                                {% else %}
                                 <span class="info-section-subtitle">Percentile ranks based on modeled pitch performance. Stuff+ grades (MLB average = 100) appear at right when available.</span>
+                                {% endif %}
                             </div>
                             {% for sc in seasons %}
                             <div id="pitcher-lollipop-chart-{{ sc.chart_index }}"></div>

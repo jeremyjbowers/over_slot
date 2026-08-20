@@ -85,3 +85,11 @@ class PitchTypeFieldTests(TestCase):
         self.assertEqual(utils.parse_stuff_plus({"Stuff+": "111"}), 111.0)
         self.assertEqual(utils.parse_stuff_plus({"Stuff Plus": "99.5"}), 99.5)
         self.assertIsNone(utils.parse_stuff_plus({"Name": "Nobody"}))
+
+    def test_second_best_stuff_plus_ranks_near_top_of_class(self):
+        rows = [{"Stuff+": str(v)} for v in (65, 80, 86, 90, 94, 100, 107, 111)]
+        distribution = utils.calculate_percentile_distribution(rows, "Stuff+")
+        second_best = utils.get_percentile_rank(107, distribution, invert=False)
+        mid = utils.get_percentile_rank(90, distribution, invert=False)
+        self.assertGreaterEqual(second_best, 0.8)
+        self.assertGreater(second_best, mid)
