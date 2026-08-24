@@ -26,6 +26,10 @@
         <meta name="twitter:image" content="{% block twitter_image %}https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.png{% endblock %}">
         <meta name="twitter:image:alt" content="{% block twitter_image_alt %}Over Slot - Baseball prospect coverage{% endblock %}">
         
+        <link rel="alternate" type="application/rss+xml" title="Over Slot Articles" href="{% url 'articles_rss' %}">
+        <link rel="alternate" type="application/rss+xml" title="Over Slot Rankings" href="{% url 'rankings_rss' %}">
+        <link rel="alternate" type="application/rss+xml" title="Over Slot Mock Drafts" href="{% url 'mock_drafts_rss' %}">
+
         <!-- Extra head content (for page-specific meta tags, etc.) -->
         {% block extra_head %}{% endblock %}
         

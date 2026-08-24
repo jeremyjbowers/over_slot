@@ -687,7 +687,11 @@ class URLPatternTestCase(TestCase):
         url_patterns = [
             'index',
             'articles_list',
+            'articles_rss',
             'rankings_list',
+            'rankings_rss',
+            'mock_drafts_list',
+            'mock_drafts_rss',
             'search',
             'magic_link',
             'magic_link_signup',

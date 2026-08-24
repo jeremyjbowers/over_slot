@@ -7,6 +7,7 @@ from django.contrib.sitemaps.views import sitemap
 
 from overslot import views, subscription_views, duplicate_views, account_views, team_duplicate_views, cache_admin_views
 from overslot.admin import admin_site
+from overslot.feeds import ArticlesFeed, RankingsFeed, MockDraftsFeed
 from . import auth
 from .sitemaps import StaticViewSitemap, ArticleSitemap, StockWatchArticleSitemap, RankingSitemap, PlayerSitemap, MockDraftSitemap, GamesSitemap
 
@@ -46,6 +47,7 @@ urlpatterns = [
     path('summernote/', include('django_summernote.urls')),
 
     path("articles/", views.articles_list, name="articles_list"),
+    path("articles/rss.xml", ArticlesFeed(), name="articles_rss"),
     path("articles/collections/<slug:slug>/", views.collection_articles_list, name="collection_articles_list"),
     path("articles/<slug:slug>/", views.articles_detail, name="articles_detail"),
 
@@ -53,9 +55,11 @@ urlpatterns = [
     path("stock-watch/<slug:slug>/", views.stock_watch_detail, name="stock_watch_detail"),
 
     path("rankings/", views.rankings_list, name="rankings_list"),
+    path("rankings/rss.xml", RankingsFeed(), name="rankings_rss"),
     path("rankings/<slug:slug>/", views.rankings_detail, name="rankings_detail"),
 
     path("mock-drafts/", views.mock_drafts_list, name="mock_drafts_list"),
+    path("mock-drafts/rss.xml", MockDraftsFeed(), name="mock_drafts_rss"),
     path("mock-drafts/<slug:slug>/", views.mock_drafts_detail, name="mock_drafts_detail"),
 
     # Share links: legacy /s/<base64url>/ or DB-backed /my-mock-draft/<uuid>/ (short, chat-friendly).
