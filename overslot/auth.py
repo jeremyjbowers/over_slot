@@ -20,25 +20,10 @@ from .security import (
     get_form_tokens,
     validate_form_tokens,
 )
-import re
-
-# Default substrings that indicate a likely bot or non-human name when present
-# in first/last name fields. Chosen to avoid collisions with common human names.
-DEFAULT_SUSPICIOUS_NAME_SUBSTRINGS = [
-    "blogspot",
-    "wordpress",
-    "tumblr",
-    "substack",
-    "medium",
-    "weebly",
-    "wixsite",
-    "squarespace",
-    "blogger",
-    "sites.google",
-    "linktr.ee",
-    "gumroad",
-    "onlyfans",
-]
+from .name_spam import (
+    name_contains_url,
+    name_looks_like_spam,
+)
 
 class MailgunEmailer:
     @staticmethod
@@ -58,51 +43,8 @@ class MailgunEmailer:
 
 def _contains_url(value: str) -> bool:
     """Return True if the provided string contains an http/https scheme indicator."""
-    if not value:
-        return False
-    return bool(re.search(r"https?:", value, flags=re.IGNORECASE))
+    return name_contains_url(value)
 
-
-def _is_name_suspicious(name: str, max_len: int = 60) -> bool:
-    """Heuristic: names that are excessively long are likely spam."""
-    if not name:
-        return False
-    return len(name.strip()) > max_len
-
-def _name_contains_disallowed_substring(first_name: str | None, last_name: str | None) -> bool:
-    """
-    Return True if either name contains obviously non-human, domain-like substrings.
-    The list can be overridden via settings.SUSPICIOUS_NAME_SUBSTRINGS.
-    """
-    terms = getattr(settings, 'SUSPICIOUS_NAME_SUBSTRINGS', DEFAULT_SUSPICIOUS_NAME_SUBSTRINGS)
-    fn = (first_name or '').lower()
-    ln = (last_name or '').lower()
-    for term in terms:
-        t = term.lower()
-        if t and (t in fn or t in ln):
-            return True
-    return False
-
-
-def _name_contains_prohibited_domain(first_name: str | None, last_name: str | None) -> bool:
-    """
-    Return True if either name contains prohibited TLDs (e.g., .ru, .su, .cn)
-    or blocked email domains. Used to reject signups with domain-like content in names.
-    """
-    fn = (first_name or '').lower()
-    ln = (last_name or '').lower()
-    combined = f"{fn} {ln}"
-
-    blocked_tlds = getattr(settings, 'BLOCKED_EMAIL_TLDS', [])
-    for tld in blocked_tlds:
-        if tld and f".{tld.lower()}" in combined:
-            return True
-
-    blocked_domains = getattr(settings, 'BLOCKED_EMAIL_DOMAINS', [])
-    for domain in blocked_domains:
-        if domain and domain.lower() in combined:
-            return True
-    return False
 
 def validate_email_with_mailgun(email: str) -> bool:
     """
@@ -162,24 +104,12 @@ def send_magic_link(request, email, is_signup=False, first_name=None, last_name=
         messages.success(request, "We've sent you a magic link! Check your email to continue.")
         return redirect('account_login')
 
-    # For signup, also validate name fields for spammy content/length
     if is_signup:
-        if _contains_url(first_name or '') or _contains_url(last_name or ''):
+        # Reject spammy name fields without creating an account.
+        # Report success so bots cannot iterate on the validation rules.
+        if name_looks_like_spam(first_name, last_name):
             messages.success(request, "We've sent you a magic link! Check your email to continue.")
             return redirect('account_login')
-        if _is_name_suspicious(first_name or '') or _is_name_suspicious(last_name or ''):
-            messages.success(request, "We've sent you a magic link! Check your email to continue.")
-            return redirect('account_login')
-        # New rule: silently block signups whose first/last name include domain-like substrings
-        if _name_contains_disallowed_substring(first_name, last_name):
-            # Do not create a user or send an email, but report success to avoid leaking signals to bots
-            messages.success(request, "We've sent you a magic link! Check your email to continue.")
-            return redirect('account_login')
-
-        # Reject if first or last name contains prohibited domains (e.g., .ru, .su, .cn)
-        if _name_contains_prohibited_domain(first_name, last_name):
-            messages.error(request, "Please use a valid first and last name.")
-            return redirect('account_signup')
 
     # Optional deliverability check with Mailgun (reduces bounces)
     if not validate_email_with_mailgun(email_normalized):

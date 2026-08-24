@@ -122,25 +122,42 @@ class AuthenticationIntegrationTestCase(TestCase):
         """Signup fails when first or last name contains prohibited domains (e.g., .ru, .su, .cn)."""
         self.client.get(reverse('account_signup'))
         response = self.client.post(reverse('magic_link_signup'), {
+            'csrfmiddlewaretoken': 'test',
             'email': 'valid@example.com',
             'first_name': 'spam.ru',
             'last_name': 'User'
         })
         self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse('account_signup'), response.url)
+        self.assertTrue(response.url.endswith(reverse('account_login')))
         mock_send_email.assert_not_called()
         self.assertFalse(User.objects.filter(email='valid@example.com').exists())
 
         self.client.get(reverse('account_signup'))
         response = self.client.post(reverse('magic_link_signup'), {
+            'csrfmiddlewaretoken': 'test',
             'email': 'valid2@example.com',
             'first_name': 'John',
             'last_name': 'mailinator.com'
         })
         self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse('account_signup'), response.url)
+        self.assertTrue(response.url.endswith(reverse('account_login')))
         mock_send_email.assert_not_called()
         self.assertFalse(User.objects.filter(email='valid2@example.com').exists())
+
+    @patch('overslot.auth.MailgunEmailer.send_email')
+    def test_spammy_signup_with_bare_domain_in_name_is_silently_ignored(self, mock_send_email):
+        """Bare hostnames in name fields (no http://) are treated as spam."""
+        mock_send_email.return_value = Mock(status_code=200)
+        response = self.client.post(reverse('magic_link_signup'), {
+            'csrfmiddlewaretoken': 'test',
+            'email': 'dinellewells3381+qq@gmail.com',
+            'first_name': 'Claim Your Authentic Money jolpo.kesug.com 7f GJ',
+            'last_name': 'Access Your Certified Reward riooep.wuaze.com XB GJ',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.endswith(reverse('account_login')))
+        mock_send_email.assert_not_called()
+        self.assertFalse(User.objects.filter(email='dinellewells3381+qq@gmail.com').exists())
 
 
 class ContentDiscoveryIntegrationTestCase(TestCase):

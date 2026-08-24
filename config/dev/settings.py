@@ -340,6 +340,8 @@ BLOCKED_EMAIL_DOMAINS = [
 
 # Substrings that indicate likely bot/non-human names in first/last name fields.
 # Keep terms specific enough to avoid collisions with real names.
+# Names that contain a domain/TLD (.com, .net, ...) are also rejected; see
+# overslot.name_spam.DEFAULT_NAME_BLOCKED_TLDS (override with NAME_BLOCKED_TLDS).
 SUSPICIOUS_NAME_SUBSTRINGS = [
     # Blogging/platforms
     "blogspot", "wordpress", "tumblr", "substack", "medium", "blogger",
