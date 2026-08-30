@@ -1196,6 +1196,42 @@ def mock_drafts_detail(request, slug):
     return render(request, "rankings_detail.html", context)
 
 
+def _stat_year_sort_key(year):
+    try:
+        return int(year)
+    except (TypeError, ValueError):
+        return 0
+
+
+def group_stat_charts_by_year(season_charts):
+    """
+    One year tab that can show pitching and hitting together (two-way players).
+    Newest year first.
+    """
+    by_year = {}
+    for sc in season_charts:
+        year = sc["year"]
+        by_year.setdefault(year, []).append(sc)
+
+    groups = []
+    for year in sorted(by_year.keys(), key=_stat_year_sort_key, reverse=True):
+        seasons = by_year[year]
+        pitcher_seasons = [s for s in seasons if s.get("pitcher_json")]
+        hitter_seasons = [s for s in seasons if s.get("hitter_json")]
+        levels = {s.get("level") for s in seasons}
+        groups.append({
+            "year": year,
+            "seasons": seasons,
+            "pitcher_seasons": pitcher_seasons,
+            "hitter_seasons": hitter_seasons,
+            "has_pitching": bool(pitcher_seasons),
+            "has_hitting": bool(hitter_seasons),
+            "pitcher_primary": pitcher_seasons[0] if pitcher_seasons else None,
+            "single_level": next(iter(levels)) if len(levels) == 1 else None,
+        })
+    return groups
+
+
 @subscription_required
 def players_detail(request, slug):
     context = {}
@@ -1329,27 +1365,16 @@ def players_detail(request, slug):
                 'chart_index': len(season_charts),  # Track original index for chart rendering
             })
     
-    # Group pitcher seasons by year for nested tab structure
-    pitcher_seasons_by_year = {}
+    stat_year_groups = group_stat_charts_by_year(season_charts)
     hitter_seasons = []
-    for sc in season_charts:
-        if sc.get('pitcher_json'):
-            year = sc['year']
-            if year not in pitcher_seasons_by_year:
-                pitcher_seasons_by_year[year] = []
-            pitcher_seasons_by_year[year].append(sc)
-        if sc.get('hitter_json'):
-            hitter_seasons.append(sc)
-
-    def _stat_year_sort_key(entry):
-        try:
-            return int(entry['year'])
-        except (TypeError, ValueError):
-            return 0
-
-    hitter_seasons.sort(key=_stat_year_sort_key, reverse=True)
+    pitcher_seasons_by_year = {}
+    for group in stat_year_groups:
+        hitter_seasons.extend(group["hitter_seasons"])
+        if group["pitcher_seasons"]:
+            pitcher_seasons_by_year[group["year"]] = group["pitcher_seasons"]
 
     context['season_charts'] = season_charts
+    context['stat_year_groups'] = stat_year_groups
     context['pitcher_seasons_by_year'] = pitcher_seasons_by_year
     context['hitter_seasons'] = hitter_seasons
 

@@ -1,11 +1,12 @@
 import json
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from overslot.management.commands.load_hs_hitters import hs_hitter_tabs
 from overslot.models import Player, PlayerStatSeason
+from overslot.views import group_stat_charts_by_year
 
 
 class HsHitterTabTests(TestCase):
@@ -64,3 +65,66 @@ class HsHittersYearViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         payload = json.loads(response.context["hitter_seasons"][0]["hitter_json"])
         self.assertEqual(payload["items"][-1]["axis"], "Twitch")
+
+
+class StatYearGroupTests(SimpleTestCase):
+    def test_two_way_same_year_shares_one_group(self):
+        charts = [
+            {"year": "2026", "level": "High School", "hitter_json": "{}", "pitcher_json": "{}"},
+            {"year": "2025", "level": "High School", "hitter_json": "{}", "pitcher_json": None},
+        ]
+        groups = group_stat_charts_by_year(charts)
+        self.assertEqual([g["year"] for g in groups], ["2026", "2025"])
+        self.assertTrue(groups[0]["has_hitting"])
+        self.assertTrue(groups[0]["has_pitching"])
+        self.assertTrue(groups[1]["has_hitting"])
+        self.assertFalse(groups[1]["has_pitching"])
+
+
+class TwoWayPlayerPageTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(
+            username="staff@example.com",
+            email="staff@example.com",
+            password="pass",
+            is_staff=True,
+        )
+        self.client.force_login(self.staff)
+        self.player = Player.objects.create(name="Two Way Kid")
+        PlayerStatSeason.objects.create(
+            player=self.player,
+            year="2026",
+            level="High School",
+            hs_contact_pct_percentile=55.0,
+            fourseam_percentile=0.72,
+            fourseam_stuff_plus=108,
+            fourseam_vert_break=16.0,
+            fourseam_horiz_break=-8.0,
+        )
+        PlayerStatSeason.objects.create(
+            player=self.player,
+            year="2025",
+            level="High School",
+            hs_contact_pct_percentile=48.0,
+            slider_percentile=0.61,
+            slider_stuff_plus=99,
+        )
+
+    def test_year_tabs_show_hitting_and_pitching_together(self):
+        response = self.client.get(
+            reverse("players_detail", kwargs={"slug": self.player.slug})
+        )
+        self.assertEqual(response.status_code, 200)
+        groups = response.context["stat_year_groups"]
+        self.assertEqual([g["year"] for g in groups], ["2026", "2025"])
+        self.assertTrue(groups[0]["has_hitting"] and groups[0]["has_pitching"])
+        self.assertTrue(groups[1]["has_hitting"] and groups[1]["has_pitching"])
+        self.assertContains(response, 'id="stat-year-tabs"')
+        self.assertContains(response, "2026 Hitter Performance")
+        self.assertContains(response, "2026 Pitch Design")
+        self.assertContains(response, "2026 Stuff+")
+        # Two-way seasons must render both chart types (not hitter-only via elif)
+        self.assertContains(response, "renderHitterChart")
+        self.assertContains(response, "renderPitcherChart")
+        self.assertContains(response, "renderPitchMovementChart")
+
