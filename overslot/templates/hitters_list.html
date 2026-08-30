@@ -625,7 +625,7 @@
             <p class="muted">Whiff %, In‑Zone Whiff %, and Out‑of‑Zone Whiff % capture swing‑and‑miss; Chase % reflects swings outside the zone; K % and BB % summarize outcomes; Avg EV and 90th % EV are batted‑ball quality; Barrel % and Pull AIR % indicate damage contact patterns; xWOBA is an expected run value per plate appearance.</p>
             <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below.</p>
         {% else %}
-            <p>These are {% if year %}{{ year }}{% else %}latest available{% endif %} <strong>percentiles (0–100)</strong> for high school hitters from the summer circuit. Bat speed, average rotational acceleration, and peak hand speed come from <strong>Blast Motion</strong>. “Explosiveness” summarizes athletic and force‑plate testing.</p>
+            <p>These are {% if year %}{{ year }}{% else %}latest available{% endif %} <strong>percentiles (0–100)</strong> for high school hitters from the summer circuit. Bat speed, average rotational acceleration, and peak hand speed come from <strong>Blast Motion</strong>. “Explosiveness” summarizes athletic and force‑plate testing. “Twitch” is reactive strength index (RSI), shown when available.</p>
             <p class="muted">Contact %, In‑Zone/Out‑of‑Zone Contact %, and Chase % describe bat‑to‑ball and swing decisions; K % summarizes outcomes; GB % / FB % describe batted‑ball shape; Air PULL % captures pulled balls in the air; Sprint Speed measures straight‑line speed; Bat Speed and rotational metrics capture swing characteristics.</p>
             <p>Cells are shaded by percentile: <strong>green</strong> = well above median, <strong>red</strong> = well below.</p>
         {% endif %}

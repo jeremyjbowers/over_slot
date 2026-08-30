@@ -1239,6 +1239,7 @@ def players_detail(request, slug):
                 ("Avg Rot. Acc.", s.hs_avg_rot_acc_percentile, s.hs_avg_rot_acc_points_above_median),
                 ("Peak Hand Speed", s.hs_peak_hand_speed_percentile, s.hs_peak_hand_speed_points_above_median),
                 ("Explosiveness", s.hs_force_plate_explosiveness_percentile, s.hs_force_plate_explosiveness_points_above_median),
+                ("Twitch", s.hs_twitch_percentile, s.hs_twitch_points_above_median),
             ]
             for axis, percentile_value, delta_value in hs_metric_specs:
                 if percentile_value is not None:
@@ -1792,7 +1793,7 @@ def college_hitters_year(request, year: int):
 
     # Hard-coded year navigation lists (stable; data changes infrequently)
     college_years = [2026, 2025, 2024]
-    hs_years = [2025, 2024, 2023, 2022]
+    hs_years = [2026, 2025, 2024, 2023, 2022]
 
     rows = []
     for s in seasons:
@@ -1857,15 +1858,6 @@ def hs_hitters_year(request, year: int):
         ("hs_peak_hand_speed_percentile", "Peak Hand Speed"),
         ("hs_force_plate_explosiveness_percentile", "Explosive"),
     ]
-    # Include statline columns at end
-    columns += [
-        ("hs_pa", "PA"),
-        ("hs_ba", "BA"),
-        ("hs_obp", "OBP"),
-        ("hs_slg", "SLG"),
-        ("hs_ops", "OPS"),
-        ("hs_iso", "ISO"),
-    ]
 
     seasons = (
         models.PlayerStatSeason.objects.filter(
@@ -1877,9 +1869,23 @@ def hs_hitters_year(request, year: int):
     if not seasons.exists():
         return get_object_or_404(models.PlayerStatSeason, level="High School", year=year_str)  # raises 404
 
+    # RSI/Twitch only exists on 2026+ sheets; omit the column when nobody has it.
+    if seasons.filter(hs_twitch_percentile__isnull=False).exists():
+        columns.append(("hs_twitch_percentile", "Twitch"))
+
+    # Include statline columns at end
+    columns += [
+        ("hs_pa", "PA"),
+        ("hs_ba", "BA"),
+        ("hs_obp", "OBP"),
+        ("hs_slg", "SLG"),
+        ("hs_ops", "OPS"),
+        ("hs_iso", "ISO"),
+    ]
+
     # Hard-coded year navigation lists (stable; data changes infrequently)
     college_years = [2026, 2025, 2024]
-    hs_years = [2025, 2024, 2023, 2022]
+    hs_years = [2026, 2025, 2024, 2023, 2022]
 
     rows = []
     for s in seasons:

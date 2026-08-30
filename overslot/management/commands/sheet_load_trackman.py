@@ -830,9 +830,9 @@ class Command(BaseCommand):
                 #   "{DRAFT_YEAR} HS Hitters {STATS_YEAR}"
                 # The stat season should be STATS_YEAR.
                 # Discover all HS Hitters tabs across the requested ranges.
-                # Draft years: 2027-2023; Data years: 2025-2022; constraint: draft > data.
-                draft_years = [str(y) for y in range(2027, 2022, -1)]
-                data_years = [str(y) for y in range(2025, 2021, -1)]
+                # Draft years: 2028-2023; Data years: 2026-2022; constraint: draft > data.
+                draft_years = [str(y) for y in range(2028, 2022, -1)]
+                data_years = [str(y) for y in range(2026, 2021, -1)]
                 hs_tabs = []
                 for draft_year in draft_years:
                     for stats_year in data_years:

@@ -585,6 +585,10 @@ class PlayerRanking(BaseModel):
     # Peak Power/BM (displayed as Force Plate Explosiveness)
     hs_force_plate_explosiveness_percentile = models.FloatField(blank=True, null=True)
     hs_force_plate_explosiveness_points_above_median = models.FloatField(blank=True, null=True)
+
+    # RSI (displayed as Twitch); present on 2026+ HS hitter sheets
+    hs_twitch_percentile = models.FloatField(blank=True, null=True)
+    hs_twitch_points_above_median = models.FloatField(blank=True, null=True)
     
     # Trackman data - Pitchers
     fourseam_percentile = models.FloatField(blank=True, null=True)
@@ -791,6 +795,9 @@ class PlayerStatSeason(BaseModel):
     hs_peak_hand_speed_points_above_median = models.FloatField(blank=True, null=True)
     hs_force_plate_explosiveness_percentile = models.FloatField(blank=True, null=True)
     hs_force_plate_explosiveness_points_above_median = models.FloatField(blank=True, null=True)
+    # RSI (displayed as Twitch); present on 2026+ HS hitter sheets
+    hs_twitch_percentile = models.FloatField(blank=True, null=True)
+    hs_twitch_points_above_median = models.FloatField(blank=True, null=True)
 
     confidence = models.IntegerField(blank=True, null=True)
 

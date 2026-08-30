@@ -5,6 +5,23 @@ from googleapiclient.errors import HttpError
 from overslot import models, utils
 
 
+def hs_hitter_tabs():
+    """Tab titles to try: "{DRAFT_YEAR} HS Hitters - {STATS_YEAR}" where draft > stats."""
+    # Draft years: 2028-2023; Data years: 2026-2022; constraint: draft > data.
+    draft_years = [str(y) for y in range(2028, 2022, -1)]
+    data_years = [str(y) for y in range(2026, 2021, -1)]
+    tabs = []
+    seen = set()
+    for draft_year in draft_years:
+        for stats_year in data_years:
+            if int(draft_year) > int(stats_year):
+                title = f"{draft_year} HS Hitters - {stats_year}"
+                if title not in seen:
+                    seen.add(title)
+                    tabs.append(title)
+    return tabs
+
+
 class Command(BaseCommand):
     help = 'Load High School Hitters Trackman data from Google Sheets'
 
@@ -20,24 +37,7 @@ class Command(BaseCommand):
         Load high school hitters data from sheets named like "{DRAFT_YEAR} HS Hitters - {STATS_YEAR}"
         """
         debug = options.get('debug', False)
-        
-        # Supported patterns:
-        #   "{DRAFT_YEAR} HS Hitters - {STATS_YEAR}"
-        #   "{DRAFT_YEAR} HS Hitters {STATS_YEAR}"
-        # The stat season should be STATS_YEAR.
-        # Discover all HS Hitters tabs across the requested ranges.
-        # Draft years: 2027-2023; Data years: 2025-2022; constraint: draft > data.
-        draft_years = [str(y) for y in range(2027, 2022, -1)]
-        data_years = [str(y) for y in range(2025, 2021, -1)]
-        hs_tabs = []
-        for draft_year in draft_years:
-            for stats_year in data_years:
-                if int(draft_year) > int(stats_year):
-                    # Only support dash-separated naming pattern created by editor
-                    hs_tabs.append(f"{draft_year} HS Hitters - {stats_year}")
-        # De-duplicate while preserving order
-        seen = set()
-        hs_tabs = [t for t in hs_tabs if not (t in seen or seen.add(t))]
+        hs_tabs = hs_hitter_tabs()
 
         for hs_tab in hs_tabs:
             sheet = None
@@ -65,10 +65,15 @@ class Command(BaseCommand):
             rows = [utils.fix_blanks(row) for row in sheet]
 
             # Helpers
-            def pct_or_number(val):
+            RAW_METRIC_HEADERS = {"RSI"}
+
+            def pct_or_number(val, header=None):
                 v = utils.parse_value(val)
                 if v is None:
                     return None
+                # RSI is a raw athletic index (often 0.5–3); never treat it as a proportion.
+                if header in RAW_METRIC_HEADERS:
+                    return v
                 # If value seems like a proportion (0-1), scale to percent space for deltas
                 return v * 100.0 if 0.0 <= v <= 1.0 else v
 
@@ -77,7 +82,7 @@ class Command(BaseCommand):
                 for r in rows:
                     for k in keys:
                         if k in r and r.get(k) is not None:
-                            parsed = pct_or_number(r.get(k))
+                            parsed = pct_or_number(r.get(k), header=k)
                             if parsed is not None:
                                 collected.append(parsed)
                             break
@@ -86,7 +91,7 @@ class Command(BaseCommand):
             def row_value(row, keys):
                 for k in keys:
                     if k in row and row.get(k) is not None:
-                        return pct_or_number(row.get(k))
+                        return pct_or_number(row.get(k), header=k)
                 return None
 
             # Raw numeric (no percent scaling) — for BA/OBP/SLG/OPS/ISO actuals
@@ -111,6 +116,7 @@ class Command(BaseCommand):
                 (["Avg Rot. Acc.", "Average Rot. Acc.", "Avg Rot Acc"], False, "hs_avg_rot_acc_percentile", "hs_avg_rot_acc_points_above_median"),
                 (["Peak Hand Speed", "Peak HandSpeed"], False, "hs_peak_hand_speed_percentile", "hs_peak_hand_speed_points_above_median"),
                 (["Peak Power"], False, "hs_force_plate_explosiveness_percentile", "hs_force_plate_explosiveness_points_above_median"),
+                (["RSI"], False, "hs_twitch_percentile", "hs_twitch_points_above_median"),
             ]
 
             # Build distributions and medians
@@ -234,6 +240,8 @@ class Command(BaseCommand):
                 season.hs_peak_hand_speed_points_above_median = computed.get('hs_peak_hand_speed_points_above_median')
                 season.hs_force_plate_explosiveness_percentile = computed.get('hs_force_plate_explosiveness_percentile')
                 season.hs_force_plate_explosiveness_points_above_median = computed.get('hs_force_plate_explosiveness_points_above_median')
+                season.hs_twitch_percentile = computed.get('hs_twitch_percentile')
+                season.hs_twitch_points_above_median = computed.get('hs_twitch_points_above_median')
 
                 season.confidence = 10
                 season.save()
