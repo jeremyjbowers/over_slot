@@ -40,6 +40,35 @@ def _mock_version_sort_key(version):
         return (1, 0.0, v.lower())
 
 
+def to_int_or_none(value):
+    """Coerce sheet values to int or None (handles '', None, numeric strings)."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped == "" or stripped.lower() in {"na", "n/a", "null"}:
+            return None
+        value = stripped
+    try:
+        # Some sheets store numbers as '1.0'; convert safely
+        return int(float(value))
+    except Exception:
+        return None
+
+
+def resolve_mock_rank(row):
+    """
+    Value for PlayerRanking.rank from a mock draft sheet row.
+
+    Prefer an explicit ``rank`` column when present. Many mock tabs omit it and
+    only have ``mock_pick_number`` (usually column A); use that as Rank instead.
+    """
+    rank = to_int_or_none(row.get("rank") if row else None)
+    if rank is not None:
+        return rank
+    return to_int_or_none(row.get("mock_pick_number") if row else None)
+
+
 class Command(BaseCommand):
     help = (
         "Load mock drafts from the Google Sheet: each tab named like "
@@ -148,21 +177,6 @@ class Command(BaseCommand):
                     return "College"
 
             return None
-
-        def to_int_or_none(value):
-            """Coerce sheet values to int or None (handles '', None, numeric strings)."""
-            if value is None:
-                return None
-            if isinstance(value, str):
-                stripped = value.strip()
-                if stripped == "" or stripped.lower() in {"na", "n/a", "null"}:
-                    return None
-                value = stripped
-            try:
-                # Some sheets store numbers as '1.0'; convert safely
-                return int(float(value))
-            except Exception:
-                return None
 
         explicit_year = options.get('year')
         explicit_version = options.get('mock_version')
@@ -308,14 +322,15 @@ class Command(BaseCommand):
                         # Update fields from the sheet
                         pr.school = row.get('school')
                         pr.position = row.get('position')
-                        pr.rank = to_int_or_none(row.get('rank'))
+                        pr.mock_pick_number = to_int_or_none(row.get('mock_pick_number'))
+                        # Prefer sheet "rank"; if absent, Rank comes from mock_pick_number (col A).
+                        pr.rank = resolve_mock_rank(row)
                         pr.level = transform_level(row.get('class', None))
                         pr.commitment = row.get('commitment', None)
                         pr.raw_carrying_tools = row.get('carrying_tool', None)
                         pr.role = row.get('role', None)
                         pr.risk = row.get('risk', None)
                         pr.scouting_report = ''  # Will set below after processing blurb
-                        pr.mock_pick_number = to_int_or_none(row.get('mock_pick_number'))
                         pr.mock_team = row.get('mock_team', None)
                         pr.mock_team_logo_url = row.get('mock_team_photo_url', None)
                         pr.active = True
