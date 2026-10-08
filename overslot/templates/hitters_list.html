@@ -606,7 +606,7 @@
                     </a>
                 {% else %}
                     <a href="{% url 'account_login' %}?next={{ request.get_full_path }}" class="btn-subscribe">
-                        Log In to Subscribe
+                        LOG IN OR SUBSCRIBE
                     </a>
                 {% endif %}
             </div>
@@ -794,6 +794,7 @@
     }
 })();
 </script>
+{% include "includes/sticky_table_headers.html" %}
 {% endblock %}
 
 {% block extra_templates %}

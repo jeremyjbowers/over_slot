@@ -1,0 +1,256 @@
+{# Pinned header clone for .data-table inside .table-responsive.
+   position:sticky cannot stick to the viewport while an ancestor has
+   overflow-x: auto (that box is the sticky containing block). The real
+   thead stays in place; this clone is fixed just under the navbar. #}
+<style>
+.sticky-table-header {
+    position: fixed;
+    top: 3.5rem;
+    z-index: 5;
+    display: none;
+    /* Same value on both axes. clip (below) avoids making this bar a scroll container. */
+    overflow: hidden;
+    background: var(--dark-surface);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    pointer-events: auto;
+}
+@supports (overflow: clip) {
+    .sticky-table-header { overflow: clip; }
+}
+.sticky-table-header.is-active {
+    display: block;
+}
+.sticky-table-header-track {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    background: var(--dark-surface);
+    will-change: transform;
+}
+.sticky-table-header th {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    background: var(--dark-surface);
+    color: var(--dark-text);
+    border-style: solid;
+    border-color: var(--dark-border);
+    border-width: 0 0 2px 0;
+    padding: 0.75rem 0.5rem;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1.5;
+    text-align: center;
+    white-space: normal;
+    overflow: visible;
+}
+.sticky-table-header th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+.sticky-table-header th.sortable:hover {
+    background: var(--dark-surface-hover);
+}
+.sticky-table-header th.sortable::after {
+    content: '';
+    position: absolute;
+    bottom: 0.25rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+}
+.sticky-table-header th.sortable.sorted-desc::after {
+    border-bottom: 5px solid var(--theme-primary);
+    border-top-width: 0;
+    opacity: 1;
+}
+.sticky-table-header th.sortable.sorted-asc::after {
+    border-top: 5px solid var(--theme-primary);
+    border-bottom-width: 0;
+    opacity: 1;
+}
+</style>
+<script>
+(function () {
+    if (document.documentElement.dataset.stickyTableHeaders) return;
+    document.documentElement.dataset.stickyTableHeaders = '1';
+
+    function stickyTopPx() {
+        var root = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+        return root * 3.5;
+    }
+
+    function buildClone(table) {
+        var headRow = table.tHead && table.tHead.rows[0];
+        if (!headRow) return null;
+        var el = document.createElement('div');
+        el.className = 'sticky-table-header';
+        el.setAttribute('aria-hidden', 'true');
+        var track = document.createElement('div');
+        track.className = 'sticky-table-header-track';
+        var cells = [];
+        var entry = { table: table, el: el, track: track, cells: cells };
+        for (var i = 0; i < headRow.cells.length; i++) {
+            (function (index) {
+                var th = document.createElement('th');
+                th.textContent = (headRow.cells[index].textContent || '').replace(/\s+/g, ' ').trim();
+                th.addEventListener('click', function () {
+                    var real = table.tHead.rows[0].cells[index];
+                    if (!real) return;
+                    real.click();
+                    syncEntry(entry);
+                });
+                track.appendChild(th);
+                cells.push(th);
+            })(i);
+        }
+        el.appendChild(track);
+        document.body.appendChild(el);
+        return entry;
+    }
+
+    function applyAlign(th, src) {
+        var align = getComputedStyle(src).textAlign;
+        if (align === 'left' || align === 'start') {
+            th.style.justifyContent = 'flex-start';
+            th.style.textAlign = 'left';
+        } else if (align === 'right' || align === 'end') {
+            th.style.justifyContent = 'flex-end';
+            th.style.textAlign = 'right';
+        } else {
+            th.style.justifyContent = 'center';
+            th.style.textAlign = 'center';
+        }
+    }
+
+    function syncEntry(entry) {
+        var row = entry.table.tHead && entry.table.tHead.rows[0];
+        if (!row || row.cells.length !== entry.cells.length) return;
+        var height = 0;
+        var width = 0;
+        var originLeft = row.cells[0].getBoundingClientRect().left;
+        for (var i = 0; i < row.cells.length; i++) {
+            var src = row.cells[i];
+            var rect = src.getBoundingClientRect();
+            var th = entry.cells[i];
+            th.className = src.className;
+            th.style.position = 'absolute';
+            th.style.top = '0';
+            th.style.left = (rect.left - originLeft) + 'px';
+            th.style.width = rect.width + 'px';
+            th.style.height = rect.height + 'px';
+            applyAlign(th, src);
+            if (rect.height > height) height = rect.height;
+            width += rect.width;
+        }
+        entry.track.style.height = height + 'px';
+        entry.track.style.width = width + 'px';
+    }
+
+    function placeEntry(entry, top) {
+        var scroller = entry.table.closest('.table-responsive');
+        var row = entry.table.tHead && entry.table.tHead.rows[0];
+        if (!scroller || !row || !row.cells.length) {
+            entry.el.classList.remove('is-active');
+            return;
+        }
+        var theadRect = entry.table.tHead.getBoundingClientRect();
+        var tableRect = entry.table.getBoundingClientRect();
+        var wrapRect = scroller.getBoundingClientRect();
+        var headerH = theadRect.height || row.cells[0].getBoundingClientRect().height;
+        var headerPinned = theadRect.top < top - 0.5;
+        var tableStillVisible = tableRect.bottom > top + headerH - 0.5;
+        var onScreen = wrapRect.width > 1 && tableRect.height > 1 && wrapRect.bottom > top && wrapRect.top < window.innerHeight;
+        if (!headerPinned || !tableStillVisible || !onScreen) {
+            entry.el.classList.remove('is-active');
+            return;
+        }
+        syncEntry(entry);
+        var firstLeft = row.cells[0].getBoundingClientRect().left;
+        var origin = wrapRect.left + scroller.clientLeft;
+        var scrollLeft = scroller.scrollLeft;
+        var inset = firstLeft - origin + scrollLeft;
+        entry.el.style.left = origin + 'px';
+        entry.el.style.width = scroller.clientWidth + 'px';
+        entry.track.style.transform = 'translateX(' + (inset - scrollLeft) + 'px)';
+        entry.el.classList.add('is-active');
+    }
+
+    function init() {
+        var tables = document.querySelectorAll('.table-responsive > table.data-table');
+        var entries = [];
+        tables.forEach(function (table) {
+            var entry = buildClone(table);
+            if (entry) entries.push(entry);
+        });
+        if (!entries.length) return;
+
+        var scheduled = false;
+        function update() {
+            scheduled = false;
+            var top = stickyTopPx();
+            entries.forEach(function (entry) { placeEntry(entry, top); });
+        }
+        function schedule() {
+            if (scheduled) return;
+            scheduled = true;
+            requestAnimationFrame(update);
+        }
+
+        window.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('resize', schedule);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', schedule);
+            window.visualViewport.addEventListener('scroll', schedule);
+        }
+        entries.forEach(function (entry) {
+            var scroller = entry.table.closest('.table-responsive');
+            if (scroller) scroller.addEventListener('scroll', schedule, { passive: true });
+            entry.el.addEventListener('wheel', function (event) {
+                if (!entry.el.classList.contains('is-active')) return;
+                var box = entry.table.closest('.table-responsive');
+                if (!box) return;
+                var delta = event.deltaX;
+                if (event.shiftKey && Math.abs(event.deltaY) > Math.abs(delta)) delta = event.deltaY;
+                if (!delta) return;
+                box.scrollLeft += delta;
+                if (Math.abs(delta) > Math.abs(event.deltaY)) event.preventDefault();
+            }, { passive: false });
+            if (window.ResizeObserver) {
+                var ro = new ResizeObserver(schedule);
+                ro.observe(entry.table);
+                if (scroller) ro.observe(scroller);
+            }
+            if (window.MutationObserver && entry.table.tHead) {
+                var mo = new MutationObserver(schedule);
+                mo.observe(entry.table.tHead, { attributes: true, subtree: true, attributeFilter: ['class'] });
+            }
+        });
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(schedule);
+        }
+        window.addEventListener('load', schedule);
+        schedule();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
