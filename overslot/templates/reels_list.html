@@ -85,7 +85,7 @@
         {% if user_authenticated %}
           <a href="{% url 'subscription_dashboard' %}" class="btn-subscribe">Subscribe Now</a>
         {% else %}
-          <a href="{% url 'account_login' %}?next={{ request.get_full_path }}" class="btn-subscribe">Log In to Subscribe</a>
+          <a href="{% url 'account_login' %}?next={{ request.get_full_path }}" class="btn-subscribe">LOG IN OR SUBSCRIBE</a>
         {% endif %}
       </div>
       <p class="subscription-note">Cancel anytime • No long-term commitment</p>
