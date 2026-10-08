@@ -51,6 +51,11 @@ class Command(BaseCommand):
             action='store_true',
             help='Do not call Stripe to reconcile local subscriptions.',
         )
+        parser.add_argument(
+            '--no-email',
+            action='store_true',
+            help='Reconcile Stripe state without sending cancel, pause, or resume email.',
+        )
 
     def handle(self, *args, **options):
         sleep_seconds = max(0.1, options['sleep'])
@@ -58,6 +63,7 @@ class Command(BaseCommand):
         retry_after = max(0, options['retry_failed_after'])
         once = options['once']
         skip_reconcile = options['skip_reconcile']
+        send_notices = not options['no_email']
 
         stopping = False
 
@@ -99,6 +105,7 @@ class Command(BaseCommand):
                 if not skip_reconcile and now >= next_reconcile:
                     try:
                         seen, changed = reconcile_stripe_subscriptions(
+                            send_notices=send_notices,
                             write=self.stdout.write,
                         )
                     except Exception:

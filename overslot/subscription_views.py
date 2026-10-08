@@ -907,6 +907,7 @@ def sync_local_subscription_from_stripe(
     *,
     event_id=None,
     dry_run=False,
+    send_notices=True,
     force_status=None,
     force_collection_paused=None,
     deleted=False,
@@ -916,6 +917,7 @@ def sync_local_subscription_from_stripe(
 
     Webhook deliveries pass event_id so a Stripe retry of that same event does not
     send a second email. Reconcile omits event_id and uses a state key instead.
+    send_notices=False still saves the Stripe state and does not email or record a notice.
     """
     before = _snapshot_subscription(local_sub)
     applied = apply_stripe_subscription_to_record(
@@ -942,7 +944,7 @@ def sync_local_subscription_from_stripe(
     queued = []
     with transaction.atomic():
         local_sub.save()
-        if to_email:
+        if send_notices and to_email:
             for notice_type in transitions:
                 state_key = _state_dedupe_key(notice_type, local_sub, stripe_subscription)
                 dedupe_key = f'{notice_type}:{event_id}' if event_id else state_key

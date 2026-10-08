@@ -15,12 +15,13 @@ from overslot.subscription_views import (
 logger = logging.getLogger(__name__)
 
 
-def reconcile_stripe_subscriptions(*, dry_run=False, write=None):
+def reconcile_stripe_subscriptions(*, dry_run=False, send_notices=True, write=None):
     """
     Retrieve each local subscription from Stripe and apply the webhook sync.
 
     write(line) receives one human-readable line per subscription. Returns
     (seen, changed). A Stripe error on one row does not stop the rest.
+    send_notices=False saves the Stripe state and does not email.
     """
     if write is None:
         def write(line):
@@ -60,6 +61,7 @@ def reconcile_stripe_subscriptions(*, dry_run=False, write=None):
                 local,
                 remote,
                 dry_run=dry_run,
+                send_notices=send_notices,
             )
         except Exception:
             logger.exception(
@@ -81,7 +83,8 @@ def reconcile_stripe_subscriptions(*, dry_run=False, write=None):
 class Command(BaseCommand):
     help = (
         'Retrieve each local subscription from Stripe, apply the same sync used by webhooks, '
-        'and email on a real cancel, pause, or resume transition. Safe to run repeatedly.'
+        'and email on a real cancel, pause, or resume transition. Safe to run repeatedly. '
+        'Pass --no-email to save Stripe state without sending those emails.'
     )
 
     def add_arguments(self, parser):
@@ -90,9 +93,15 @@ class Command(BaseCommand):
             action='store_true',
             help='Print field changes without saving or sending email.',
         )
+        parser.add_argument(
+            '--no-email',
+            action='store_true',
+            help='Save Stripe state and do not send cancel, pause, or resume email.',
+        )
 
     def handle(self, *args, **options):
         dry_run = options['dry_run']
+        send_notices = not options['no_email']
 
         def write(line):
             if line.endswith('error'):
@@ -100,5 +109,11 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(line)
 
-        seen, updated = reconcile_stripe_subscriptions(dry_run=dry_run, write=write)
-        self.stdout.write(f'seen={seen} changed={updated} dry_run={dry_run}')
+        seen, updated = reconcile_stripe_subscriptions(
+            dry_run=dry_run,
+            send_notices=send_notices,
+            write=write,
+        )
+        self.stdout.write(
+            f'seen={seen} changed={updated} dry_run={dry_run} no_email={options["no_email"]}'
+        )

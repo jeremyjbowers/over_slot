@@ -580,6 +580,28 @@ class StripeReconciliationTests(TestCase):
         self.assertFalse(row.cancel_at_period_end)
         self.assertEqual(send_email.call_count, 0)
 
+    def test_reconcile_no_email_saves_without_sending(self):
+        self.subscription.status = 'active'
+        self.subscription.save(update_fields=['status', 'last_modified'])
+        remote = stripe_bagify(
+            {
+                'id': 'sub_recon',
+                'status': 'canceled',
+                'cancel_at_period_end': False,
+                'current_period_end': 1893456000,
+                'items': {'data': []},
+            }
+        )
+        with patch.object(stripe.Subscription, 'retrieve', return_value=remote), patch(
+            'overslot.auth.MailgunEmailer.send_email'
+        ) as send_email:
+            call_command('reconcile_stripe_subscriptions', '--no-email')
+        row = Subscription.objects.get(pk=self.subscription.pk)
+        self.assertEqual(row.status, 'canceled')
+        self.assertFalse(row.can_access_premium_content())
+        self.assertEqual(send_email.call_count, 0)
+        self.assertEqual(SubscriptionNotice.objects.filter(subscription=row).count(), 0)
+
     def test_process_stripe_events_replays_pending_payload(self):
         StripeWebhookEvent.objects.create(
             stripe_event_id='evt_replay_1',
