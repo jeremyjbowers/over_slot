@@ -141,6 +141,8 @@ from overslot.models import (
     StockWatchArticle,
     StockWatchPlayer,
     Subscription,
+    SubscriptionNotice,
+    StripeWebhookEvent,
     DuplicateDecision,
     UserEmail,
     FeatureFlag,
@@ -599,8 +601,8 @@ class RankingAdmin(SummernoteModelAdmin):
 @admin.register(Subscription, site=admin_site)
 class SubscriptionAdmin(admin.ModelAdmin):
     model = Subscription
-    list_display = ["user", "status", "plan_name", "current_period_end", "is_active"]
-    list_filter = ["status", "plan_name", "created"]
+    list_display = ["user", "status", "collection_paused", "cancel_at_period_end", "plan_name", "current_period_end", "is_active"]
+    list_filter = ["status", "collection_paused", "cancel_at_period_end", "plan_name", "created"]
     search_fields = ["user__email", "user__username", "stripe_customer_id", "stripe_subscription_id"]
     autocomplete_fields = ["user"]
     readonly_fields = ["created", "last_modified", "stripe_customer_id", "stripe_subscription_id"]
@@ -623,6 +625,9 @@ class SubscriptionAdmin(admin.ModelAdmin):
                 "fields": (
                     "status",
                     "plan_name",
+                    "cancel_at_period_end",
+                    "canceled_at",
+                    "collection_paused",
                     ("current_period_start", "current_period_end"),
                 ),
             },
@@ -685,6 +690,22 @@ class SubscriptionPriceAdmin(admin.ModelAdmin):
             updated += 1
         self.message_user(request, f"Set {updated} price(s) as default for their plan/interval.")
     set_as_default.short_description = "Set selected as default for their plan+interval"
+
+
+@admin.register(SubscriptionNotice, site=admin_site)
+class SubscriptionNoticeAdmin(admin.ModelAdmin):
+    list_display = ["subscription", "notice_type", "dedupe_key", "created"]
+    list_filter = ["notice_type", "created"]
+    search_fields = ["dedupe_key", "subscription__user__email", "subscription__stripe_subscription_id"]
+    readonly_fields = ["created", "last_modified"]
+
+
+@admin.register(StripeWebhookEvent, site=admin_site)
+class StripeWebhookEventAdmin(admin.ModelAdmin):
+    list_display = ["stripe_event_id", "event_type", "status", "created", "last_modified"]
+    list_filter = ["status", "event_type"]
+    search_fields = ["stripe_event_id", "event_type", "last_error"]
+    readonly_fields = ["created", "last_modified", "stripe_event_id", "payload"]
 
 
 @admin.register(DuplicateDecision, site=admin_site)

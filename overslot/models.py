@@ -98,7 +98,14 @@ class Subscription(BaseModel):
     # Subscription details
     plan_name = models.CharField(max_length=100, blank=True, null=True)
     price_id = models.CharField(max_length=255, blank=True, null=True)
-    
+
+    # Cancellation / pause. Stored separately from Stripe's status string so an
+    # active subscription that will cancel at period end, or whose collection is
+    # paused, is not overloaded onto status.
+    cancel_at_period_end = models.BooleanField(default=False)
+    canceled_at = models.DateTimeField(blank=True, null=True)
+    collection_paused = models.BooleanField(default=False)
+
     def __unicode__(self):
         return f"{self.user.email} - {self.status}"
     
@@ -111,14 +118,86 @@ class Subscription(BaseModel):
     def is_trial(self):
         """Check if the subscription is in trial period."""
         return self.status in ['trialing', 'active'] and self.current_period_start and self.current_period_end
-    
+
     def can_access_premium_content(self):
         """
         Align site access with Stripe subscription states where a customer has paid membership.
 
         Includes past_due (Stripe retries card failures; service usually continues meanwhile).
+        cancel_at_period_end keeps access while status is still active/trialing/past_due.
+        Collection paused (or a fully canceled subscription) does not.
         """
+        if self.collection_paused:
+            return False
         return self.status in ('active', 'trialing', 'past_due')
+
+
+class SubscriptionNotice(BaseModel):
+    """
+    Idempotency log for subscription emails.
+
+    The same transition can be observed twice (webhook retry plus reconcile). A unique
+    (subscription, notice_type, dedupe_key) stops the second send.
+    """
+
+    NOTICE_CANCEL_SCHEDULED = 'cancel_scheduled'
+    NOTICE_CANCELED = 'canceled'
+    NOTICE_PAUSED = 'paused'
+    NOTICE_RESUMED = 'resumed'
+    NOTICE_TYPE_CHOICES = (
+        (NOTICE_CANCEL_SCHEDULED, 'Cancel scheduled'),
+        (NOTICE_CANCELED, 'Canceled'),
+        (NOTICE_PAUSED, 'Paused'),
+        (NOTICE_RESUMED, 'Resumed'),
+    )
+
+    subscription = models.ForeignKey(
+        Subscription,
+        on_delete=models.CASCADE,
+        related_name='notices',
+    )
+    notice_type = models.CharField(max_length=32, choices=NOTICE_TYPE_CHOICES)
+    dedupe_key = models.CharField(max_length=255)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['subscription', 'notice_type', 'dedupe_key'],
+                name='uniq_subscription_notice_dedupe',
+            ),
+        ]
+
+    def __unicode__(self):
+        return f"{self.notice_type} {self.dedupe_key}"
+
+
+class StripeWebhookEvent(BaseModel):
+    """
+    Persisted Stripe webhook so a crash or retry can replay without double-sending mail.
+
+    The row is written before handling. status is pending, processed, or failed.
+    """
+
+    STATUS_PENDING = 'pending'
+    STATUS_PROCESSED = 'processed'
+    STATUS_FAILED = 'failed'
+    STATUS_CHOICES = (
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_PROCESSED, 'Processed'),
+        (STATUS_FAILED, 'Failed'),
+    )
+
+    stripe_event_id = models.CharField(max_length=255, unique=True)
+    event_type = models.CharField(max_length=128, blank=True, default='')
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    last_error = models.TextField(blank=True, default='')
+    payload = models.JSONField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['created', 'id']
+
+    def __unicode__(self):
+        return f"{self.event_type} {self.stripe_event_id} ({self.status})"
 
 
 # --- New subscription pricing models ---

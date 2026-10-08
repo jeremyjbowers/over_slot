@@ -1,0 +1,25 @@
+{% extends "email_base.html" %}
+
+{% block email_title %}Your subscription will cancel{% endblock %}
+
+{% block email_content %}
+    <h1 class="email-title">Your subscription will cancel</h1>
+    <p class="email-text">
+        Your Over Slot subscription is scheduled to cancel.
+        You keep premium access until {{ period_end_display|default:"the end of the current billing period" }}.
+    </p>
+    <p class="email-text">
+        Plan: {{ plan_name }}
+    </p>
+    {% if receipt_url %}
+        <div class="email-button-container">
+            <a href="{{ receipt_url }}" class="email-button" style="display: inline-block !important; background-color: #1d4ed8 !important; color: #ffffff !important; text-decoration: none !important; padding: 16px 32px !important; border-radius: 6px !important; font-weight: 600 !important; font-size: 16px !important; text-align: center !important;">
+                View receipt
+            </a>
+        </div>
+        <p class="email-text">
+            <strong>Button not working?</strong> Copy and paste this link into your browser:
+        </p>
+        <div class="email-fallback-link">{{ receipt_url }}</div>
+    {% endif %}
+{% endblock %}

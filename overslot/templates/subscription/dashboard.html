@@ -35,7 +35,74 @@
         {% endif %}
 
         <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-            {% if subscription and subscription.can_access_premium_content %}
+            {% if subscription and subscription.collection_paused %}
+                <!-- Collection paused: no premium access -->
+                <div class="bg-yellow-50 px-6 py-4 border-b border-yellow-200">
+                    <h2 class="text-xl font-semibold text-yellow-800">Subscription paused</h2>
+                    <p class="text-yellow-700 mt-1">Billing is paused, so premium access is paused until the subscription resumes.</p>
+                </div>
+                <div class="px-6 py-6">
+                    <p class="text-gray-700 mb-4">Stripe is not collecting payment for this membership right now. Premium pages stay locked while billing is paused.</p>
+                    {% if subscription.plan_name %}
+                    <p class="text-sm text-gray-600 mb-4">Plan: {{ subscription.plan_name }}</p>
+                    {% endif %}
+                    <a href="{% url 'manage_billing' %}"
+                       class="inline-block bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200 text-center">
+                        Manage Billing
+                    </a>
+                </div>
+
+            {% elif subscription and subscription.can_access_premium_content and subscription.cancel_at_period_end %}
+                <!-- Active, but set to cancel at period end. Access remains until then. -->
+                <div class="bg-amber-50 px-6 py-4 border-b border-amber-200">
+                    <h2 class="text-xl font-semibold text-amber-900">Cancellation scheduled</h2>
+                    <p class="text-amber-800 mt-1">
+                        {% if subscription.current_period_end %}
+                            Your subscription will cancel on {{ subscription.current_period_end|date:"F j, Y" }}. You keep premium access until then.
+                        {% else %}
+                            Your subscription will cancel at the end of the current billing period. You keep premium access until then.
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div class="px-6 py-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-3">Subscription Details</h3>
+                            <dl class="space-y-2">
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Plan</dt>
+                                    <dd class="text-sm text-gray-900">{{ subscription.plan_name|default:"Premium Plan" }}</dd>
+                                </div>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Status</dt>
+                                    <dd class="text-sm text-gray-900 capitalize">
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-900">
+                                            Cancels {{ subscription.current_period_end|date:"M j, Y"|default:"at period end" }}
+                                        </span>
+                                    </dd>
+                                </div>
+                                {% if subscription.current_period_end %}
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Access until</dt>
+                                    <dd class="text-sm text-gray-900">{{ subscription.current_period_end|date:"F j, Y" }}</dd>
+                                </div>
+                                {% endif %}
+                            </dl>
+                        </div>
+
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-3">Manage Subscription</h3>
+                            <p class="text-sm text-gray-600 mb-3">Cancellation is already scheduled. Manage billing if you want to keep this subscription.</p>
+                            <a href="{% url 'manage_billing' %}"
+                               class="block w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200 text-center">
+                                Manage Billing
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            {% elif subscription and subscription.can_access_premium_content %}
                 <!-- Active Subscription -->
                 <div class="bg-green-50 px-6 py-4 border-b border-green-200">
                     <h2 class="text-xl font-semibold text-green-800">Premium access</h2>
@@ -97,10 +164,16 @@
                 </div>
                 
                 <div class="px-6 py-6">
-                    {% if subscription.current_period_end %}
+                    {% if period_end_in_future %}
                         <p class="text-gray-700 mb-4">
-                            You will continue to have access to premium content until {{ subscription.current_period_end|date:"F j, Y" }}.
+                            This subscription is canceled, so premium access has ended.
                         </p>
+                    {% elif subscription.current_period_end %}
+                        <p class="text-gray-700 mb-4">
+                            This subscription is canceled. The last billing period ended {{ subscription.current_period_end|date:"F j, Y" }}.
+                        </p>
+                    {% else %}
+                        <p class="text-gray-700 mb-4">Your subscription has been canceled.</p>
                     {% endif %}
                     
                     {% if has_any_price %}

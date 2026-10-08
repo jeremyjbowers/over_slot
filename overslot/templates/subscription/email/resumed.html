@@ -1,0 +1,13 @@
+{% extends "email_base.html" %}
+
+{% block email_title %}Premium access is restored{% endblock %}
+
+{% block email_content %}
+    <h1 class="email-title">Premium access is restored</h1>
+    <p class="email-text">
+        Your Over Slot subscription has resumed. Premium access is restored.
+    </p>
+    <p class="email-text">
+        Plan: {{ plan_name }}
+    </p>
+{% endblock %}
