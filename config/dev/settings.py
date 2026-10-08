@@ -247,11 +247,11 @@ STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY', default=None)
 STRIPE_PUBLISHABLE_KEY = env('STRIPE_PUBLISHABLE_KEY', default=None)
 STRIPE_WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET', default=None)
 STRIPE_PRICE_ID = env('STRIPE_PRICE_ID', default=None)
-# When True, Stripe webhooks finish inside the HTTP request (Mailgun and
-# Invoice.list block the response). Leave False in production: the view stores
-# the event and returns while a daemon thread finishes the work. The test
-# runner always processes inline because `'test' in sys.argv`, so this does
-# not need to be set for tests and is not read from the environment.
+# When True, Stripe webhooks apply the event inside the HTTP request.
+# Leave False in production: the view only stores the event. Run
+# `django-admin run_stripe_worker` as a long-running process to apply stored
+# events and reconcile subscriptions with Stripe. The test runner always
+# processes inline because `'test' in sys.argv`.
 STRIPE_WEBHOOK_INLINE = False
 
 # Optional JSON mapping for prices (DB-first resolver will fall back to this)

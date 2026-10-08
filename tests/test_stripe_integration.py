@@ -607,6 +607,68 @@ class StripeReconciliationTests(TestCase):
         call_command('process_stripe_events')
         self.assertEqual(StripeWebhookEvent.objects.get(stripe_event_id='evt_replay_1').status, 'processed')
 
+    def test_webhook_queues_until_worker_runs(self):
+        """Production webhooks only store the event. The worker applies it."""
+        self.subscription.status = 'inactive'
+        self.subscription.save(update_fields=['status', 'last_modified'])
+        event = _subscription_event(
+            'evt_queued_1',
+            'customer.subscription.updated',
+            {
+                'id': 'sub_recon',
+                'customer': 'cus_recon',
+                'status': 'past_due',
+                'items': {'data': []},
+            },
+        )
+        with patch.object(sub_views, '_stripe_webhook_runs_inline', return_value=False):
+            response = self._post(event)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Subscription.objects.get(pk=self.subscription.pk).status, 'inactive')
+        stored = StripeWebhookEvent.objects.get(stripe_event_id='evt_queued_1')
+        self.assertEqual(stored.status, 'pending')
+
+        with patch.object(stripe.Subscription, 'retrieve') as retrieve:
+            call_command('run_stripe_worker', '--once', '--skip-reconcile')
+        retrieve.assert_not_called()
+        row = Subscription.objects.get(pk=self.subscription.pk)
+        self.assertEqual(row.status, 'past_due')
+        self.assertEqual(
+            StripeWebhookEvent.objects.get(stripe_event_id='evt_queued_1').status,
+            'processed',
+        )
+
+    def test_worker_waits_before_retrying_a_failed_event(self):
+        record = StripeWebhookEvent.objects.create(
+            stripe_event_id='evt_failed_recent',
+            event_type='customer.subscription.updated',
+            status='failed',
+            payload={
+                'id': 'evt_failed_recent',
+                'type': 'customer.subscription.updated',
+                'data': {
+                    'object': {
+                        'id': 'sub_recon',
+                        'customer': 'cus_recon',
+                        'status': 'past_due',
+                        'items': {'data': []},
+                    }
+                },
+            },
+        )
+        call_command('run_stripe_worker', '--once', '--skip-reconcile', '--retry-failed-after', '60')
+        record.refresh_from_db()
+        self.assertEqual(record.status, 'failed')
+        self.assertEqual(Subscription.objects.get(pk=self.subscription.pk).status, 'active')
+
+        StripeWebhookEvent.objects.filter(pk=record.pk).update(
+            last_modified=timezone.now() - timedelta(seconds=120),
+        )
+        call_command('run_stripe_worker', '--once', '--skip-reconcile', '--retry-failed-after', '60')
+        record.refresh_from_db()
+        self.assertEqual(record.status, 'processed')
+        self.assertEqual(Subscription.objects.get(pk=self.subscription.pk).status, 'past_due')
+
 
 @override_settings(
     STRIPE_SECRET_KEY='sk_test_dummy',

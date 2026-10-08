@@ -1,6 +1,5 @@
 import logging
 import sys
-import threading
 from datetime import UTC, datetime
 
 import stripe
@@ -12,7 +11,7 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.contrib import messages
-from django.db import IntegrityError, close_old_connections, transaction
+from django.db import IntegrityError, transaction
 from django.core.cache import cache
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -604,7 +603,8 @@ def _stripe_webhook_runs_inline():
     Tests POST a webhook and then read the database, so they must finish inline.
 
     ``'test' in sys.argv`` covers that without a new setting. Production leaves
-    STRIPE_WEBHOOK_INLINE false and finishes on a daemon thread.
+    STRIPE_WEBHOOK_INLINE false: the view only stores the event, and
+    ``run_stripe_worker`` applies it.
     """
     if 'test' in sys.argv:
         return True
@@ -617,8 +617,10 @@ def stripe_webhook(request):
     """
     Handle Stripe webhooks to update subscription status.
 
-    Verify the signature, persist a StripeWebhookEvent, and return without waiting
-    on Mailgun or Invoice.list unless tests or STRIPE_WEBHOOK_INLINE force inline work.
+    Verify the signature, persist a StripeWebhookEvent, and return. Production does
+    not apply the event in this request. Run ``django-admin run_stripe_worker`` as a
+    long-running process to apply stored events and reconcile with Stripe.
+    Tests and STRIPE_WEBHOOK_INLINE apply the event before the response.
     A duplicate event id that is already processed returns 200 and does not email again.
 
     Stripe dashboard checklist — send these events:
@@ -661,28 +663,16 @@ def stripe_webhook(request):
         if not created and record.status == StripeWebhookEvent.STATUS_PROCESSED:
             return HttpResponse(status=200)
 
-    def _work():
-        _run_webhook_handling(record, event_type, data_object, event_id)
-
-    if _stripe_webhook_runs_inline():
+    # No event id means we cannot queue a replay. Apply it here so it is not dropped.
+    run_inline = _stripe_webhook_runs_inline()
+    if not event_id and not run_inline:
+        logger.warning('Stripe webhook type=%s has no event id; applying inline', event_type)
+    if run_inline or not event_id:
         try:
-            _work()
+            _run_webhook_handling(record, event_type, data_object, event_id)
         except Exception:
             logger.exception('Unhandled error processing Stripe webhook type=%s', event_type)
             return HttpResponse(status=500)
-        return HttpResponse(status=200)
-
-    def _thread():
-        close_old_connections()
-        try:
-            try:
-                _work()
-            except Exception:
-                logger.exception('Unhandled error processing Stripe webhook type=%s', event_type)
-        finally:
-            close_old_connections()
-
-    threading.Thread(target=_thread, name=f'stripe-webhook-{event_id or event_type}', daemon=True).start()
     return HttpResponse(status=200)
 
 
