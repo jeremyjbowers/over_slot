@@ -1,0 +1,13 @@
+{% extends "email_base.html" %}
+
+{% block email_title %}Your subscription is paused{% endblock %}
+
+{% block email_content %}
+    <h1 class="email-title">Your subscription is paused</h1>
+    <p class="email-text">
+        Your Over Slot subscription is paused. Premium access is paused until billing resumes.
+    </p>
+    <p class="email-text">
+        Plan: {{ plan_name }}
+    </p>
+{% endblock %}
