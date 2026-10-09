@@ -325,7 +325,7 @@
                     {% if user_authenticated %}
                     <a href="{% url 'subscription_dashboard' %}" style="display: inline-block; background: var(--theme-primary); color: var(--dark-text); padding: 1rem 2rem; font-weight: 600; font-size: var(--text-lg); text-decoration: none;">Subscribe Now</a>
                     {% else %}
-                    <a href="{% url 'account_login' %}?next={{ request.get_full_path }}" style="display: inline-block; background: var(--theme-primary); color: var(--dark-text); padding: 1rem 2rem; font-weight: 600; font-size: var(--text-lg); text-decoration: none;">Log In to Subscribe</a>
+                    <a href="{% url 'account_login' %}?next={{ request.get_full_path }}" style="display: inline-block; background: var(--theme-primary); color: var(--dark-text); padding: 1rem 2rem; font-weight: 600; font-size: var(--text-lg); text-decoration: none;">LOG IN OR SUBSCRIBE</a>
                     {% endif %}
                 </div>
                 <p style="font-size: var(--text-sm); color: var(--dark-text-muted); margin: 0;">Cancel anytime • No long-term commitment</p>
