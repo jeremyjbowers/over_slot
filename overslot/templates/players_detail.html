@@ -854,6 +854,10 @@ body {
     overflow: hidden;
 }
 
+#lollipop-chart-container .chart-tabs-wrapper .tabs ul {
+    flex-wrap: wrap;
+}
+
 /* 643 Stats Tables Styles */
 .stats-643-container {
     max-width: 1200px;
@@ -1069,31 +1073,70 @@ body {
 
         {% if season_charts and not preview_mode %}
         <div id="lollipop-chart-container">
-            {% if stat_year_groups|length > 1 %}
             <div class="chart-tabs-wrapper">
                 <div class="tabs is-toggle is-small">
                     <ul id="stat-year-tabs">
                         {% for group in stat_year_groups %}
-                        <li class="{% if forloop.first %}is-active{% endif %}">
-                            <a href="#" data-target="stat-year-{{ group.year }}">
-                                {% if group.single_level == "College" %}
-                                <span>{{ group.year }} college</span>
-                                {% else %}
-                                <span>{{ group.year }}</span>
-                                {% if group.single_level %}
-                                <span class="is-size-7 tab-level" style="margin-left: 6px;">{{ group.single_level }}</span>
-                                {% endif %}
-                                {% endif %}
+                        {% if group.has_hitting %}
+                        <li{% if group.hit_active %} class="is-active"{% endif %}>
+                            <a href="#" data-target="stat-hit-{{ group.year }}">
+                                <span>{{ group.year }} Hit</span>
                             </a>
                         </li>
+                        {% endif %}
+                        {% if group.has_pitching %}
+                        <li{% if group.pitch_active %} class="is-active"{% endif %}>
+                            <a href="#" data-target="stat-pitch-{{ group.year }}">
+                                <span>{{ group.year }} Pitch</span>
+                            </a>
+                        </li>
+                        {% endif %}
                         {% endfor %}
                     </ul>
                 </div>
             </div>
-            {% endif %}
             {% for group in stat_year_groups %}
-            <div id="stat-year-{{ group.year }}" class="stat-year-panel" style="{% if not forloop.first %}display:none{% endif %}">
-                {% if group.has_pitching %}
+            {% if group.has_hitting %}
+            <div id="stat-hit-{{ group.year }}" class="stat-chart-panel"{% if not group.hit_active %} style="display:none"{% endif %}>
+                {% for sc in group.hitter_seasons %}
+                <div class="info-section">
+                    <div class="info-section-header">
+                        <h3 class="info-section-title">
+                            {% if sc.level == "College" %}
+                            {{ sc.year }} college
+                            {% else %}
+                            {{ sc.year }} Hitter Performance ({{ sc.level }})
+                            {% endif %}
+                        </h3>
+                    </div>
+                    <div class="info-section-content">
+                        {% if sc.level == "High School" %}
+                        <span class="info-section-subtitle">Summer circuit performance metrics. Bat speed, average rotational acceleration, and peak hand speed provided by Blast Motion.</span>
+                        <span class="info-section-subtitle">"Explosiveness" is a composite score based on general athletic testing and force plate outputs. "Twitch" is reactive strength index (RSI) from athletic testing, shown when available.</span>
+                        <span class="info-section-subtitle">High school deltas show actual points vs median (±).</span>
+                        {% else %}
+                        <span class="info-section-subtitle">Percentile ranks and raw values based on hitter data for the selected year.</span>
+                        {% endif %}
+                    </div>
+                    {% if sc.hs_statline %}
+                    <div class="info-section-content">
+                        <div class="info-grid" style="grid-template-columns: repeat(6, minmax(80px, 1fr));">
+                            <div class="info-item"><div class="info-label">PA</div><div class="info-value">{{ sc.hs_statline.pa|floatformat:0 }}</div></div>
+                            <div class="info-item"><div class="info-label">BA</div><div class="info-value">{% if sc.hs_statline.ba %}{{ sc.hs_statline.ba|format_avg3 }}{% endif %}</div></div>
+                            <div class="info-item"><div class="info-label">OBP</div><div class="info-value">{% if sc.hs_statline.obp %}{{ sc.hs_statline.obp|format_avg3 }}{% endif %}</div></div>
+                            <div class="info-item"><div class="info-label">SLG</div><div class="info-value">{% if sc.hs_statline.slg %}{{ sc.hs_statline.slg|format_avg3 }}{% endif %}</div></div>
+                            <div class="info-item"><div class="info-label">OPS</div><div class="info-value">{% if sc.hs_statline.ops %}{{ sc.hs_statline.ops|format_avg3 }}{% endif %}</div></div>
+                            <div class="info-item"><div class="info-label">ISO</div><div class="info-value">{% if sc.hs_statline.iso %}{{ sc.hs_statline.iso|format_avg3 }}{% endif %}</div></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div id="lollipop-chart-{{ sc.chart_index }}"></div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if group.has_pitching %}
+            <div id="stat-pitch-{{ group.year }}" class="stat-chart-panel"{% if not group.pitch_active %} style="display:none"{% endif %}>
                 {% with sc=group.pitcher_primary %}
                 <div class="chart-tabs-wrapper">
                     <div class="tabs is-toggle is-small">
@@ -1164,43 +1207,8 @@ body {
                     </div>
                 </div>
                 {% endwith %}
-                {% endif %}
-                {% for sc in group.hitter_seasons %}
-                <div class="info-section">
-                    <div class="info-section-header">
-                        <h3 class="info-section-title">
-                            {% if sc.level == "College" %}
-                            {{ sc.year }} college
-                            {% else %}
-                            {{ sc.year }} Hitter Performance ({{ sc.level }})
-                            {% endif %}
-                        </h3>
-                    </div>
-                    <div class="info-section-content">
-                        {% if sc.level == "High School" %}
-                        <span class="info-section-subtitle">Summer circuit performance metrics. Bat speed, average rotational acceleration, and peak hand speed provided by Blast Motion.</span>
-                        <span class="info-section-subtitle">"Explosiveness" is a composite score based on general athletic testing and force plate outputs. "Twitch" is reactive strength index (RSI) from athletic testing, shown when available.</span>
-                        <span class="info-section-subtitle">High school deltas show actual points vs median (±).</span>
-                        {% else %}
-                        <span class="info-section-subtitle">Percentile ranks and raw values based on hitter data for the selected year.</span>
-                        {% endif %}
-                    </div>
-                    {% if sc.hs_statline %}
-                    <div class="info-section-content">
-                        <div class="info-grid" style="grid-template-columns: repeat(6, minmax(80px, 1fr));">
-                            <div class="info-item"><div class="info-label">PA</div><div class="info-value">{{ sc.hs_statline.pa|floatformat:0 }}</div></div>
-                            <div class="info-item"><div class="info-label">BA</div><div class="info-value">{% if sc.hs_statline.ba %}{{ sc.hs_statline.ba|format_avg3 }}{% endif %}</div></div>
-                            <div class="info-item"><div class="info-label">OBP</div><div class="info-value">{% if sc.hs_statline.obp %}{{ sc.hs_statline.obp|format_avg3 }}{% endif %}</div></div>
-                            <div class="info-item"><div class="info-label">SLG</div><div class="info-value">{% if sc.hs_statline.slg %}{{ sc.hs_statline.slg|format_avg3 }}{% endif %}</div></div>
-                            <div class="info-item"><div class="info-label">OPS</div><div class="info-value">{% if sc.hs_statline.ops %}{{ sc.hs_statline.ops|format_avg3 }}{% endif %}</div></div>
-                            <div class="info-item"><div class="info-label">ISO</div><div class="info-value">{% if sc.hs_statline.iso %}{{ sc.hs_statline.iso|format_avg3 }}{% endif %}</div></div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    <div id="lollipop-chart-{{ sc.chart_index }}"></div>
-                </div>
-                {% endfor %}
             </div>
+            {% endif %}
             {% endfor %}
         </div>
         {% endif %}
@@ -1234,7 +1242,7 @@ body {
                     </a>
                 {% else %}
                     <a href="{% url 'account_login' %}?next={{ request.get_full_path }}" class="btn-subscribe">
-                        Log In to Subscribe
+                        LOG IN OR SUBSCRIBE
                     </a>
                 {% endif %}
             </div>
@@ -1676,8 +1684,16 @@ function toggleReport(button) {
 }
 
 {% if season_charts and not preview_mode %}
-// Tabs behavior
+// One Hit/Pitch button row. Pitch Design vs Pitch Quality stays inside the pitch panel.
 (function(){
+    function showPanel(panel) {
+        if (!panel) return;
+        panel.style.display = '';
+        if (typeof renderPendingMovementCharts === 'function') {
+            renderPendingMovementCharts(panel);
+        }
+    }
+
     const yearTabs = document.querySelectorAll('#stat-year-tabs li a');
     if (yearTabs.length) {
         yearTabs.forEach(a => {
@@ -1686,14 +1702,13 @@ function toggleReport(button) {
                 const target = a.getAttribute('data-target');
                 document.querySelectorAll('#stat-year-tabs li').forEach(li => li.classList.remove('is-active'));
                 a.parentElement.classList.add('is-active');
-                document.querySelectorAll('.stat-year-panel').forEach(p => p.style.display = 'none');
-                const panel = document.getElementById(target);
-                if (panel) panel.style.display = '';
+                document.querySelectorAll('.stat-chart-panel').forEach(p => p.style.display = 'none');
+                showPanel(document.getElementById(target));
             });
         });
     }
     
-    // Pitcher chart sub-tabs (Design/Quality)
+    // Pitcher chart sub-tabs (Design/Quality), scoped to the pitch panel
     const pitcherChartTabs = document.querySelectorAll('.pitcher-chart-tabs li a');
     if (pitcherChartTabs.length) {
         pitcherChartTabs.forEach(a => {
@@ -1704,11 +1719,10 @@ function toggleReport(button) {
                 const tabGroup = a.closest('.pitcher-chart-tabs');
                 tabGroup.querySelectorAll('li').forEach(li => li.classList.remove('is-active'));
                 a.parentElement.classList.add('is-active');
-                const yearPanel = document.getElementById('stat-year-' + year);
-                if (yearPanel) {
-                    yearPanel.querySelectorAll('.pitcher-chart-panel').forEach(p => p.style.display = 'none');
-                    const panel = document.getElementById(target);
-                    if (panel) panel.style.display = '';
+                const pitchPanel = document.getElementById('stat-pitch-' + year);
+                if (pitchPanel) {
+                    pitchPanel.querySelectorAll('.pitcher-chart-panel').forEach(p => p.style.display = 'none');
+                    showPanel(document.getElementById(target));
                 }
             });
         });
@@ -1735,6 +1749,7 @@ function toggleReport(button) {
 
 // Reusable renderers
 function renderHitterChart(selector, payload) {
+if (d3.select(selector).select("svg").size()) return;
 const hitterChartPayload = payload;
 const data = hitterChartPayload.items || [];
 
@@ -1941,6 +1956,7 @@ svg.selectAll(".score-label")
 }
 
 function renderPitcherChart(selector, payload) {
+if (d3.select(selector).select("svg").size()) return;
 // Pitcher Chart JavaScript
 const pitcherLollipopData = payload;
 
@@ -2598,18 +2614,50 @@ function renderPitchMovementChart(selector, movementData, year, handedness, leve
     }
 }
 
-// Render all seasons
+// Hitter and pitch-quality charts measure #lollipop-chart-container, which stays
+// visible, so they can render while an inner panel is hidden. Pitch-movement
+// charts measure their own node; render each one only after that node has width,
+// and only once.
 {% for sc in season_charts %}
 {% if sc.hitter_json %}
 renderHitterChart("#lollipop-chart-{{ sc.chart_index }}", JSON.parse('{{ sc.hitter_json|escapejs }}'));
 {% endif %}
 {% if sc.pitcher_json %}
 renderPitcherChart("#pitcher-lollipop-chart-{{ sc.chart_index }}", JSON.parse('{{ sc.pitcher_json|escapejs }}'));
-{% if sc.pitcher_movement_json %}
-renderPitchMovementChart("#pitch-movement-chart-{{ sc.chart_index }}", JSON.parse('{{ sc.pitcher_movement_json|escapejs }}'), '{{ sc.year }}', '{{ sc.pitcher_handedness|default:"" }}', '{{ sc.level|escapejs }}');
-{% endif %}
 {% endif %}
 {% endfor %}
+
+const pendingMovementCharts = [
+{% for sc in season_charts %}
+{% if sc.pitcher_movement_json %}
+    {
+        selector: "#pitch-movement-chart-{{ sc.chart_index }}",
+        data: JSON.parse('{{ sc.pitcher_movement_json|escapejs }}'),
+        year: "{{ sc.year|escapejs }}",
+        handedness: "{{ sc.pitcher_handedness|default:''|escapejs }}",
+        level: "{{ sc.level|escapejs }}",
+        rendered: false
+    },
+{% endif %}
+{% endfor %}
+];
+
+function renderPendingMovementCharts(root) {
+    pendingMovementCharts.forEach((item) => {
+        if (item.rendered) return;
+        const node = document.querySelector(item.selector);
+        if (!node) return;
+        if (root && !root.contains(node)) return;
+        if (node.getBoundingClientRect().width <= 0) return;
+        renderPitchMovementChart(item.selector, item.data, item.year, item.handedness, item.level);
+        item.rendered = true;
+    });
+}
+
+renderPendingMovementCharts(document.getElementById("lollipop-chart-container"));
+setTimeout(function() {
+    renderPendingMovementCharts(document.getElementById("lollipop-chart-container"));
+}, 100);
 {% endif %}
 </script>
 {% endblock %}

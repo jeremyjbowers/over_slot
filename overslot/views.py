@@ -1205,8 +1205,13 @@ def _stat_year_sort_key(year):
 
 def group_stat_charts_by_year(season_charts):
     """
-    One year tab that can show pitching and hitting together (two-way players).
-    Newest year first.
+    Group stat charts by year, newest year first.
+
+    A year may include hitting and pitching. The player page lists those as
+    separate buttons (``2026 Hit``, then ``2026 Pitch``). ``hit_active`` and
+    ``pitch_active`` select the default panel: the newest year that has a
+    hitting graphic, or the newest pitching graphic when there is no hitting
+    graphic.
     """
     by_year = {}
     for sc in season_charts:
@@ -1228,7 +1233,19 @@ def group_stat_charts_by_year(season_charts):
             "has_hitting": bool(hitter_seasons),
             "pitcher_primary": pitcher_seasons[0] if pitcher_seasons else None,
             "single_level": next(iter(levels)) if len(levels) == 1 else None,
+            "hit_active": False,
+            "pitch_active": False,
         })
+
+    for group in groups:
+        if group["has_hitting"]:
+            group["hit_active"] = True
+            break
+    else:
+        for group in groups:
+            if group["has_pitching"]:
+                group["pitch_active"] = True
+                break
     return groups
 
 
