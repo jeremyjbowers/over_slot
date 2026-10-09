@@ -81,6 +81,7 @@
     margin-bottom: 8px;
     transition: border-color 0.2s ease;
     overflow: hidden;
+    font-family: var(--font-sans);
 }
 
 .player-ranking-card:hover {
@@ -94,8 +95,10 @@
     z-index: 2;
     background: var(--theme-primary);
     color: white;
-    font-size: 1.35rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-xl);
     font-weight: 800;
+    letter-spacing: -0.02em;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -163,14 +166,15 @@
 
 .player-name {
     margin: 0;
-    font-family: var(--font-serif);
-    font-size: 1.35rem;
-    font-weight: 700;
-    line-height: 1.15;
+    font-family: var(--font-sans);
+    font-size: var(--text-xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: var(--leading-tight);
 }
 
 .player-name a {
-    color: white;
+    color: var(--dark-text);
     text-decoration: none;
     min-width: 0;
 }
@@ -184,10 +188,11 @@
     align-items: center;
     gap: 0.5rem;
     min-width: 0;
-    font-size: 0.8rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
     font-weight: 600;
     color: var(--dark-text);
-    line-height: 1.2;
+    line-height: var(--leading-tight);
 }
 
 .player-pos {
@@ -230,15 +235,17 @@
     display: inline-flex;
     align-items: baseline;
     gap: 0.25rem;
-    font-size: 0.75rem;
-    line-height: 1.2;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    line-height: var(--leading-tight);
     white-space: nowrap;
 }
 
 .bio-label {
     color: var(--dark-text-muted);
+    font-family: var(--font-sans);
     font-weight: 600;
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
 }
 
 .bio-value {
@@ -254,18 +261,20 @@
     display: inline-flex;
     align-items: baseline;
     gap: 0.3rem;
-    font-size: 0.7rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
     font-weight: 600;
-    line-height: 1.2;
+    line-height: var(--leading-tight);
     min-width: 0;
 }
 
 .player-commitment-label {
     color: var(--dark-text-muted);
+    font-family: var(--font-sans);
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
-    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    font-size: var(--text-xs);
     flex-shrink: 0;
 }
 
@@ -281,10 +290,11 @@
     display: none;
     align-items: center;
     gap: 0.3rem;
-    font-size: 0.7rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
     font-weight: 700;
     color: var(--theme-primary);
-    line-height: 1.2;
+    line-height: var(--leading-tight);
     min-width: 0;
 }
 
@@ -333,9 +343,10 @@
 .tool-chip {
     display: inline-flex;
     align-items: stretch;
-    font-size: 0.65rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
     font-weight: 700;
-    line-height: 1;
+    line-height: var(--leading-none);
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.18);
 }
@@ -383,11 +394,12 @@
     background: var(--dark-surface-hover);
     color: var(--dark-text-secondary);
     border: 1px solid rgba(255, 255, 255, 0.18);
-    font-size: 0.62rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    line-height: 1.2;
+    line-height: var(--leading-tight);
     white-space: nowrap;
 }
 
@@ -399,7 +411,8 @@
 }
 
 .card-tag--commit .card-tag-label {
-    font-size: 0.58rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -471,14 +484,19 @@
 
 .scouting-report-header h4 {
     margin: 0 0 0.5rem 0;
-    font-size: 1.25rem;
-    font-weight: 700;
+    font-family: var(--font-sans);
+    font-size: var(--text-xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: var(--leading-tight);
     color: var(--dark-text);
 }
 
 .scouting-meta {
-    font-size: 0.875rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
     color: var(--dark-text-muted);
+    line-height: var(--leading-snug);
 }
 
 .carrying-tools {
@@ -491,7 +509,8 @@
 .tool-item {
     display: flex;
     overflow: hidden;
-    font-size: 0.875rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
     font-weight: 600;
 }
 
@@ -512,8 +531,8 @@
 
 .scouting-report-content {
     font-family: var(--font-serif);
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
     color: var(--dark-text-secondary);
     margin-bottom: 1.5rem;
 }
@@ -523,10 +542,12 @@
 }
 
 .photo-credit {
-    font-size: 0.75rem;
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
     color: var(--dark-text-muted);
     text-align: right;
     font-style: italic;
+    line-height: var(--leading-snug);
 }
 
 /* Mobile: stacked cards with compact header + tag footer */
@@ -543,7 +564,7 @@
     .player-rank-badge {
         width: 2rem;
         min-height: 2rem;
-        font-size: 0.85rem;
+        font-size: var(--text-sm);
         clip-path: polygon(0 0, 100% 0, 100% calc(100% - 0.45rem), calc(100% - 0.45rem) 100%, 0 100%);
     }
 
@@ -562,8 +583,8 @@
     }
 
     .player-name {
-        font-size: 1.05rem;
-        line-height: 1.15;
+        font-size: var(--text-lg);
+        line-height: var(--leading-tight);
     }
 
     .player-name a {
@@ -574,7 +595,7 @@
     }
 
     .player-pos-school {
-        font-size: 0.72rem;
+        font-size: var(--text-xs);
         gap: 0.35rem;
     }
 
@@ -584,7 +605,7 @@
 
     .player-mock-team {
         display: inline-flex;
-        font-size: 0.62rem;
+        font-size: var(--text-xs);
         max-width: 100%;
     }
 
@@ -593,11 +614,11 @@
     }
 
     .player-bio-info--primary .bio-stat {
-        font-size: 0.62rem;
+        font-size: var(--text-xs);
     }
 
     .player-bio-info--primary .bio-label {
-        font-size: 0.62rem;
+        font-size: var(--text-xs);
         color: var(--dark-text-secondary);
     }
 
@@ -626,7 +647,7 @@
     }
 
     .card-tag {
-        font-size: 0.58rem;
+        font-size: var(--text-xs);
         padding: 0.15rem 0.45rem;
     }
 
@@ -652,11 +673,12 @@
     }
 
     .player-expanded-panel .scouting-report-header h4 {
-        font-size: 1rem;
+        font-size: var(--text-lg);
     }
 
     .player-expanded-panel .scouting-report-content {
-        font-size: 0.92rem;
+        font-family: var(--font-serif);
+        font-size: var(--text-base);
     }
 
     .player-expanded-panel .carrying-tools {
@@ -664,7 +686,7 @@
     }
 
     .player-expanded-panel .tool-item {
-        font-size: 0.75rem;
+        font-size: var(--text-xs);
     }
 }
 
@@ -672,7 +694,7 @@
     .player-rank-badge {
         width: 1.85rem;
         min-height: 1.85rem;
-        font-size: 0.78rem;
+        font-size: var(--text-xs);
     }
 
     .player-card-header {
@@ -680,15 +702,15 @@
     }
 
     .player-name {
-        font-size: 0.98rem;
+        font-size: var(--text-base);
     }
 
     .player-pos-school {
-        font-size: 0.68rem;
+        font-size: var(--text-xs);
     }
 
     .player-bio-info--primary .bio-stat {
-        font-size: 0.58rem;
+        font-size: var(--text-xs);
     }
 
     .player-card-footer {
@@ -1339,7 +1361,7 @@
                             </a>
                         {% else %}
                             <a href="{% url 'account_login' %}?next={{ request.get_full_path }}" class="btn-subscribe">
-                                Log In to Subscribe
+                                LOG IN OR SUBSCRIBE
                             </a>
                         {% endif %}
                     </div>
