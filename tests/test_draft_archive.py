@@ -47,6 +47,7 @@ class DraftArchivePageTests(SimpleTestCase):
         self.assertIn('id="view"', html)
         self.assertIn('href="${OSURL[y]||"/rankings/"}"', html)
         self.assertIn("o.ou ? o.ou", html)
+        self.assertIn('document.querySelector(".draft-archive").appendChild', html)
         self.assertNotIn("https://overslotbaseball.com", html)
         self.assertNotIn('class="wordmark"', html)
 

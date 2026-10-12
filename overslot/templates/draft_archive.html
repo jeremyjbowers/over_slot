@@ -271,7 +271,7 @@ function tipHTML(a,b,c,team){
 const RAMP = ["#fecaca","#fca5a5","#f87171","#ef4444","#b91c1c","#7f1d1d"]; // round groups, earliest = brightest
 const GROUPS = [["Round 1 + comp",r=>r<=1.5],["Rounds 2–3",r=>r>=2&&r<4],["Rounds 4–5",r=>r>=4&&r<6],["Rounds 6–10",r=>r>=6&&r<11],["Rounds 11–20",r=>r>=11&&r<21],["Rounds 21+",r=>r>=21]];
 const BUCKETS = [["Below 0",w=>w<0],["0–2",w=>w>=0&&w<2],["2–5",w=>w>=2&&w<5],["5–10",w=>w>=5&&w<10],["10–20",w=>w>=10&&w<20],["20–40",w=>w>=20&&w<40],["40+",w=>w>=40]];
-const tipEl = document.createElement("div"); tipEl.id = "vtip"; tipEl.hidden = true; document.body.appendChild(tipEl);
+const tipEl = document.createElement("div"); tipEl.id = "vtip"; tipEl.hidden = true; document.querySelector(".draft-archive").appendChild(tipEl);
 function roundNum(o){ const n = parseInt(o.r,10); if(!isNaN(n)) return n; const m = String(o.r).match(/\d+/); return m ? +m[0] + .5 : 1.5; }
 function buildViz(rows, y, onTeam){
   const el = document.getElementById("viz"); if(!el) return;
@@ -732,8 +732,8 @@ function openCompare(){
   const m = document.createElement("div");
   m.id = "pcard"; m.hidden = true; m.setAttribute("role","dialog"); m.setAttribute("aria-modal","true"); m.setAttribute("aria-labelledby","pcname");
   m.innerHTML = `<div class="pcback"></div><div class="pcpanel"><button type="button" class="pcclose" aria-label="Close">×</button><div class="pcbody"></div></div>`;
-  document.body.appendChild(m);
-  const tray = document.createElement("div"); tray.id = "cmptray"; tray.hidden = true; document.body.appendChild(tray);
+  document.querySelector(".draft-archive").appendChild(m);
+  const tray = document.createElement("div"); tray.id = "cmptray"; tray.hidden = true; document.querySelector(".draft-archive").appendChild(tray);
   m.querySelector(".pcback").addEventListener("click", closeCard);
   m.querySelector(".pcclose").addEventListener("click", closeCard);
   document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeCard(); });
