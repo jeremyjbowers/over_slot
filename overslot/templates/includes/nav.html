@@ -54,6 +54,7 @@
                     <span class="navbar-link nav-link nav-dropdown-parent has-text-grey-lighter">Rankings</span>
                     <div class="navbar-dropdown">
                         <a class="navbar-item" href="{% url 'rankings_list' %}">Draft rankings</a>
+                        <a class="navbar-item" href="{% url 'draft_archive' %}">Draft archive</a>
                         {% if has_published_mock_drafts %}
                         <a class="navbar-item" href="{% url 'mock_drafts_list' %}">Mock drafts</a>
                         {% endif %}

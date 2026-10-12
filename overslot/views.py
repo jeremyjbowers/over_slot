@@ -1526,6 +1526,14 @@ def robots_txt(request):
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 
+def draft_archive(request):
+    """
+    Public MLB draft archive (1977–2026). Free for every visitor.
+    The page is a one-time port of a standalone HTML file; edit the template in place.
+    """
+    return render(request, "draft_archive.html")
+
+
 def about_us(request):
     """
     Display the about-us page with authors, their bios, photos, and recent articles.
