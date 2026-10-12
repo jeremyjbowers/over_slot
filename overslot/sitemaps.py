@@ -28,6 +28,7 @@ class StaticViewSitemap(BaseForcedDomainSitemap):
             "articles_list",
             "stock_watch_list",
             "rankings_list",
+            "draft_archive",
             "mock_drafts_list",
             "my_mock_draft",
             "videos_list",

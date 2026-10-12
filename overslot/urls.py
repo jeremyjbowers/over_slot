@@ -90,6 +90,7 @@ urlpatterns = [
     path("teams/", views.teams_list, name="teams_list"),
     path("teams/<slug:slug>/", views.team_detail, name="team_detail"),
 
+    path("draft-archive/", views.draft_archive, name="draft_archive"),
     path("about-us/", views.about_us, name="about_us"),
 
     path("", views.index, name="index"),
