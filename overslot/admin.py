@@ -159,9 +159,9 @@ from overslot.models import (
 @admin.register(Author, site=admin_site)
 class AuthorAdmin(SummernoteModelAdmin):
     model = Author
-    list_display = ["name", "user", "display_email_column", "founder", "twitter", "bluesky"]
-    list_filter = ["founder"]
-    list_editable = ["founder"]
+    list_display = ["name", "user", "display_email_column", "founder", "active", "twitter", "bluesky"]
+    list_filter = ["active", "founder"]
+    list_editable = ["founder", "active"]
     search_fields = ["name", "user__username", "user__email", "email", "bio", "twitter", "bluesky"]
     autocomplete_fields = ["user"]
     readonly_fields = ["created", "last_modified", "display_email_readonly"]
@@ -216,6 +216,16 @@ class AuthorAdmin(SummernoteModelAdmin):
                     "twitter",
                     "bluesky",
                 )
+            },
+        ),
+        (
+            "Status",
+            {
+                "description": (
+                    "Inactive authors stay in the backend and on stories; "
+                    "they are only hidden from the About Us / authors page."
+                ),
+                "fields": ("active", "created", "last_modified"),
             },
         ),
     )

@@ -486,7 +486,16 @@ class PlayerRankingCarryingTool(BaseModel):
 class Author(BaseModel):
     """
     Extended profile for Users who can write articles.
+
+    ``active`` (from BaseModel) controls About Us / authors-page visibility.
+    Inactive authors remain in the admin and on stories; they are only hidden
+    from the public authors page.
     """
+    # Override BaseModel.active so the admin help text is author-specific.
+    active = models.BooleanField(
+        default=True,
+        help_text="Show on the About Us / authors page. Uncheck to hide without removing the author from stories or the backend.",
+    )
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='author_profile', blank=True, null=True)
     display_name = models.CharField(max_length=255, help_text="Name to display on articles", blank=True, null=True)
     # Backwards-compat: tests create Author with 'name'. Map to existing 'display_name' column.
