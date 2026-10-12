@@ -52,3 +52,10 @@ Two CSS gotchas that caused the long-standing "can't scroll the pick list" bug (
 2. **Wheel-event swallowing:** several elements (`#board`, `#draft-complete-inner`, etc.) get `overscroll-behavior-y: contain` for mobile. A scroll container with `contain` **swallows wheel/touch events instead of chaining to the parent scroller, even when it has nothing to scroll**. So an accidental scroll container (per gotcha 1) covering the page makes wheel scrolling dead everywhere while scrollbar-dragging and JS `scrollTop` still work.
 
 During an active draft, `#board` is a legitimate internal scroller (`flex-1 overflow-y-auto`) — the overrides above apply only in the `.draft-finished` state.
+
+## Cursor Cloud specific instructions
+
+- Boot starts PostgreSQL 16 and Valkey, then migrates and runs `django-admin runserver 0.0.0.0:8000`. `policy-rc.d` blocks `service postgresql start`; start Postgres with `sudo pg_ctlcluster 16 main start`. Valkey is `sudo service valkey-server start` on `127.0.0.1:6379`.
+- Dev database: name `overslot`, user `overslot`, password `overslot`, host `127.0.0.1`. The server process sets `PYTHONPATH=/workspace`, `DJANGO_SETTINGS_MODULE=config.dev.settings`, and `VALKEY_URL=valkey://127.0.0.1:6379/0`. There is no `manage.py`.
+- Dev settings use `ManifestStaticFilesStorage`. `collectstatic` runs during install and writes `static/staticfiles.json`. Admin pages raise `Missing staticfiles manifest entry` until that file exists.
+- Leave `VALKEY_URL` unset for `django-admin test tests`. The dev server's Valkey cache is shared, so a set URL makes tests read cached HTML from the dev database. The suite is not fully green on current `main` (magic-link POSTs 403 without `csrfmiddlewaretoken` in the body; some list-page assertions no longer match the templates). `tests.test_secondary_email.AdminIntegrationTestCase` passes after `collectstatic`.
