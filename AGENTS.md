@@ -19,7 +19,7 @@ The simulator page (`/my-mock-draft/`, template `overslot/templates/mock_draft_s
 
 ## Caching — the classic trap
 
-`GET /my-mock-draft/` is cached as a **whole HTML string in Valkey** (key `overslot:my_mock_draft:html:v12`, see `KEY_MY_MOCK_DRAFT_HTML` in `overslot/cache_utils.py`, 1-hour timeout). This applies **in local dev too** whenever `VALKEY_URL` is set, so template/CSS/JS changes silently don't appear even after the build script + server reload. Multiple past commits ("still trying to overcome cache") were fighting this.
+`GET /my-mock-draft/` is cached as a **whole HTML string in Valkey** (key `overslot:my_mock_draft:html:v13`, see `KEY_MY_MOCK_DRAFT_HTML` in `overslot/cache_utils.py`, 1-hour timeout). This applies **in local dev too** whenever `VALKEY_URL` is set, so template/CSS/JS changes silently don't appear even after the build script + server reload. Multiple past commits ("still trying to overcome cache") were fighting this.
 
 - Bust locally:
 

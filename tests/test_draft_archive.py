@@ -35,6 +35,46 @@ class DraftArchivePageTests(SimpleTestCase):
         self.assertEqual(reverse("draft_archive"), "/draft-archive/")
         self.assertIn("draft_archive", StaticViewSitemap().items())
 
+    def test_nav_puts_draft_archive_under_data(self):
+        request = self.factory.get("/draft-archive/")
+        request.user = AnonymousUser()
+        html = render_to_string("includes/nav.html", _page_context(request.user, request))
+        rankings = html.split(">Rankings<", 1)[1].split(">Data<", 1)[0]
+        data = html.split(">Data<", 1)[1].split(">Videos<", 1)[0]
+        self.assertNotIn('href="/draft-archive/"', rankings)
+        self.assertIn('href="/draft-archive/"', data)
+        self.assertIn(">Draft archive<", data)
+        self.assertLess(data.index('href="/draft-archive/"'), data.index('href="/stats/"'))
+
+    def test_homepage_banner_promotes_draft_archive(self):
+        request = self.factory.get("/")
+        request.user = AnonymousUser()
+        ctx = _page_context(request.user, request)
+        ctx.update({
+            "latest_articles": [],
+            "latest_rankings": [],
+            "latest_stock_watch": [],
+            "latest_games": [],
+            "scouting_articles": [],
+            "non_scouting_articles": [],
+            "draft_highlight_reels": [],
+            "featured_games": [],
+            "latest_podcasts": [],
+            "current_rankings": [],
+            "archived_rankings": [],
+            "rankings_count": 0,
+            "player_videos": [],
+            "videos_count": 0,
+            "homepage_collections": [],
+        })
+        html = render_to_string("index.html", ctx)
+        self.assertIn(">Draft Archive<", html)
+        self.assertIn("MLB Draft Archive, <span class=\"home-feature-banner-years\">1977", html)
+        self.assertIn("Open the archive", html)
+        self.assertIn('href="/draft-archive/"', html)
+        self.assertNotIn("Start a mock draft", html)
+        self.assertNotIn('href="/my-mock-draft/"', html)
+
     def test_anonymous_page_uses_site_nav_and_keeps_overslot_paths(self):
         request = self.factory.get("/draft-archive/")
         request.user = AnonymousUser()

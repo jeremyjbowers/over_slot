@@ -695,13 +695,13 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
         font-size: 0.9rem;
     }
 
-    .mock-draft-home-banner {
+    .home-feature-banner {
         flex-direction: column;
         align-items: stretch;
         padding: 0.85rem 1rem;
     }
 
-    .mock-draft-home-banner-cta {
+    .home-feature-banner-cta {
         width: 100%;
         justify-content: center;
     }
@@ -1030,8 +1030,8 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
 @media (max-width: 768px) { .carousel-arrows { display: none; } .mobile-touch-zones { display: flex; position: absolute; top: 50%; left: 0; right: 0; transform: translateY(-50%); z-index: 10; pointer-events: none; justify-content: space-between; padding: 0 1rem; } .mobile-touch-zone { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: all; background: rgba(0, 0, 0, 0.4); border: 2px solid rgba(255, 255, 255, 0.3); cursor: pointer; color: white; font-size: 1rem; } .carousel-slide { cursor: pointer; } }
 @media (max-width: 640px) { .ranking-grid { grid-template-columns: 1fr; } }
 
-/* Mock draft homepage banner */
-.mock-draft-home-banner {
+/* Homepage feature banner (draft archive until the 2027 simulator returns) */
+.home-feature-banner {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -1044,34 +1044,37 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
     color: var(--dark-text);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.mock-draft-home-banner:hover {
+.home-feature-banner:hover {
     border-color: var(--theme-primary);
     box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2);
     color: var(--dark-text);
     text-decoration: none;
 }
-.mock-draft-home-banner-text {
+.home-feature-banner-text {
     display: flex;
     align-items: flex-start;
     gap: 0.85rem;
     min-width: 0;
     flex: 1;
 }
-.mock-draft-home-banner-title {
+.home-feature-banner-title {
     font-weight: 800;
     font-size: 1.1rem;
     letter-spacing: -0.02em;
     color: var(--dark-text);
     margin: 0 0 0.2rem;
 }
-.mock-draft-home-banner-sub {
+.home-feature-banner-years {
+    white-space: nowrap;
+}
+.home-feature-banner-sub {
     margin: 0;
     font-size: 0.9rem;
     color: var(--dark-text-muted);
     line-height: 1.4;
     max-width: 36rem;
 }
-.mock-draft-home-banner-cta {
+.home-feature-banner-cta {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
@@ -1085,7 +1088,7 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
     border-radius: 0.25rem;
     transition: background 0.2s ease, border-color 0.2s ease;
 }
-.mock-draft-home-banner:hover .mock-draft-home-banner-cta {
+.home-feature-banner:hover .home-feature-banner-cta {
     background: var(--theme-primary-hover);
     border-color: var(--theme-primary-hover);
     color: #fff !important;
@@ -1250,16 +1253,17 @@ https://the-over-slot.nyc3.cdn.digitaloceanspaces.com/static/images/og-default.p
     </div>
 </div>
 
-<div class="content-section mock-draft-home-banner-outer" style="margin-top: 2rem;">
-    <h2 class="section-title"><span class="title-text">Mock Draft Simulator</span></h2>
-    <a href="{% url 'my_mock_draft' %}" class="mock-draft-home-banner">
-        <div class="mock-draft-home-banner-text">
+{# Homepage feature banner. Promotes the Draft Archive until the 2027 mock draft simulator replaces it in Jan/Feb. #}
+<div class="content-section home-feature-banner-outer" style="margin-top: 2rem;">
+    <h2 class="section-title"><span class="title-text">Draft Archive</span></h2>
+    <a href="{% url 'draft_archive' %}" class="home-feature-banner">
+        <div class="home-feature-banner-text">
             <div>
-                <p class="mock-draft-home-banner-title">Over-Slot&rsquo;s Exclusive 2026 MLB Draft Simulator</p>
-                <p class="mock-draft-home-banner-sub">Pick a team and draft all 10 rounds with real slot values, real team tendencies, and a shareable draft class when you&rsquo;re done!</p>
+                <p class="home-feature-banner-title">Over-Slot&rsquo;s MLB Draft Archive, <span class="home-feature-banner-years">1977&ndash;2026</span></p>
+                <p class="home-feature-banner-sub">Every June draft in one place: full boards, career fWAR, debut dates, and signing bonuses from 2017 on. Open a class, a franchise, or the all-time leaderboards.</p>
             </div>
         </div>
-        <span class="mock-draft-home-banner-cta">Start a mock draft <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+        <span class="home-feature-banner-cta">Open the archive <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
     </a>
 </div>
 
