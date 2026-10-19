@@ -94,6 +94,13 @@ def bust_homepage():
         f'{KEY_HOMEPAGE}:collections',
     ]
     _safe_delete_many(keys)
+    # Playlist catalog (shared with load_highlight_playlist); import lazily to
+    # avoid a circular import at module load.
+    try:
+        from overslot.youtube_playlist import KEY_DRAFT_HIGHLIGHT_PLAYLIST
+        _safe_delete(KEY_DRAFT_HIGHLIGHT_PLAYLIST)
+    except Exception:
+        pass
 
 
 def bust_articles_list():

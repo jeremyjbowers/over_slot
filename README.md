@@ -227,7 +227,7 @@ The site caches expensive querysets and computed data to improve performance und
 
 | Location | Cached Data | TTL |
 |----------|-------------|-----|
-| **Homepage** | Stock watch carousel, articles carousel, rankings carousel, games carousel, scouting articles, non-scouting articles, current/archived rankings, rankings count, player videos, 2027 draft highlight reels playlist, featured games, podcasts | 24 hr |
+| **Homepage** | Stock watch carousel, articles carousel, rankings carousel, games carousel, scouting articles, non-scouting articles, current/archived rankings, rankings count, player videos, 2027 draft highlight reels (random sample from YouTube playlist), featured games, podcasts | 24 hr |
 | **Articles list** | Combined news items (articles + stock watch), recent rankings sidebar | 24 hr |
 | **Article detail** | Article with active players/teams (per slug) | 24 hr |
 | **Stock watch detail** | Article with stock watch players and statlines (per slug) | 24 hr |

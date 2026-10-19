@@ -122,6 +122,7 @@ def cache_dashboard(request):
         f'{KEY_HOMEPAGE}:videos_count',
         f'{KEY_HOMEPAGE}:featured_games',
         f'{KEY_HOMEPAGE}:draft_highlight_reels',
+        f'overslot:youtube_playlist:PLHOPM8dszvhA',
         f'{KEY_HOMEPAGE}:podcasts',
         f'{KEY_HOMEPAGE}:collections',
         f'{KEY_ARTICLES}:list_items',
