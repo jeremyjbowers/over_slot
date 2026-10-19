@@ -16,6 +16,7 @@ class LiveUpdateOffseasonTestCase(SimpleTestCase):
         self.assertEqual(
             [call.args[0] for call in mocked.call_args_list],
             [
+                "load_highlight_playlist",
                 "generate_player_duplicates",
                 "sheet_load_rankings",
                 "sheet_load_mocks",
@@ -36,6 +37,7 @@ class LiveUpdateOffseasonTestCase(SimpleTestCase):
             [call.args[0] for call in mocked.call_args_list],
             [
                 "load_podcast_episodes",
+                "load_highlight_playlist",
                 "generate_player_duplicates",
                 "sheet_load_rankings",
                 "sheet_load_mocks",

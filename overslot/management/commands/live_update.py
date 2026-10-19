@@ -20,11 +20,12 @@ OFFSEASON_SKIP = (
 class Command(BaseCommand):
     help = (
         "Refresh site data. While OFFSEASON is True, only rankings, mocks, "
-        "and the player-duplicate scan run."
+        "the highlight playlist, and the player-duplicate scan run."
     )
 
     def handle(self, *args, **options):
         self._run("load_podcast_episodes")
+        self._run("load_highlight_playlist")
 
         self._run("generate_player_duplicates")
         self._run("sheet_load_rankings")

@@ -42,6 +42,10 @@ from overslot.cache_utils import (
     KEY_ARTICLES,
     KEY_STOCK_WATCH,
 )
+from overslot.youtube_playlist import (
+    DRAFT_HIGHLIGHT_PLAYLIST_URL,
+    get_playlist_videos,
+)
 
 # Client endgame binary (inlined in mock_draft_sim.html): magic OSD1 + version + picks.
 _ENDGAME_MAGIC = b'OSD1'
@@ -183,13 +187,25 @@ def index(request):
         ).exclude(photo_url="").count()
     context['videos_count'] = get_cached('overslot:homepage:videos_count', _videos_count, HOMEPAGE_TIMEOUT)
 
-    # 2027 draft highlight reels: YouTube playlist (homepage embed + outbound link)
-    context['draft_highlight_reels_playlist_url'] = (
-        'https://www.youtube.com/playlist?list=PLHOPM8dszvhA'
+    def _draft_highlight_reels():
+        """
+        Random sample of videos from the cached 2027 YouTube highlight playlist.
+        Catalog is warmed by `load_highlight_playlist` (also fetched on cold miss).
+        """
+        import random
+
+        videos = get_playlist_videos()
+        if not videos:
+            return []
+        sample_size = min(4, len(videos))
+        return random.sample(list(videos), sample_size)
+
+    context['draft_highlight_reels'] = get_cached(
+        f'{KEY_HOMEPAGE}:draft_highlight_reels',
+        _draft_highlight_reels,
+        HOMEPAGE_TIMEOUT,
     )
-    context['draft_highlight_reels_embed_url'] = (
-        'https://www.youtube.com/embed/videoseries?list=PLHOPM8dszvhA'
-    )
+    context['draft_highlight_reels_playlist_url'] = DRAFT_HIGHLIGHT_PLAYLIST_URL
 
     # Featured games belt
     from django.utils import timezone
