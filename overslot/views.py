@@ -183,46 +183,12 @@ def index(request):
         ).exclude(photo_url="").count()
     context['videos_count'] = get_cached('overslot:homepage:videos_count', _videos_count, HOMEPAGE_TIMEOUT)
 
-    def _draft_highlight_reels():
-        """
-        Random sample of YouTube-backed 2026 draft highlight reels from sheet-loaded PlayerRanking rows.
-        """
-        qs = models.PlayerRanking.objects.filter(
-            active=True,
-            ranking__year='2026',
-            ranking__is_draft=True,
-            ranking__is_mock_draft=False,
-            ranking__publish=True,
-            player__isnull=False,
-            player__active=True,
-        ).exclude(
-            highlight_reel_url__isnull=True
-        ).exclude(
-            highlight_reel_url=''
-        ).select_related('player')
-
-        candidates = list(qs.order_by('?')[:80])
-        reels = []
-        seen_player = set()
-        for pr in candidates:
-            if pr.player_id in seen_player:
-                continue
-            embed = video_embed_url(pr.highlight_reel_url or '')
-            if not embed or 'youtube.com/embed' not in embed:
-                continue
-            seen_player.add(pr.player_id)
-            reels.append({
-                'embed_url': embed,
-                'player_name': pr.player.name,
-            })
-            if len(reels) >= 6:
-                break
-        return reels
-
-    context['draft_highlight_reels'] = get_cached(
-        f'{KEY_HOMEPAGE}:draft_highlight_reels',
-        _draft_highlight_reels,
-        HOMEPAGE_TIMEOUT,
+    # 2027 draft highlight reels: YouTube playlist (homepage embed + outbound link)
+    context['draft_highlight_reels_playlist_url'] = (
+        'https://www.youtube.com/playlist?list=PLHOPM8dszvhA'
+    )
+    context['draft_highlight_reels_embed_url'] = (
+        'https://www.youtube.com/embed/videoseries?list=PLHOPM8dszvhA'
     )
 
     # Featured games belt
