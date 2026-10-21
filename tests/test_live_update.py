@@ -20,12 +20,21 @@ class LiveUpdateOffseasonTestCase(SimpleTestCase):
                 "generate_player_duplicates",
                 "sheet_load_rankings",
                 "sheet_load_mocks",
+                "load_college_hitters",
+                "load_college_pitchers",
+                "load_hs_hitters",
                 "generate_player_duplicates",
             ],
         )
         logged = out.getvalue()
         for name in OFFSEASON_SKIP:
             self.assertIn(f"Skipping {name} until the season starts", logged)
+        for name in (
+            "load_college_hitters",
+            "load_college_pitchers",
+            "load_hs_hitters",
+        ):
+            self.assertNotIn(f"Skipping {name} until the season starts", logged)
 
     def test_season_runs_every_loader(self):
         with patch("overslot.management.commands.live_update.OFFSEASON", False), patch(
