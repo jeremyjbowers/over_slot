@@ -1,6 +1,7 @@
 asgiref==3.11.1
 attrs==26.1.0
 bleach==6.3.0
+brotli==1.2.1
 boto3==1.43.9
 botocore==1.43.9
 cachetools==7.1.2
