@@ -1,6 +1,7 @@
 asgiref
 attrs
 bleach
+brotli>=1.2.1
 boto3
 botocore
 cachetools
