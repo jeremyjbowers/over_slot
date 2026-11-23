@@ -8,6 +8,7 @@
         <div class="dashboard-header">
             <h1>Account Settings</h1>
             <p>Manage your email addresses and account preferences</p>
+            <p><a href="{% url 'account_api_keys' %}">API keys</a> for subscribers reading articles, rankings, and mock drafts</p>
         </div>
 
         <!-- Primary Email Section -->
@@ -124,6 +125,10 @@
 .dashboard-header p {
     color: var(--text-secondary);
     font-size: var(--text-sm);
+}
+
+.dashboard-header a {
+    color: var(--theme-primary);
 }
 
 .email-section {

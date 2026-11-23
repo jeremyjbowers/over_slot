@@ -31,6 +31,7 @@ h11
 httplib2
 idna
 jmespath
+mcp
 nh3
 nicknames
 numpy

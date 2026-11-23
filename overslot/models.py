@@ -1,5 +1,7 @@
 import datetime
+import hashlib
 import os
+import secrets
 import uuid
 
 from dateutil.relativedelta import *
@@ -11,6 +13,7 @@ from django.dispatch import receiver
 from django.conf import settings
 from django.utils.text import slugify
 from django.utils.crypto import get_random_string
+from django.utils import timezone
 
 from overslot import utils
 
@@ -1533,3 +1536,119 @@ class MockDraftShare(models.Model):
 
     def __str__(self):
         return str(self.id)
+
+
+class ReadAPIKey(BaseModel):
+    """
+    Long-lived read key for MCP and the JSON read API, scoped to one user.
+
+    The secret is stored so the account can read it again on the API keys page.
+    Authentication uses the SHA-256 hash. Other accounts cannot see the secret.
+    Only an account with an active subscription can create or use a key, and a
+    usable key can read the full published record.
+    """
+
+    SCOPE_READ = "read"
+    MAX_ACTIVE_PER_USER = 20
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="read_api_keys"
+    )
+    label = models.CharField(max_length=255, blank=True, default="")
+    token_prefix = models.CharField(max_length=16, db_index=True)
+    token_hash = models.CharField(max_length=64, unique=True)
+    token_secret = models.CharField(max_length=128, blank=True, default="")
+    last_used_at = models.DateTimeField(blank=True, null=True)
+    revoked_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["-created", "-id"]
+        verbose_name = "read API key"
+        verbose_name_plural = "read API keys"
+
+    def __unicode__(self):
+        who = self.user.email or self.user.username
+        return f"{who} [{self.label or self.token_prefix}]"
+
+    @staticmethod
+    def _hash(raw_token):
+        return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def account_is_paid(user):
+        """True when this account's subscription can open premium content.
+
+        Staff without a subscription are not paid. past_due still counts, matching
+        the site. A paused collection does not.
+        """
+        if user is None or not getattr(user, "is_active", False):
+            return False
+        if getattr(user, "is_authenticated", True) is False:
+            return False
+        try:
+            subscription = user.subscription
+        except Subscription.DoesNotExist:
+            return False
+        return subscription.can_access_premium_content()
+
+    @classmethod
+    def active_for_user(cls, user):
+        return cls.objects.filter(user=user, active=True, revoked_at__isnull=True)
+
+    @classmethod
+    def create_key(cls, user, label=""):
+        if not cls.account_is_paid(user):
+            raise PermissionError(
+                "An active subscription is required to create a read API key."
+            )
+        raw = f"overslot_{secrets.token_urlsafe(32)}"
+        key = cls.objects.create(
+            user=user,
+            label=(label or "")[:255],
+            token_prefix=raw[:16],
+            token_hash=cls._hash(raw),
+            token_secret=raw,
+        )
+        return raw, key
+
+    @classmethod
+    def lookup(cls, raw_token):
+        """Return the active key for this secret, ignoring subscription status."""
+        if not raw_token or not isinstance(raw_token, str):
+            return None
+        if not raw_token.startswith("overslot_"):
+            return None
+        try:
+            key = cls.objects.select_related("user").get(
+                token_hash=cls._hash(raw_token),
+                revoked_at__isnull=True,
+                active=True,
+            )
+        except cls.DoesNotExist:
+            return None
+        if not key.user.is_active:
+            return None
+        return key
+
+    @classmethod
+    def authorize(cls, raw_token):
+        """
+        Return (key, None) when the secret belongs to a paid account.
+
+        (None, "unauthorized") for a missing, revoked, or unknown secret.
+        (None, "unpaid") when the secret is valid but the account is not paid.
+        A successful call records last_used_at.
+        """
+        key = cls.lookup(raw_token)
+        if key is None:
+            return None, "unauthorized"
+        if not cls.account_is_paid(key.user):
+            return None, "unpaid"
+        key.last_used_at = timezone.now()
+        key.save(update_fields=["last_used_at", "last_modified"])
+        return key, None
+
+    def revoke(self):
+        self.revoked_at = timezone.now()
+        self.active = False
+        self.save(update_fields=["revoked_at", "active", "last_modified"])

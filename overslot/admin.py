@@ -153,6 +153,7 @@ from overslot.models import (
     PotentialTeamDuplicate,
     Game,
     MockDraftShare,
+    ReadAPIKey,
 )
 
 
@@ -1003,6 +1004,33 @@ class MockDraftShareAdmin(admin.ModelAdmin):
     @staticmethod
     def payload_size(obj):
         return len(obj.payload) if obj.payload else 0
+
+
+@admin.register(ReadAPIKey, site=admin_site)
+class ReadAPIKeyAdmin(admin.ModelAdmin):
+    list_display = ["user", "label", "token_prefix", "active", "last_used_at", "revoked_at", "created"]
+    list_filter = ["active"]
+    search_fields = ["user__email", "user__username", "label", "token_prefix"]
+    readonly_fields = [
+        "token_prefix",
+        "token_hash",
+        "token_secret",
+        "last_used_at",
+        "revoked_at",
+        "created",
+        "last_modified",
+    ]
+    raw_id_fields = ["user"]
+    actions = ["revoke_keys"]
+
+    @admin.action(description="Revoke selected read API keys")
+    def revoke_keys(self, request, queryset):
+        count = 0
+        for key in queryset:
+            if key.revoked_at is None and key.active:
+                key.revoke()
+                count += 1
+        self.message_user(request, f"Revoked {count} read API key(s).")
 
 
 @admin.register(Game, site=admin_site)

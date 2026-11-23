@@ -6,6 +6,7 @@ from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 
 from overslot import views, subscription_views, duplicate_views, account_views, team_duplicate_views, cache_admin_views
+from overslot.mcp_app import views as mcp_views
 from overslot.admin import admin_site
 from overslot.feeds import ArticlesFeed, RankingsFeed, MockDraftsFeed
 from . import auth
@@ -117,6 +118,17 @@ urlpatterns = [
     path("api/search/", views.search, name="search"),
     path("api/v1/players/", views.api_players, name="api_players"),
 
+    # Read API used by the MCP server. Bearer overslot_… keys, published content only.
+    path("api/mcp/v1/articles/", mcp_views.articles_list, name="mcp_articles_list"),
+    path("api/mcp/v1/articles/<slug:slug>/", mcp_views.articles_detail, name="mcp_articles_detail"),
+    path("api/mcp/v1/rankings/", mcp_views.rankings_list, name="mcp_rankings_list"),
+    path("api/mcp/v1/rankings/<slug:slug>/", mcp_views.rankings_detail, name="mcp_rankings_detail"),
+    path("api/mcp/v1/mock-drafts/", mcp_views.mock_drafts_list, name="mcp_mock_drafts_list"),
+    path("api/mcp/v1/mock-drafts/<slug:slug>/", mcp_views.mock_drafts_detail, name="mcp_mock_drafts_detail"),
+    path("api/mcp/v1/players/", mcp_views.players_search, name="mcp_players_search"),
+    path("api/mcp/v1/players/<slug:slug>/", mcp_views.players_detail, name="mcp_players_detail"),
+    path("api/mcp/v1/player-stat-seasons/", mcp_views.player_stat_seasons, name="mcp_player_stat_seasons"),
+
     # Subscription URLs
     path('subscription/', subscription_views.subscription_dashboard, name='subscription_dashboard'),
     path('subscription/checkout/', subscription_views.create_checkout_session, name='create_checkout_session'),
@@ -140,6 +152,7 @@ urlpatterns = [
 
     # Account Management URLs
     path('account/', account_views.account_dashboard, name='account_dashboard'),
+    path('account/api-keys/', account_views.account_api_keys, name='account_api_keys'),
     path('account/email/add/', account_views.add_secondary_email, name='add_secondary_email'),
     path('account/email/<int:email_id>/remove/', account_views.remove_secondary_email, name='remove_secondary_email'),
     path('account/email/<int:email_id>/resend/', account_views.resend_verification_email, name='resend_verification_email'),
