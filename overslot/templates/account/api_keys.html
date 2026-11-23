@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}API keys - Over Slot{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="account-dashboard">
+        <div class="dashboard-header">
+            <h1>API keys</h1>
+            <p>Read-only keys for agents. A key from a subscribed account returns the full published record.</p>
+            <p><a href="{% url 'account_dashboard' %}">Back to account settings</a></p>
+        </div>
+
+        <div class="email-section">
+            <h2>What a key can read</h2>
+            <p class="section-description">
+                A read key returns the full published record: articles, draft rankings,
+                player rankings and scouting reports, player data (Trackman stat seasons
+                and 6-4-3 counting stats), and mock drafts. Keys cannot change anything
+                on the site. Only an active subscription can create or use one.
+            </p>
+            {% if can_create %}
+            <p class="section-description">
+                Send the key as <span class="mono">Authorization: Bearer overslot_…</span>.
+                Point an MCP client at <span class="mono">{{ mcp_url }}</span>.
+                The same reads are at <span class="mono">/api/mcp/v1/</span>.
+            </p>
+
+            <form method="post" action="{% url 'account_api_keys' %}" class="add-email-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <h3>New read key</h3>
+                <div class="form-group">
+                    <input type="text"
+                           name="label"
+                           maxlength="255"
+                           class="form-input"
+                           placeholder="Label, such as laptop or claude"
+                           aria-label="Label">
+                    <button type="submit" class="btn-primary">Generate key</button>
+                </div>
+                <p class="form-help">You can keep up to {{ max_keys }} active keys. You only see your own.</p>
+            </form>
+            {% else %}
+            <p class="section-description">
+                This account does not have an active subscription, so it cannot create a read key.
+                <a href="{% url 'subscription_dashboard' %}">View subscription</a>
+            </p>
+            {% endif %}
+        </div>
+
+        <div class="email-section">
+            <h2>Your keys</h2>
+            {% if not api_keys %}
+            <div class="empty-state">
+                <p>You do not have any API keys yet.</p>
+            </div>
+            {% else %}
+            <div class="key-table" role="list">
+                {% for key in api_keys %}
+                <article class="email-item key-item" role="listitem">
+                    <div class="key-main">
+                        <div class="email-info">
+                            <span class="email-address">{{ key.label|default:"Untitled" }}</span>
+                            {% if key.revoked_at or not key.active %}
+                            <span class="email-badge unverified">Revoked</span>
+                            {% else %}
+                            <span class="email-badge verified">Active</span>
+                            {% endif %}
+                            <span class="email-badge primary">Read</span>
+                        </div>
+                        {% if key.token_secret and key.active and not key.revoked_at %}
+                        <label class="key-label" for="key-{{ key.pk }}">Key</label>
+                        <input id="key-{{ key.pk }}" class="form-input key-secret" type="text" readonly value="{{ key.token_secret }}" onclick="this.select()">
+                        {% elif not key.token_secret %}
+                        <p class="form-help">This key was not stored. Generate a new one to see the text.</p>
+                        {% endif %}
+                        <p class="form-help">
+                            {% if key.last_used_at %}Last used {{ key.last_used_at|date:"M j, Y, g:i a" }}{% else %}Not used yet{% endif %}
+                            {% if key.created %} · Created {{ key.created|date:"M j, Y" }}{% endif %}
+                        </p>
+                    </div>
+                    {% if key.active and not key.revoked_at %}
+                    <div class="email-actions">
+                        <form method="post" action="{% url 'account_api_keys' %}" onsubmit="return confirm('Revoke this key? Agents using it will stop working.');">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="revoke">
+                            <input type="hidden" name="key_id" value="{{ key.pk }}">
+                            <button type="submit" class="btn-link danger">Revoke</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.account-dashboard {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+.dashboard-header { margin-bottom: 2rem; }
+.dashboard-header h1 { color: var(--text-primary); margin-bottom: 0.5rem; }
+.dashboard-header p { color: var(--text-secondary); font-size: var(--text-sm); }
+.dashboard-header a { color: var(--theme-primary); }
+.email-section {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.email-section h2 { color: var(--text-primary); margin-bottom: 1rem; font-size: var(--text-lg); }
+.section-description a { color: var(--theme-primary); }
+.section-description, .form-help {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85em;
+    color: var(--text-primary);
+}
+.email-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--dark-border);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    background: var(--dark-bg);
+}
+.email-info { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.email-address { color: var(--text-primary); font-weight: 500; }
+.email-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: var(--text-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+}
+.email-badge.primary { background: var(--theme-primary); color: white; }
+.email-badge.verified { background: var(--success); color: white; }
+.email-badge.unverified { background: var(--warning); color: var(--dark-bg); }
+.key-main { flex: 1; min-width: 0; }
+.key-label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    margin-bottom: 0.25rem;
+}
+.form-input, .key-secret {
+    width: 100%;
+    background: var(--dark-bg);
+    border: 1px solid var(--dark-border);
+    color: var(--text-primary);
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-size: var(--text-sm);
+}
+.key-secret { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: var(--text-xs); }
+.add-email-form { border-top: 1px solid var(--dark-border); padding-top: 1.5rem; margin-top: 0.5rem; }
+.add-email-form h3 { color: var(--text-primary); margin-bottom: 1rem; font-size: var(--text-base); }
+.add-email-form .form-group { display: flex; gap: 0.75rem; align-items: flex-start; }
+.add-email-form .form-input { flex: 1; }
+.btn-primary {
+    background: var(--theme-primary);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    white-space: nowrap;
+}
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--theme-primary);
+    cursor: pointer;
+    font-size: var(--text-sm);
+    text-decoration: underline;
+    padding: 0;
+}
+.btn-link.danger { color: var(--danger); }
+.empty-state { text-align: center; padding: 1rem; color: var(--text-secondary); }
+@media (max-width: 640px) {
+    .email-item { flex-direction: column; }
+    .add-email-form .form-group { flex-direction: column; }
+    .btn-primary { width: 100%; }
+}
+</style>
+{% endblock %}

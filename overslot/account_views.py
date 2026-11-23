@@ -1,7 +1,10 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.views.decorators.cache import never_cache
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.http import JsonResponse
@@ -11,7 +14,7 @@ from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils.crypto import get_random_string
 
-from overslot.models import UserEmail
+from overslot.models import ReadAPIKey, UserEmail
 from overslot.auth import MailgunEmailer, validate_email_with_mailgun
 from .security import (
     rate_limit_allow,
@@ -207,3 +210,59 @@ def send_verification_email(request, user_email, token):
     except Exception as e:
         # Log the error in production
         raise Exception(f"Failed to send verification email: {str(e)}")
+
+
+def _own_read_api_key(user, raw_id):
+    """Return this account's key, or 404 if the id is missing or someone else's."""
+    if raw_id in (None, ""):
+        raise Http404("API key not found")
+    try:
+        return ReadAPIKey.objects.get(pk=raw_id, user=user)
+    except (ReadAPIKey.DoesNotExist, ValueError, ValidationError):
+        raise Http404("API key not found")
+
+
+@never_cache
+@login_required
+def account_api_keys(request):
+    """Create and revoke read API keys for the signed-in account."""
+    user = request.user
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "create":
+            label = (request.POST.get("label") or "").strip()[:255]
+            if not ReadAPIKey.account_is_paid(user):
+                messages.error(
+                    request,
+                    "An active subscription is required to create a read API key.",
+                )
+            elif ReadAPIKey.active_for_user(user).count() >= ReadAPIKey.MAX_ACTIVE_PER_USER:
+                messages.error(
+                    request,
+                    f"You can have {ReadAPIKey.MAX_ACTIVE_PER_USER} active read keys. Revoke one to add another.",
+                )
+            else:
+                ReadAPIKey.create_key(user, label=label)
+                messages.success(request, "API key created. Copy it from the list below.")
+        elif action == "revoke":
+            key = _own_read_api_key(user, request.POST.get("key_id"))
+            if key.revoked_at is None and key.active:
+                key.revoke()
+                messages.success(request, "API key revoked.")
+            else:
+                messages.success(request, "That API key is already revoked.")
+        else:
+            messages.error(request, "Unknown action.")
+        return redirect("account_api_keys")
+
+    return render(
+        request,
+        "account/api_keys.html",
+        {
+            "user": user,
+            "api_keys": ReadAPIKey.objects.filter(user=user).order_by("-created", "-id"),
+            "mcp_url": request.build_absolute_uri("/mcp"),
+            "max_keys": ReadAPIKey.MAX_ACTIVE_PER_USER,
+            "can_create": ReadAPIKey.account_is_paid(user),
+        },
+    )
