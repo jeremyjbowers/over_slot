@@ -1,10 +1,11 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from django.db.models import Q, Count
-from django.core.exceptions import MultipleObjectsReturned
 import traceback
 
-from overslot import models, utils
+from overslot import models, sheet_identity, utils
+
+RANKINGS_SHEET_ID = "15kLgnYACmlcrYV3QI5TECb2Vzkz-9jkrc8kc_IG6rkE"
 
 
 class Command(BaseCommand):
@@ -20,6 +21,11 @@ class Command(BaseCommand):
             '--debug',
             action='store_true',
             help='Print detailed progress information while loading',
+        )
+        parser.add_argument(
+            '--no-write-ids',
+            action='store_true',
+            help="Don't write overslot_id values back to the sheet",
         )
         parser.add_argument(
             'tab',
@@ -38,30 +44,6 @@ class Command(BaseCommand):
         else:
             self.stdout.write('Running in non-destructive mode. Use --clear to delete existing data.')
 
-        def get_primary_player(player):
-            """
-            Check if this player has been merged into another player.
-            If so, return the primary player. Otherwise, return the original player.
-            """
-            # Check if this player was merged into another (it would be inactive)
-            if not player.active:
-                # Look for a merge decision where this player was the secondary
-                merge_decision = models.DuplicateDecision.objects.filter(
-                    decision='merged',
-                    primary_player__isnull=False
-                ).filter(
-                    Q(player1=player) | Q(player2=player)
-                ).exclude(
-                    primary_player=player  # Don't match if this player was the primary
-                ).first()
-                
-                if merge_decision and merge_decision.primary_player.active:
-                    if debug:
-                        self.stdout.write(f"  → Player {player.name} was merged into {merge_decision.primary_player.name}")
-                    return merge_decision.primary_player
-            
-            return player
-        
         def get_primary_team(team):
             """
             Check if this team has been merged into another team.
@@ -126,11 +108,14 @@ class Command(BaseCommand):
                 try:
                     if debug:
                         self.stdout.write(self.style.WARNING(f"Starting load for tab: {year} {level}"))
-                    sheet = utils.get_sheet("15kLgnYACmlcrYV3QI5TECb2Vzkz-9jkrc8kc_IG6rkE", f"{year} {level}!A:Z", value_cutoff=None)
+                    tab_title = f"{year} {level}"
+                    header, sheet = sheet_identity.read_tab(RANKINGS_SHEET_ID, tab_title)
                     if debug:
                         self.stdout.write(f"Fetched sheet with {len(sheet)} rows for {year} {level}")
 
-                    player_rows = [row for row in sheet if str(row.get('name', '')).strip()]
+                    player_rows = [(n, row) for n, row in sheet if str(row.get('name', '')).strip()]
+                    resolver = sheet_identity.TabResolver(tab_title)
+                    id_assignments = {}
                     if not player_rows:
                         self.stdout.write(f"Skipping {year} {level}: no player rankings in sheet yet")
                         continue
@@ -176,49 +161,18 @@ class Command(BaseCommand):
                             self.stdout.write(self.style.WARNING(f"Deleted {deleted_count} duplicate inactive PlayerRanking records for ranking id={r.pk}"))
 
                     processed_rows = 0
-                    for idx, row in enumerate(player_rows, start=1):
+                    for idx, (row_number, row) in enumerate(player_rows, start=1):
                         processed_rows += 1
                         player_name = row.get('name', '')
                         player_position = row.get('position', '')
                         if debug:
                             self.stdout.write(f"Row {idx}/{len(player_rows)}: name={player_name} position={player_position}")
                         
-                        # player object - handle duplicate case
-                        try:
-                            p, created = models.Player.objects.get_or_create(name=player_name, position=player_position)
-                            if debug:
-                                self.stdout.write(f"  Player {'created' if created else 'found'}: id={p.pk} name={p.name} position={p.position}")
-                        except MultipleObjectsReturned as e:
-                            # Multiple players found with same name/position
-                            self.stderr.write(self.style.ERROR(f"\n{'='*80}"))
-                            self.stderr.write(self.style.ERROR(f"DUPLICATE PLAYER ERROR at Row {idx}/{len(player_rows)}"))
-                            self.stderr.write(self.style.ERROR(f"  Name: '{player_name}'"))
-                            self.stderr.write(self.style.ERROR(f"  Position: '{player_position}'"))
-                            matching_players = models.Player.objects.filter(name=player_name, position=player_position)
-                            self.stderr.write(self.style.ERROR(f"  Found {matching_players.count()} matching players:"))
-                            for mp in matching_players:
-                                self.stderr.write(f"    - id={mp.pk} name='{mp.name}' position='{mp.position}' active={mp.active} school='{mp.school}'")
-                            
-                            # Try to get the first active one, or just the first one
-                            p = matching_players.filter(active=True).first()
-                            if not p:
-                                p = matching_players.first()
-                                self.stderr.write(self.style.WARNING(f"  → Using inactive player: id={p.pk}"))
-                            else:
-                                self.stderr.write(self.style.SUCCESS(f"  → Using active player: id={p.pk}"))
-                            self.stderr.write(self.style.ERROR(f"{'='*80}\n"))
-                            created = False
-                        
-                        # Check if this player has been merged into another player
+                        p, created = resolver.resolve(row_number, row)
+                        id_assignments[row_number] = (player_name, str(p.pk))
                         if debug:
-                            self.stdout.write(f"  Checking for merged player: id={p.pk} name={p.name} active={p.active}")
-                        p_original = p
-                        p = get_primary_player(p)
-                        if p != p_original:
-                            self.stdout.write(self.style.WARNING(f"  → Player was merged: {p_original.name} (id={p_original.pk}) -> {p.name} (id={p.pk})"))
-                        elif debug:
-                            self.stdout.write(f"  No merge found, using original player: id={p.pk}")
-                        
+                            self.stdout.write(f"  Player {'created' if created else 'found'}: id={p.pk} name={p.name} position={p.position}")
+
                         p.school=row.get('school')
 
                         if row.get('bat_throw', None):
@@ -363,6 +317,9 @@ class Command(BaseCommand):
                                 self.stdout.write("  Scouting report cleared")
 
                         pr.save()
+                    self.report_tab(resolver)
+                    if not options.get('no_write_ids'):
+                        self.write_ids(tab_title, header, id_assignments)
                     if debug:
                         self.stdout.write(self.style.SUCCESS(f"Completed load for {year} {level}: {processed_rows} rows processed"))
                 except Exception as e:
@@ -370,3 +327,26 @@ class Command(BaseCommand):
                         self.stderr.write(self.style.ERROR(f"Error processing {year} {level}: {e}"))
                         self.stderr.write(traceback.format_exc())
                     continue
+
+    def report_tab(self, resolver):
+        c = resolver.counts
+        self.stdout.write(
+            f"{resolver.tab_label}: {c['id']} by overslot_id, {c['id_merged']} by merged overslot_id, "
+            f"{c['name']} by name, {c['created']} new players"
+        )
+        for issue in resolver.issues:
+            self.stdout.write(self.style.WARNING(f"  {issue}"))
+
+    def write_ids(self, tab_title, header, assignments):
+        try:
+            counts = sheet_identity.write_ids(RANKINGS_SHEET_ID, tab_title, header, assignments)
+        except Exception as e:
+            self.stderr.write(self.style.ERROR(
+                f"{tab_title}: couldn't write overslot_id values ({e}). The sheet must be shared with the "
+                "service account as an editor. Rankings loaded fine; rerun with --no-write-ids to skip this."
+            ))
+            return
+        msg = f"{tab_title}: wrote {counts['written']} overslot_id values ({counts['unchanged']} already set)"
+        if counts['skipped_moved']:
+            msg += f", skipped {counts['skipped_moved']} rows that moved during the load (rerun to fill them)"
+        self.stdout.write(msg)

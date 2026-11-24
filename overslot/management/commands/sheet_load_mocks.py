@@ -3,7 +3,7 @@ import re
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Q
 
-from overslot import models, utils
+from overslot import models, sheet_identity, utils
 
 # Mock draft source spreadsheet (tabs named like "2026 Mock 1.0", "2026 Mock 2.0", …).
 MOCK_DRAFT_SPREADSHEET_ID = "1n91_DpIkNKncmTpRWgnCdVrEF_eVjA_NTGZJUYSKqbU"
@@ -110,29 +110,6 @@ class Command(BaseCommand):
         else:
             self.stdout.write('Running in non-destructive mode. Use --clear to delete existing data.')
 
-        def get_primary_player(player):
-            """
-            Check if this player has been merged into another player.
-            If so, return the primary player. Otherwise, return the original player.
-            """
-            # Check if this player was merged into another (it would be inactive)
-            if not player.active:
-                # Look for a merge decision where this player was the secondary
-                merge_decision = models.DuplicateDecision.objects.filter(
-                    decision='merged',
-                    primary_player__isnull=False
-                ).filter(
-                    Q(player1=player) | Q(player2=player)
-                ).exclude(
-                    primary_player=player  # Don't match if this player was the primary
-                ).first()
-                
-                if merge_decision and merge_decision.primary_player.active:
-                    print(f"  → Player {player.name} was merged into {merge_decision.primary_player.name}")
-                    return merge_decision.primary_player
-            
-            return player
-        
         def get_primary_team(team):
             """
             Check if this team has been merged into another team.
@@ -275,12 +252,11 @@ class Command(BaseCommand):
                     # Deactivate existing player rankings for this mock ranking
                     models.PlayerRanking.objects.filter(ranking=r).update(rank=None, active=False)
 
-                    for row in sheet:
-                        # player object
-                        p, created = models.Player.objects.get_or_create(name=row['name'], position = row['position'])
-                        
-                        # Check if this player has been merged into another player
-                        p = get_primary_player(p)
+                    resolver = sheet_identity.TabResolver(tab_title)
+                    for row_number, row in enumerate(sheet, start=2):
+                        # Uses the overslot_id column when the mock tab has one (copied from
+                        # the rankings sheet); otherwise name + position as before.
+                        p, created = resolver.resolve(row_number, row)
                         
                         p.school=row.get('school')
 
@@ -376,3 +352,6 @@ class Command(BaseCommand):
                             pr.scouting_report = None
 
                         pr.save()
+
+                    for issue in resolver.issues:
+                        self.stdout.write(self.style.WARNING(f"  {issue}"))
