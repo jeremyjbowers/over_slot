@@ -2,7 +2,7 @@ import numpy as np
 from django.core.management.base import BaseCommand
 from googleapiclient.errors import HttpError
 
-from overslot import models, utils
+from overslot import models, stat_identity, utils
 
 
 _COLLEGE_HITTER_TRACKMAN_FIELDS = (
@@ -312,7 +312,8 @@ class Command(BaseCommand):
 
                 if row.get('Name'):
                     obj = utils.resolve_college_stat_player(
-                        row['Name'], year, debug=debug, stdout=self.stdout
+                        row['Name'], year, debug=debug, stdout=self.stdout,
+                        team=row.get('Team') or '', source='trackman',
                     )
                 else:
                     obj = None
@@ -393,7 +394,10 @@ class Command(BaseCommand):
                 name = sheet_row.get("Name")
                 if not name:
                     continue
-                obj = utils.fuzzy_find_player(name, debug=debug, stdout=self.stdout)
+                obj = stat_identity.resolve_college_stat_player(
+                    name, year, sheet_row.get('Team') or '', 'trackman',
+                    debug=debug, stdout=self.stdout, queue=False,
+                )
                 if not obj:
                     continue
                 season = models.PlayerStatSeason.objects.filter(

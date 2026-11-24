@@ -5,7 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.sitemaps.views import sitemap
 
-from overslot import views, subscription_views, duplicate_views, account_views, team_duplicate_views, cache_admin_views
+from overslot import views, subscription_views, duplicate_views, account_views, team_duplicate_views, cache_admin_views, stat_link_views
 from overslot.mcp_app import views as mcp_views
 from overslot.admin import admin_site
 from overslot.feeds import ArticlesFeed, RankingsFeed, MockDraftsFeed
@@ -35,6 +35,11 @@ urlpatterns = [
     path('admin/duplicates/check/<uuid:player1_uuid>/<uuid:player2_uuid>/', duplicate_views.manual_duplicate_check, name='manual_duplicate_check'),
     path('admin/duplicates/suggest/', duplicate_views.suggest_duplicate, name='suggest_duplicate'),
     
+    # College stat lines whose school doesn't match the player (admin only)
+    path('admin/stat-links/', stat_link_views.stat_link_queue, name='stat_link_queue'),
+    path('admin/stat-links/player/<uuid:player_uuid>/', stat_link_views.stat_link_player, name='stat_link_player'),
+    path('admin/stat-links/player/<uuid:player_uuid>/decide/', stat_link_views.stat_link_decide, name='stat_link_decide'),
+
     # Team Duplicate Management URLs (admin only)
     path('admin/team-duplicates/', team_duplicate_views.team_duplicate_dashboard, name='team_duplicate_dashboard'),
     path('admin/team-duplicates/review/', team_duplicate_views.review_team_duplicate, name='review_team_duplicate'),

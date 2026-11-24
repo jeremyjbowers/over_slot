@@ -1,0 +1,95 @@
+{% extends "admin/duplicate_base.html" %}
+{% block title %}Stat Matches{% endblock %}
+{% block breadcrumb %}
+<span class="breadcrumb-separator">›</span>
+<span>Stat Matches</span>
+{% endblock %}
+{% block content %}
+<div class="page-title">College stats that don't match the player's school</div>
+<p style="color:#718096; margin-bottom:1.5rem;">
+    Each row is a name and team from Trackman or 6-4-3 that matched an Overslot player whose record doesn't include that school.
+    Loaders hold these stats back until someone answers. Every answer is saved, so the same pair never comes back.
+    Same-season conflicts are listed first, then players by best rank.
+</p>
+
+<div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-body">
+        <form method="get" style="display:flex; gap:1rem; align-items:end; flex-wrap:wrap;">
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending ({{ counts.pending|default:0 }})</option>
+                    <option value="accepted" {% if status == 'accepted' %}selected{% endif %}>Same player ({{ counts.accepted|default:0 }})</option>
+                    <option value="rejected" {% if status == 'rejected' %}selected{% endif %}>Different person ({{ counts.rejected|default:0 }})</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Search</label>
+                <input type="text" name="q" value="{{ q }}" class="form-input" placeholder="Name or team">
+            </div>
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+    </div>
+</div>
+
+{% if page.object_list %}
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Stat line</th>
+                <th>Matched player</th>
+                <th>His record</th>
+                <th>Answer</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for link in page %}
+            <tr>
+                <td>
+                    <strong>{{ link.raw_name }}</strong> at <strong>{{ link.raw_team }}</strong><br>
+                    <span style="color:#718096; font-size:0.85rem;">{{ link.seasons|join:", " }}</span>
+                    {% if link.reason == 'conflict' %}<br><span class="badge badge-danger">two schools, same season</span>{% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'stat_link_player' link.player.uuid %}">{{ link.player.name }}</a>
+                    {% if link.best_rank %}<br><span style="color:#718096; font-size:0.85rem;">best rank #{{ link.best_rank }}</span>{% endif %}
+                    <br><a href="{% url 'players_detail' link.player.slug %}" target="_blank" style="font-size:0.85rem;">public page</a>
+                </td>
+                <td style="font-size:0.9rem;">
+                    {% for r in link.ranked %}{{ r.year }} {{ r.level|default:"" }}: {{ r.school }}{% if r.commitment %} (commit {{ r.commitment }}){% endif %}<br>{% empty %}<span style="color:#a0aec0;">not ranked</span>{% endfor %}
+                </td>
+                <td>
+                    {% if link.status == 'pending' %}
+                    <form method="post" action="{% url 'stat_link_decide' link.player.uuid %}" style="display:flex; flex-direction:column; gap:0.4rem; min-width:220px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="team_key" value="{{ link.team_key }}">
+                        <input type="hidden" name="name_key" value="{{ link.name_key }}">
+                        <input type="hidden" name="raw_team" value="{{ link.raw_team }}">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button name="action" value="accept" class="btn btn-success">Same player (transfer)</button>
+                        <button name="action" value="reject" class="btn btn-danger">Different person: remove</button>
+                        <div style="display:flex; gap:0.4rem;">
+                            <input type="text" name="target" class="form-input" placeholder="Other player's URL or slug" style="flex:1;">
+                            <button name="action" value="move" class="btn btn-outline">Move</button>
+                        </div>
+                    </form>
+                    {% else %}
+                    {{ link.get_status_display }}{% if link.decided_by %} by {{ link.decided_by.username }}{% endif %}
+                    {% if link.decided_at %}<br><span style="color:#718096; font-size:0.85rem;">{{ link.decided_at|date:"M j, Y" }}</span>{% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div style="margin-top:1rem; display:flex; gap:1rem;">
+    {% if page.has_previous %}<a class="btn btn-outline" href="?status={{ status }}&q={{ q|urlencode }}&page={{ page.previous_page_number }}">Previous</a>{% endif %}
+    <span style="color:#718096;">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a class="btn btn-outline" href="?status={{ status }}&q={{ q|urlencode }}&page={{ page.next_page_number }}">Next</a>{% endif %}
+</div>
+{% else %}
+<div class="card"><div class="card-body">Nothing here. Run <code>django-admin find_stat_melts</code> to scan existing stats.</div></div>
+{% endif %}
+{% endblock %}
