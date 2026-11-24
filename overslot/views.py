@@ -1560,8 +1560,74 @@ def about_us(request):
     return render(request, "about_us.html", context)
 
 
+def _player_export_identity():
+    """
+    Extra identity fields for the player export, built in bulk.
+
+    Returns (merged_into, schools):
+    - merged_into: inactive player uuid -> surviving player uuid, following merge chains.
+    - schools: player uuid -> [{year, level, school, commitment, position}] from draft-board
+      rankings (not mocks), newest first, one entry per year/level/school.
+    """
+    primary_of = {}
+    for p1, p2, primary in models.DuplicateDecision.objects.filter(
+        decision="merged", primary_player__isnull=False
+    ).values_list("player1_id", "player2_id", "primary_player_id"):
+        for pid in (p1, p2):
+            if pid != primary:
+                primary_of[pid] = primary
+
+    active = set(models.Player.objects.filter(active=True).values_list("uuid", flat=True))
+    merged_into = {}
+    for pid in primary_of:
+        if pid in active:
+            continue
+        seen = {pid}
+        target = primary_of[pid]
+        while target not in active and target in primary_of and target not in seen:
+            seen.add(target)
+            target = primary_of[target]
+        merged_into[pid] = target
+
+    schools = {}
+    seen_keys = set()
+    rows = (
+        models.PlayerRanking.objects.filter(
+            ranking__is_draft=True, ranking__is_mock_draft=False, player__isnull=False
+        )
+        .values_list("player_id", "ranking__year", "level", "school", "commitment", "position")
+        .order_by("-ranking__year")
+    )
+    for pid, year, level, school, commitment, position in rows:
+        school = (school or "").strip()
+        key = (pid, year, level, school)
+        if not school or key in seen_keys:
+            continue
+        seen_keys.add(key)
+        schools.setdefault(pid, []).append(
+            {
+                "year": year,
+                "level": level,
+                "school": school,
+                "commitment": (commitment or "").strip() or None,
+                "position": (position or "").strip() or None,
+            }
+        )
+    return merged_into, schools
+
+
 def api_players(request):
-    """Return all Player records as JSON or CSV with all fields, including IDs."""
+    """
+    Return Player records as JSON or CSV with all fields, including IDs.
+
+    Every player gets two identity fields so consumers (6-4-3) can line their
+    records up with ours:
+    - merged_into: for a player merged away as a duplicate, the uuid of the player
+      that replaced him; otherwise null. Repoint anything stored under the old uuid.
+    - schools: where our draft board has had him, by draft year and level.
+
+    ?active=1 returns only active players.
+    """
     # API key check via query param against environment variable
     expected_key = os.environ.get('OVERSLOT_API_KEY')
     if not expected_key:
@@ -1587,12 +1653,16 @@ def api_players(request):
     fields = [f.name for f in player_model._meta.fields]
 
     queryset = player_model.objects.all()
+    if (request.GET.get('active') or '').lower() in ('1', 'true', 'yes'):
+        queryset = queryset.filter(active=True)
+
+    merged_into, schools = _player_export_identity()
 
     if wants_csv:
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="players.csv"'
         writer = csv.writer(response)
-        writer.writerow(fields)
+        writer.writerow(fields + ['merged_into', 'schools'])
         for player in queryset.iterator():
             row = []
             for field_name in fields:
@@ -1602,6 +1672,12 @@ def api_players(request):
                     row.append('')
                 else:
                     row.append(str(value))
+            target = merged_into.get(player.uuid)
+            row.append(str(target) if target else '')
+            row.append(' | '.join(
+                f"{s['year']} {s['level'] or ''}: {s['school']}".replace('  ', ' ')
+                for s in schools.get(player.uuid, [])
+            ))
             writer.writerow(row)
         return response
 
@@ -1611,6 +1687,9 @@ def api_players(request):
         record = {}
         for field_name in fields:
             record[field_name] = getattr(player, field_name)
+        target = merged_into.get(player.uuid)
+        record['merged_into'] = str(target) if target else None
+        record['schools'] = schools.get(player.uuid, [])
         data.append(record)
 
     return JsonResponse(data, safe=False)
