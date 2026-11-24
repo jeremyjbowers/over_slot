@@ -1,0 +1,61 @@
+{% extends "admin/duplicate_base.html" %}
+{% block title %}Stats for {{ player.name }}{% endblock %}
+{% block breadcrumb %}
+<span class="breadcrumb-separator">›</span>
+<a href="{% url 'stat_link_queue' %}">Stat Matches</a>
+<span class="breadcrumb-separator">›</span>
+<span>{{ player.name }}</span>
+{% endblock %}
+{% block content %}
+<div class="page-title">{{ player.name }}: college stats by team</div>
+<p style="color:#718096; margin-bottom:1.5rem;">
+    {{ player.position|default:"" }}{% if player.hometown %} · {{ player.hometown }}{% if player.state %}, {{ player.state }}{% endif %}{% endif %}
+    {% if player.bats %} · B/T {{ player.bats }}-{{ player.throws }}{% endif %}
+    · <a href="{% url 'players_detail' player.slug %}" target="_blank">public page</a>
+</p>
+
+<div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-header"><div class="card-title">On our boards</div></div>
+    <div class="card-body" style="font-size:0.95rem;">
+        {% for r in rankings %}{{ r.year }} {{ r.level|default:"" }}: {{ r.school }}{% if r.commitment %} (commit {{ r.commitment }}){% endif %}{% if r.rank %} · #{{ r.rank }}{% endif %}<br>{% empty %}Not ranked.{% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <table class="table">
+        <thead><tr><th>Team</th><th>Seasons</th><th>Status</th><th>Answer</th></tr></thead>
+        <tbody>
+        {% for t in teams %}
+            <tr>
+                <td><strong>{{ t.team|default:"(no team)" }}</strong>
+                    {% if t.on_record %}<br><span class="badge badge-success">on his record</span>{% endif %}</td>
+                <td style="font-size:0.9rem;">
+                    {% for s in t.trackman %}Trackman {{ s.year }}{% if s.draft_year %} (draft yr {{ s.draft_year }}){% endif %}<br>{% endfor %}
+                    {% for s in t.six43 %}6-4-3 {{ s.year }}{% if s.hit_plate_appearances %} · {{ s.hit_plate_appearances }} PA{% endif %}{% if s.pitch_innings_pitched %} · {{ s.pitch_innings_pitched }} IP{% endif %}<br>{% endfor %}
+                </td>
+                <td>{% if t.link %}{{ t.link.get_status_display }}{% elif t.on_record %}—{% else %}not reviewed{% endif %}</td>
+                <td>
+                    {% if t.key != "(no team)" %}
+                    <form method="post" action="{% url 'stat_link_decide' player.uuid %}" style="display:flex; flex-direction:column; gap:0.4rem; min-width:220px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="team_key" value="{{ t.key }}">
+                        {% if t.link %}<input type="hidden" name="name_key" value="{{ t.link.name_key }}">{% endif %}
+                        <input type="hidden" name="raw_team" value="{{ t.team }}">
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        {% if not t.on_record %}<button name="action" value="accept" class="btn btn-success">Same player</button>{% endif %}
+                        <button name="action" value="reject" class="btn btn-danger">Different person: remove</button>
+                        <div style="display:flex; gap:0.4rem;">
+                            <input type="text" name="target" class="form-input" placeholder="Other player's URL or slug" style="flex:1;">
+                            <button name="action" value="move" class="btn btn-outline">Move</button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">No college stats.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -33,6 +33,34 @@ def get_name_similarity(name1, name2):
     return difflib.SequenceMatcher(None, norm1, norm2).ratio()
 
 
+def move_stat_seasons(removed, keeper):
+    """
+    Move Trackman and 6-4-3 seasons from a merged-away player to the keeper.
+    A season the keeper already has (same year and level, or same year and
+    team for 6-4-3) stays where it is. Returns how many moved.
+    """
+    from overslot.models import StatTeamLink
+
+    moved = 0
+    for season in PlayerStatSeason.objects.filter(player=removed):
+        if PlayerStatSeason.objects.filter(player=keeper, year=season.year, level=season.level).exists():
+            continue
+        season.player = keeper
+        season.save(update_fields=["player"])
+        moved += 1
+    for season in Player643StatSeason.objects.filter(player=removed):
+        if Player643StatSeason.objects.filter(player=keeper, year=season.year, team_name=season.team_name).exists():
+            continue
+        season.player = keeper
+        season.save(update_fields=["player"])
+        moved += 1
+    for link in StatTeamLink.objects.filter(player=removed):
+        if not StatTeamLink.objects.filter(name_key=link.name_key, team_key=link.team_key, player=keeper).exists():
+            link.player = keeper
+            link.save(update_fields=["player"])
+    return moved
+
+
 @staff_member_required
 def duplicate_dashboard(request):
     """Main dashboard for duplicate management"""
@@ -160,6 +188,9 @@ def merge_players(request, player1_uuid, player2_uuid):
         with transaction.atomic():
             # Move all PlayerRanking records to the keeper
             ranking_count = PlayerRanking.objects.filter(player=removed).update(player=keeper)
+
+            # Move stat seasons too, or they are stranded on an inactive player.
+            stat_count = move_stat_seasons(removed, keeper)
             
             # Move all Article relationships to the keeper
             article_count = 0
@@ -186,6 +217,7 @@ def merge_players(request, player1_uuid, player2_uuid):
             merge_notes += f"Kept: {keeper.name} (UUID: {keeper.uuid})\n"
             merge_notes += f"Removed: {removed.name} (UUID: {removed.uuid})\n"
             merge_notes += f"Transferred {ranking_count} ranking records\n"
+            merge_notes += f"Transferred {stat_count} stat seasons\n"
             merge_notes += f"Transferred {article_count} article relationships\n"
             merge_notes += f"Cleaned up {other_dupes_count} other potential duplicate records\n"
             if notes:

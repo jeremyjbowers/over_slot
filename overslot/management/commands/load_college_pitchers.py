@@ -203,7 +203,8 @@ class Command(BaseCommand):
 
                     if row.get('Name'):
                         obj = utils.resolve_college_stat_player(
-                            row['Name'], year, debug=debug, stdout=self.stdout
+                            row['Name'], year, debug=debug, stdout=self.stdout,
+                            team=row.get('School') or '', source='trackman',
                         )
                     else:
                         obj = None

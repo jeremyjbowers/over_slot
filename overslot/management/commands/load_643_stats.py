@@ -5,6 +5,7 @@ from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
 
 from overslot import models
+from overslot import stat_identity
 from overslot.utils import fuzzy_find_player, player_accepts_college_season
 
 
@@ -39,6 +40,7 @@ class Command(BaseCommand):
         dry_run = options.get('dry_run', False)
         player_id_filter = options.get('player_id')
         verbosity = options.get('verbosity', 1)
+        self.verbosity = verbosity
 
         if dry_run:
             self.stdout.write(self.style.WARNING('DRY RUN MODE - No changes will be saved'))
@@ -407,6 +409,7 @@ class Command(BaseCommand):
                 uuid_mod.UUID(str(pid))
                 player = models.Player.objects.filter(uuid=pid, active=True).first()
                 if player:
+                    player._matched_by_643_uuid = True
                     return player
             except (ValueError, TypeError, AttributeError):
                 pass
@@ -469,9 +472,27 @@ class Command(BaseCommand):
             stats_by_season[key]['pitching'] = stat_record
         
         # Create/update records for each season
+        by_uuid = getattr(player, '_matched_by_643_uuid', False)
         for (year, team_name), stats in stats_by_season.items():
             if not player_accepts_college_season(player, year):
                 continue
+            # 6-4-3's own mapping (our UUID) is trusted. A name-only match must
+            # also agree on school, or the season is held for review.
+            if not by_uuid and team_name and team_name != '---':
+                if not stat_identity.team_fits_player(player, team_name, year, source='643'):
+                    stat_identity.queue_link(
+                        player,
+                        player.name,
+                        team_name,
+                        year,
+                        '643',
+                        models.StatTeamLink.REASON_UNKNOWN_SCHOOL,
+                    )
+                    if self.verbosity >= 1:
+                        self.stdout.write(self.style.WARNING(
+                            f"Held 6-4-3 {year} {team_name} for '{player.name}': school not on his record (queued for review)"
+                        ))
+                    continue
             stat_season, created = self._create_or_update_stat_season(
                 player=player,
                 year=year,

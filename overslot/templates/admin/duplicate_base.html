@@ -539,6 +539,7 @@
         <div class="section-subnav">
             <a href="{% url 'admin:index' %}" class="subnav-link">Django Admin</a>
             <a href="{% url 'duplicate_dashboard' %}" class="subnav-link {% if request.path|slice:':18' == '/admin/duplicates' %}is-active{% endif %}">Player Duplicates</a>
+            <a href="{% url 'stat_link_queue' %}" class="subnav-link {% if request.path|slice:':18' == '/admin/stat-links' %}is-active{% endif %}">Stat Matches</a>
             <a href="{% url 'team_duplicate_dashboard' %}" class="subnav-link {% if request.path|slice:':20' == '/admin/team-duplicates' %}is-active{% endif %}">Team Duplicates</a>
             <a href="{% url 'cache_dashboard' %}" class="subnav-link {% if request.path|slice:':12' == '/admin/cache' %}is-active{% endif %}">Cache</a>
             <a href="{% url 'data_status' %}" class="subnav-link {% if request.path == '/admin/data-status/' %}is-active{% endif %}">Data Status</a>

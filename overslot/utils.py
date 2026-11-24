@@ -600,8 +600,20 @@ def player_accepts_college_season(player, season_year, eligibility=None):
     return season > max_hs
 
 
-def resolve_college_stat_player(name, season_year, debug=False, stdout=None):
-    """Name-match a player, then reject HS-class collisions for this college season."""
+def resolve_college_stat_player(name, season_year, debug=False, stdout=None, team=None, source=None):
+    """
+    Match a college stat row to a player.
+
+    With `team`, the row must also agree on school (see overslot.stat_identity);
+    rows that don't are held back and queued for review. Without `team`, falls
+    back to the old name-only match plus the HS-class guard.
+    """
+    if team is not None:
+        from overslot import stat_identity
+
+        return stat_identity.resolve_college_stat_player(
+            name, season_year, team, source, debug=debug, stdout=stdout
+        )
     obj = fuzzy_find_player(name, debug=debug, stdout=stdout)
     if obj and not player_accepts_college_season(obj, season_year):
         if debug and stdout:

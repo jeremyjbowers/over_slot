@@ -729,7 +729,7 @@ class PlayerRanking(BaseModel):
                     self.school_team = matched_team
                 else:
                     # If no match found, create the team (same logic as sheet_load commands)
-                    team, created = models.Team.objects.get_or_create(
+                    team, created = Team.objects.get_or_create(
                         name=school_name,
                         defaults={'active': True}
                     )
@@ -1652,3 +1652,52 @@ class ReadAPIKey(BaseModel):
         self.revoked_at = timezone.now()
         self.active = False
         self.save(update_fields=["revoked_at", "active", "last_modified"])
+
+
+class StatTeamLink(BaseModel):
+    """
+    A reviewed (or waiting-for-review) answer to: "is the stat line for NAME at
+    TEAM this Overslot player?"
+
+    College stat sources (Trackman sheets, 6-4-3) identify players only by name
+    and team. When a name matches a player but the team is not one of his known
+    schools, the loaders hold the row back and create a PENDING link. A human
+    then marks it ACCEPTED (same person, e.g. a transfer) or REJECTED (a
+    different person with the same name). Loaders consult these on every run,
+    so a decision is never asked for twice.
+    """
+
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    STATUS_CHOICES = (
+        (PENDING, "Pending review"),
+        (ACCEPTED, "Same player"),
+        (REJECTED, "Different person"),
+    )
+
+    REASON_UNKNOWN_SCHOOL = "unknown_school"
+    REASON_CONFLICT = "conflict"
+    REASON_CHOICES = (
+        (REASON_UNKNOWN_SCHOOL, "School not on the player's record"),
+        (REASON_CONFLICT, "Two schools in the same season"),
+    )
+
+    name_key = models.CharField(max_length=255, db_index=True, help_text="Normalized player name")
+    team_key = models.CharField(max_length=255, db_index=True, help_text="Normalized school name")
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name="stat_team_links")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=PENDING, db_index=True)
+    reason = models.CharField(max_length=32, choices=REASON_CHOICES, blank=True, null=True)
+    raw_name = models.CharField(max_length=255, blank=True, null=True)
+    raw_team = models.CharField(max_length=255, blank=True, null=True)
+    seasons = models.JSONField(default=list, blank=True, help_text="'source:year' entries seen for this pair")
+    decided_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    decided_at = models.DateTimeField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ["name_key", "team_key", "player"]
+        ordering = ["status", "-created"]
+
+    def __unicode__(self):
+        return f"{self.raw_name} at {self.raw_team} -> {self.player.name} ({self.status})"
